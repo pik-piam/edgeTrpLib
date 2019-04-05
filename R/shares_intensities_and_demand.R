@@ -1,0 +1,133 @@
+#' Derive shares, demand and intensities from the logit tree.
+#'
+#' @param logit_shares
+#' @param path2intensities
+#' @param demand_input
+#' @import dplyr
+#' @import data.table
+#' @importFrom rmndt toISO_dt toRegions_dt
+#' @export
+
+shares_intensity_and_demand <- function(logit_shares,
+                                        path2intensities,
+                                        demand_input=NULL){
+
+    ## load the shares at each level
+    S3S_shares <- logit_shares[["S3S_shares"]][,-c("fuel_price", "non_fuel_price", "tot_VOT_price")]
+    S2S3_shares <- logit_shares[["S2S3_shares"]][,-c("fuel_price", "non_fuel_price", "tot_VOT_price")]
+    S1S2_shares <- logit_shares[["S1S2_shares"]][,-c("fuel_price", "non_fuel_price", "tot_VOT_price")]
+    VS1_shares <- logit_shares[["VS1_shares"]][,-c("fuel_price", "non_fuel_price", "tot_VOT_price")]
+    FV_shares <- logit_shares[["FV_shares"]][,-c("fuel_price", "non_fuel_price", "tot_VOT_price")]
+    ## load the mapping to CES nodes
+    mapping_CESnodes_EDGE=fread(file.path(edge_path, "data/input/mapping_CESnodes_EDGE.csv"))
+
+    ## create a normalized total demand OR loads absolute demand if given
+    if (is.null(demand_input)) {
+        demand=CJ(region=unique(S3S_shares$region),
+                  sector=unique(S3S_shares$sector),
+                  year=unique(S3S_shares$year))
+        demand[,demand:=1]
+    }else {
+        demand=demand_input
+    }
+
+    ## calculate demand in million pkm for each level
+    demandS3=right_join(demand,S3S_shares)%>%
+        mutate(demand_L3=demand*share)%>%
+        select(-share,-demand)
+
+    demandS2=full_join(demandS3,S2S3_shares)%>%
+        mutate(demand_L2=demand_L3*share)%>%
+        select(-share,-demand_L3)
+
+    demandS1=full_join(demandS2,S1S2_shares)%>%
+        mutate(demand_L1=demand_L2*share)%>%
+        select(-share,-demand_L2)
+
+    demandV=full_join(demandS1,VS1_shares)%>%
+        mutate(demand_V=demand_L1*share)%>%
+        select(-share,-demand_L1)
+
+    demandF=full_join(demandV,FV_shares)%>%
+        mutate(demand_F=demand_V*share)%>%
+        select(-share,-demand_V)
+
+
+    demandF_plot_pkm=copy(demandF)
+
+    ## Calculate demand in EJ
+    ## merge the demand in pkm with the energy intensity
+    demandF=inner_join(demandF,MJ_vkm_base)%>%
+        mutate(demand_EJ=demand_F*conv_pkm_MJ*CONV_millionkm_km*CONV_MJ_EJ) #convert from million pkm to EJ
+
+    demandF_plot_EJ=copy(demandF)
+
+
+    ## downscale to ISO level the pkm demand
+    ## first I need to merge with a mapping that represents how the entries match to the CES
+    demandF=left_join(demandF,mapping_CESnodes_EDGE)
+
+    ## calculate both shares and average energy intensity
+    demandF=data.table(demandF)
+
+    demandF=demandF[,.(region, year, Value_demand=demand_EJ, demand_F, CES_node, sector)]
+
+    demandF=demandF[,.(Value_demand=sum(Value_demand),
+                       Value_intensity=sum(Value_demand)/sum(demand_F)), #in EJ/million pkm
+                    by=c("region","year","CES_node","sector")]
+
+    ## from wide to long format
+    demandF = melt(demandF, id.vars = c("region","year","CES_node","sector"),
+                   measure.vars = c("Value_demand", "Value_intensity"))
+
+    ## get rid on NaNs energy intensity (they appear wherever demand is 0, so they are not useful)
+    demandF=demandF[!is.nan(value),]
+
+    demandF[,sector:=NULL]
+
+
+    ## calculate demand
+    demand=demandF[variable == "Value_demand", .(region, year, CES_node, value)]
+    demand=approx_dt(demand, years,
+                     idxcols = c("region", "CES_node"),
+                     extrapolate=T)
+    demand=demand[order(region,year,CES_node)]
+    demand <- toISO_dt(demand,GCAM2ISO_MAPPING,
+                       datacol = "CES_node",
+                       valuecol = "value",
+                       strategy = "gdp",
+                       usecache = T)
+
+    demand=toRegions_dt(demand,REMIND2ISO_MAPPING,
+                        datacol = "CES_node",
+                        valuecol = "value")
+
+                                        #calculation of shares
+    demand[,CES_parent:=sub("(.*?)(_.*)","\\2",CES_node)]
+    demand[,shares:=value/sum(value),by=.(region,year,CES_parent)]
+
+    ## calculate intensity
+    demandI=demandF[variable == "Value_intensity", .(region, year, CES_node, value)]
+    demandI=approx_dt(demandI, years,
+                      idxcols = c("region", "CES_node"),
+                      extrapolate=T)
+
+    demandI=demandI[order(region,year,CES_node)]
+    demandI=toISO_dt(demandI,GCAM2ISO_MAPPING,
+                     datacol = "CES_node",
+                     valuecol = "value")
+
+    demandI=toRegions_dt(demandI,REMIND2ISO_MAPPING,
+                         datacol = "CES_node",
+                         valuecol = "value",
+                         strategy = "gdp",
+                         usecache = T)
+
+
+    demand_list=list(demand=demand,
+                     demandI=demandI,
+                     demandF_plot_pkm=demandF_plot_pkm,
+                     demandF_plot_EJ=demandF_plot_EJ)
+
+    return(demand_list)
+}

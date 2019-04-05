@@ -1,0 +1,12 @@
+Package: edgetRansport
+Title: Helper functions for EDGE transport calculations.
+Version: 0.0.0.9000
+Authors@R: c(
+    person("Alois", "Dirnaichner", email = "dirnaichner@pik-potsdam.de", role = c("aut", "cre")),
+    person("Marianna", "Rottoli", email = "rottoli@pik-potsdam.de", role = "aut"))		    
+Description: This package is highly specialized and created solely to not duplicate helper functions.
+Depends: R (>= 3.4.4)
+License: MIT
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 6.1.1
