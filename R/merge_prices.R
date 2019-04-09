@@ -12,21 +12,21 @@
 merge_prices <- function(gdx, REMINDmapping, path2intensities, path2UCD) {
     ## report prices from REMIND gdx in 2005$/MJ
     tdptwyr2dpgj <- 31.71  #TerraDollar per TWyear to Dollar per GJ
-    
+
     ## load entries from the gdx
     fety <- readGDX(gdx, c("entyFe", "fety"), format = "first_found")
     pebal_subset <- c("pegas", "pecoal")
-    
+
     febal.m <- readGDX(gdx, name = c("q_balFe", "q_febal"), types = "equations",
                        field = "m", format = "first_found")[, years, fety]
     budget.m <- readGDX(gdx, name = "qm_budget", types = "equations", field = "m",
                         format = "first_found")[, years,]  # Alternative: calcPrice
     pebal.m <- readGDX(gdx, name = c("q_balPe", "qm_pebal"), types = "equations",
                        field = "m", format = "first_found")[, years, pebal_subset]
-    
+
     tmp <- setNames(abs(lowpass(febal.m[, , "feelt"]/(budget.m + 1e-10), fix = "both",
                                 altFilter = match(2010, years))) * tdptwyr2dpgj, "Price|Final Energy|Electricity|Transport|Moving Avg (US$2005/GJ)")
-    
+
     tmp <- mbind(tmp, setNames(abs(lowpass(febal.m[, , "feh2t"]/(budget.m + 1e-10),
                                            fix = "both", altFilter = match(2010, years))) * tdptwyr2dpgj, "Price|Final Energy|Hydrogen|Transport|Moving Avg (US$2005/GJ)"))
     tmp <- mbind(tmp, setNames(abs(lowpass(febal.m[, , "fedie"]/(budget.m + 1e-10),
@@ -35,17 +35,17 @@ merge_prices <- function(gdx, REMINDmapping, path2intensities, path2UCD) {
                                "Price|Natural Gas|Primary Level (US$2005/GJ)"))
     tmp <- mbind(tmp, setNames(pebal.m[, , "pecoal"]/(budget.m + 1e-10) * tdptwyr2dpgj,
                                "Price|Coal|Primary Level (US$2005/GJ)"))
-    
+
     tmp <- magpie2dt(tmp, regioncol = "region",
                      yearcol = "year", datacols = "sector_fuel")
 
     fuel_price_REMIND <- toISO_dt(tmp, mapping = REMINDmapping)
-    
+
     fuel_price_REMIND <- toRegions_dt(fuel_price_REMIND, GCAM2ISO_MAPPING,
                                    datacol = "sector_fuel",
                                    valuecol = "value",
                                    strategy = "gdp")
-    
+
     fuel_price_REMIND[, `:=`(sector_fuel, ifelse(grepl("Electricity", sector_fuel),
                                                  "elect_td_trn", sector_fuel))]
     fuel_price_REMIND[, `:=`(sector_fuel, ifelse(grepl("Hydrogen", sector_fuel),
@@ -56,14 +56,14 @@ merge_prices <- function(gdx, REMINDmapping, path2intensities, path2UCD) {
                                                  sector_fuel))]
     fuel_price_REMIND[, `:=`(sector_fuel, ifelse(grepl("Coal", sector_fuel), "delivered coal",
                                                  sector_fuel))]
-    
+
     ## rename the fuel price
     setnames(fuel_price_REMIND, old = c("value"), new = c("fuel_price"))
-    
+
     ## fuel price in 2005USD/GJ -> 1990USD/EJ
-    
+
     fuel_price_REMIND[, fuel_price_EJ := fuel_price * CONV_2005USD_1990USD * 1e9]
-    
+
     ## apply the markup fro NG and coal (coal can be negative!!, as a workaround I
     ## make it positive and apply the markup):
     fuel_price_REMIND[, fuel_price_EJ := ifelse(sector_fuel == "delivered gas", fuel_price_EJ/0.2,
@@ -74,11 +74,11 @@ merge_prices <- function(gdx, REMINDmapping, path2intensities, path2UCD) {
     if(all(fuel_price_REMIND[year == 1990]$fuel_price_EJ == 0)){
         ## if no 1990 prices are found, lets use 2005 prices and issue warning
         warning("No 1990 fuel prices found in REMIND, using 2005 prices.")
-        fuel_price_REMIND[year == 1990, fuel_price_EJ := fuel_price_EJ_REMIND[year==2005]$fuel_price_EJ] 
+        fuel_price_REMIND[year == 1990, fuel_price_EJ := fuel_price_REMIND[year==2005]$fuel_price_EJ]
     }
-    
+
     stopifnot(all(fuel_price_REMIND$fuel_price_EJ > 0))
-    
+
     ## join with vehicle intensity and load factor to get the 1990USD/pkm
 
     km_intensity <- readRDS(path2intensities)
@@ -87,7 +87,7 @@ merge_prices <- function(gdx, REMINDmapping, path2intensities, path2UCD) {
         "year", "sector_fuel"), all.y = TRUE)
 
 
-    ## fuel_price [$/EJ * EJ/Mpkm * Mpkm/pkm], 
+    ## fuel_price [$/EJ * EJ/Mpkm * Mpkm/pkm],
     tech_cost2 <- fuel_price_REMIND[, fuel_price_pkm := fuel_price_EJ * EJ_Mpkm_final * 1e-6]
     tech_cost2=tech_cost2[,-c("EJ_Mpkm","EJ_Mpkm_adjusted","lambda","EJ_Mpkm")]
 
