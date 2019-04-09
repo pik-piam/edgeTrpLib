@@ -62,22 +62,22 @@ merge_prices <- function(gdx, REMINDmapping, path2intensities, path2UCD) {
     
     ## fuel price in 2005USD/GJ -> 1990USD/EJ
     
-    fuel_price_REMIND[, fuel_price := fuel_price * CONV_2005USD_1990USD * 1e9]
+    fuel_price_REMIND[, fuel_price_EJ := fuel_price * CONV_2005USD_1990USD * 1e9]
     
     ## apply the markup fro NG and coal (coal can be negative!!, as a workaround I
     ## make it positive and apply the markup):
-    fuel_price_REMIND[, fuel_price := ifelse(sector_fuel == "delivered gas", fuel_price/0.2,
-                                                fuel_price)]
-    fuel_price_REMIND[, fuel_price := ifelse(sector_fuel == "delivered coal",
-                                                abs(fuel_price/0.2), fuel_price)]
+    fuel_price_REMIND[, fuel_price_EJ := ifelse(sector_fuel == "delivered gas", fuel_price_EJ/0.2,
+                                                fuel_price_EJ)]
+    fuel_price_REMIND[, fuel_price_EJ := ifelse(sector_fuel == "delivered coal",
+                                                abs(fuel_price_EJ/0.2), fuel_price_EJ)]
 
-    if(all(fuel_price_REMIND[year == 1990]$fuel_price == 0)){
+    if(all(fuel_price_REMIND[year == 1990]$fuel_price_EJ == 0)){
         ## if no 1990 prices are found, lets use 2005 prices and issue warning
         warning("No 1990 fuel prices found in REMIND, using 2005 prices.")
-        fuel_price_REMIND[year == 1990, fuel_price := fuel_price_REMIND[year==2005]$fuel_price] 
+        fuel_price_REMIND[year == 1990, fuel_price_EJ := fuel_price_EJ_REMIND[year==2005]$fuel_price_EJ] 
     }
     
-    stopifnot(all(fuel_price_REMIND$fuel_price > 0))
+    stopifnot(all(fuel_price_REMIND$fuel_price_EJ > 0))
     
     ## join with vehicle intensity and load factor to get the 1990USD/pkm
 
@@ -88,7 +88,7 @@ merge_prices <- function(gdx, REMINDmapping, path2intensities, path2UCD) {
 
 
     ## fuel_price [$/EJ * EJ/Mpkm * Mpkm/pkm], 
-    tech_cost2 <- fuel_price_REMIND[, fuel_price_pkm := fuel_price * EJ_Mpkm_final * 1e-6]
+    tech_cost2 <- fuel_price_REMIND[, fuel_price_pkm := fuel_price_EJ * EJ_Mpkm_final * 1e-6]
     tech_cost2=tech_cost2[,-c("EJ_Mpkm","EJ_Mpkm_adjusted","lambda","EJ_Mpkm")]
 
     ## merge the non energy prices, they are $/pkm

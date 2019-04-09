@@ -9,7 +9,7 @@
 #' @export
 
 shares_intensity_and_demand <- function(logit_shares,
-                                        path2intensities,
+                                        MJ_vkm_base,
                                         demand_input=NULL){
 
     ## load the shares at each level
@@ -57,7 +57,7 @@ shares_intensity_and_demand <- function(logit_shares,
 
     ## Calculate demand in EJ
     ## merge the demand in pkm with the energy intensity
-    demandF=inner_join(demandF,MJ_vkm_base)%>%
+    demandF=inner_join(demandF, MJ_vkm_base)%>%
         mutate(demand_EJ=demand_F*conv_pkm_MJ*CONV_millionkm_km*CONV_MJ_EJ) #convert from million pkm to EJ
 
     demandF_plot_EJ=copy(demandF)
@@ -102,7 +102,7 @@ shares_intensity_and_demand <- function(logit_shares,
                         datacol = "CES_node",
                         valuecol = "value")
 
-                                        #calculation of shares
+    ## calculation of shares
     demand[,CES_parent:=sub("(.*?)(_.*)","\\2",CES_node)]
     demand[,shares:=value/sum(value),by=.(region,year,CES_parent)]
 

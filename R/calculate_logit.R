@@ -24,7 +24,7 @@ calculate_logit <- function(prices,
     vot_data <- readRDS(path2VOT)
 
     ## X2Xcalc is used to traverse the logit tree, calculating shares and intensities
-    X2Xcalc <- function(prices, conv_pkm_mj, level_base, level_next, group_value) {
+    X2Xcalc <- function(prices, mj_vkm_data, level_base, level_next, group_value) {
         final_SW <- sw_data[[paste0(level_next, "_final_SW")]]
         logit_exponent <- logit_data[[paste0("logit_exponent_", level_next)]]
         
@@ -35,29 +35,29 @@ calculate_logit <- function(prices,
         value_time <- vot_data[[paste0("value_time_", level_next)]]
         ## joins the df containing the prices with the df containing the logit exponents
         df <- merge(prices, logit_exponent,
-                    by=intersect(names(prices),names(logit_exponent)), all.x = TRUE)
+                    by=intersect(names(prices), names(logit_exponent)), all.x = TRUE)
 
         ## joins the previous df with gathe df containing the sw
-        df <- merge(df, final_SW,by=intersect(names(df),names(final_SW)), all.y=TRUE)
+        df <- merge(df, final_SW, by=intersect( names(df),names(final_SW)), all.y=TRUE)
 
         ## needs random lambdas for the sectors that are not explicitly calculated
-        df <- df[, logit.exponent := ifelse(is.na(logit.exponent), -10, logit.exponent)]
+        df <- df[ is.na(logit.exponent), logit.exponent := -10]
 
         ## calculate the shares given prices, lambda and sw
         df <- df[, share := sw * tot_price^logit.exponent/sum(sw * tot_price^logit.exponent),
                  by = c(group_value, "region", "year")]
 
         ## merge value of time for the selected level and assign 0 to the entries that don't have it
-        df <- merge(df, value_time,by=intersect(names(df),names(value_time)),all.x=TRUE)
+        df <- merge(df, value_time, by=intersect(names(df),names(value_time)), all.x=TRUE)
 
-        df <- df[, `:=`(time_price, ifelse(is.na(time_price), 0, time_price))]
-        df <- df[, `:=`(tot_VOT_price, time_price + tot_VOT_price)]
-        df <- df[, `:=`(tot_price, tot_price + time_price)]
+        df <- df[is.na(time_price), time_price := 0]
+        df <- df[, tot_VOT_price := time_price + tot_VOT_price]
+        df <- df[, tot_price := tot_price + time_price]
 
-        MJ_vkm <- merge(df, conv_pkm_mj,by=intersect(names(df),names(conv_pkm_mj)),all = FALSE)
+        MJ_vkm <- merge(df, mj_vkm_data, by=intersect(names(df),names(mj_vkm_data)),all = FALSE)
 
-        MJ_vkm <- MJ_vkm[, .(conv_pkm_MJ = sum(share * conv_pkm_MJ)), by = c("region",
-                                                                             "year", group_value)]
+        MJ_vkm <- MJ_vkm[, .(MJ_vkm = sum(share * MJ_vkm)),
+                         by = c("region", "year", "technology", group_value)]
 
         ## get rid of the ( misleading afterwards) columns
         df_shares <- copy(df)
@@ -68,13 +68,13 @@ calculate_logit <- function(prices,
                   seq(match(group_value, all_subsectors) - 1,
                       length(all_subsectors), 1)],
               "tot_VOT_price",
-              "fuel_price",
+              "fuel_price_pkm",
               "non_fuel_price"), with = FALSE]
         
         ## calculate 'one level up' database with the useful columns only
         df <- df[
           , c("share","tot_price","tot_VOT_price",
-              "fuel_price","non_fuel_price","region","year",
+              "fuel_price_pkm","non_fuel_price","region","year",
               all_subsectors[
                   seq(match(group_value, all_subsectors) - 1,
                       length(all_subsectors), 1)]), with = FALSE]
@@ -82,7 +82,7 @@ calculate_logit <- function(prices,
         ## calculate prices of one level up
         df=df[,.(tot_price=sum(share*tot_price),
                  tot_VOT_price=sum(share*tot_VOT_price),
-                 fuel_price=sum(share*fuel_price),
+                 fuel_price_pkm=sum(share*fuel_price_pkm),
                  non_fuel_price=sum(share*non_fuel_price)),
               by = c("region","year",
                      all_subsectors[
@@ -108,15 +108,14 @@ calculate_logit <- function(prices,
 
     base[,tot_VOT_price := 0]
     #Cycling and Walking have no fuel and non fuel prices, 0 instead of NA is given
-    base[,fuel_price:=ifelse(is.na(fuel_price),0,fuel_price)]
-    base[,non_fuel_price:=ifelse(is.na(non_fuel_price),0,non_fuel_price)]
+    base[is.na(fuel_price_pkm), fuel_price_pkm := 0]
+    base[is.na(non_fuel_price), non_fuel_price := 0]
 
     ## energy intensity
-    conv_pkm_mj <- readRDS(path2intensities)
-    conv_pkm_mj <- conv_pkm_mj[, `:=`(conv_pkm_MJ, EJ_Mpkm_final/CONV_MJ_EJ*CONV_unit_million)]  #MJ/pkm
-    conv_pkm_mj=conv_pkm_mj[,-c("EJ_Mpkm","EJ_Mpkm_adjusted","lambda","EJ_Mpkm","EJ_Mpkm_final")]
+    mj_vkm_data <- readRDS(path2intensities)[, MJ_vkm := EJ_Mpkm_final/CONV_MJ_EJ*CONV_unit_million]  ## MJ/pkm
+    mj_vkm_data <- mj_vkm_data[,-c("EJ_Mpkm","EJ_Mpkm_adjusted","lambda","EJ_Mpkm","EJ_Mpkm_final")]
 
-    FV_all <- X2Xcalc(base, conv_pkm_mj,
+    FV_all <- X2Xcalc(base, mj_vkm_data,
                       level_base = "base",
                       level_next = "FV",
                       group_value = "vehicle_type")
@@ -176,8 +175,7 @@ calculate_logit <- function(prices,
                      FV=FV,
                      base=base)
 
-    result=list(conv_pkm_mj=conv_pkm_mj,
-                MJ_vkm_S3S=MJ_vkm_S3S,
+    result=list(mj_vkm_data=mj_vkm_data,
                 prices_list=prices_list,
                 share_list=share_list)
 
