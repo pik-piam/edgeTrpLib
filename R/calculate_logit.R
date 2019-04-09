@@ -25,9 +25,9 @@ calculate_logit <- function(prices,
 
     ## X2Xcalc is used to traverse the logit tree, calculating shares and intensities
     X2Xcalc <- function(prices, mj_vkm_data, level_base, level_next, group_value) {
-        final_SW <- sw_data[[paste0(level_next, "_final_SW")]]
+        final_SW <- sw_data[[paste0(level_next, "_SW")]]
         logit_exponent <- logit_data[[paste0("logit_exponent_", level_next)]]
-        
+
         ## data contains all the prices in the beginning
         all_subsectors <- c("technology", "vehicle_type", "subsector_L1", "subsector_L2",
                             "subsector_L3", "sector")
@@ -70,7 +70,7 @@ calculate_logit <- function(prices,
               "tot_VOT_price",
               "fuel_price_pkm",
               "non_fuel_price"), with = FALSE]
-        
+
         ## calculate 'one level up' database with the useful columns only
         df <- df[
           , c("share","tot_price","tot_VOT_price",
