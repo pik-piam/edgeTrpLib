@@ -45,7 +45,7 @@ calculate_logit <- function(prices,
 
         ## calculate the shares given prices, lambda and sw
         df <- df[, share := sw * tot_price^logit.exponent/sum(sw * tot_price^logit.exponent),
-                 by = c(group_value, "region", "year")]
+                 by = c(group_value, "iso", "year")]
 
         ## merge value of time for the selected level and assign 0 to the entries that don't have it
         df <- merge(df, value_time, by=intersect(names(df),names(value_time)), all.x=TRUE)
@@ -57,13 +57,13 @@ calculate_logit <- function(prices,
         MJ_vkm <- merge(df, mj_vkm_data, by=intersect(names(df),names(mj_vkm_data)),all = FALSE)
 
         MJ_vkm <- MJ_vkm[, .(MJ_vkm = sum(share * MJ_vkm)),
-                         by = c("region", "year", "technology", group_value)]
+                         by = c("iso", "year", "technology", group_value)]
 
         ## get rid of the ( misleading afterwards) columns
         df_shares <- copy(df)
 
         df_shares <- df_shares[
-          , c("share", "region", "year",
+          , c("share", "iso", "year",
               all_subsectors[
                   seq(match(group_value, all_subsectors) - 1,
                       length(all_subsectors), 1)],
@@ -74,7 +74,7 @@ calculate_logit <- function(prices,
         ## calculate 'one level up' database with the useful columns only
         df <- df[
           , c("share","tot_price","tot_VOT_price",
-              "fuel_price_pkm","non_fuel_price","region","year",
+              "fuel_price_pkm","non_fuel_price","iso","year",
               all_subsectors[
                   seq(match(group_value, all_subsectors) - 1,
                       length(all_subsectors), 1)]), with = FALSE]
@@ -84,7 +84,7 @@ calculate_logit <- function(prices,
                  tot_VOT_price=sum(share*tot_VOT_price),
                  fuel_price_pkm=sum(share*fuel_price_pkm),
                  non_fuel_price=sum(share*non_fuel_price)),
-              by = c("region","year",
+              by = c("iso","year",
                      all_subsectors[
                          seq(match(group_value,all_subsectors),
                              length(all_subsectors),1)])]
@@ -102,7 +102,7 @@ calculate_logit <- function(prices,
     ## non-fuel prices
     price_nonmot <- vot_data[["price_nonmot"]]
     base= merge(base, price_nonmot, all.x = TRUE,
-                by = c("tot_price","region","year",
+                by = c("tot_price","iso","year",
                        "technology","vehicle_type",
                        "subsector_L1","subsector_L2","subsector_L3","sector"))
 
