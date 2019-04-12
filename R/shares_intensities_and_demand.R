@@ -45,7 +45,7 @@ shares_intensity_and_demand <- function(logit_shares,
     demand=merge(demand,VS1_shares,all=TRUE, by = c("iso", "year", "sector","subsector_L3","subsector_L2","subsector_L1"))
     demand=demand[,.(demand_V=demand_L1*share, iso, sector,year,subsector_L3,subsector_L2,subsector_L1,vehicle_type)]
     #V->F
-    demand=merge(demandV,FV_shares,all=TRUE, by = c("iso", "year", "sector","subsector_L3","subsector_L2","subsector_L1","vehicle_type"))
+    demand=merge(demand,FV_shares,all=TRUE, by = c("iso", "year", "sector","subsector_L3","subsector_L2","subsector_L1","vehicle_type"))
     demand=demand[,.(demand_F=demand_V*share, iso, sector,year,subsector_L3,subsector_L2,subsector_L1,vehicle_type,technology)]
 
     demandF_plot_pkm=copy(demand)
