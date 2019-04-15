@@ -69,7 +69,8 @@ calculate_logit <- function(prices,
                       length(all_subsectors), 1)],
               "tot_VOT_price",
               "fuel_price_pkm",
-              "non_fuel_price"), with = FALSE]
+              "non_fuel_price",
+              "tot_price"), with = FALSE]
 
         ## calculate 'one level up' database with the useful columns only
         df <- df[
@@ -101,7 +102,7 @@ calculate_logit <- function(prices,
 
     ## non-fuel prices
     price_nonmot <- vot_data[["price_nonmot"]]
-    base= merge(base, price_nonmot, all.x = TRUE,
+    base= merge(base, price_nonmot, all = TRUE,
                 by = c("tot_price","iso","year",
                        "technology","vehicle_type",
                        "subsector_L1","subsector_L2","subsector_L3","sector"))
