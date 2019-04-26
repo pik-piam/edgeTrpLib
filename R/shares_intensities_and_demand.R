@@ -66,7 +66,7 @@ shares_intensity_and_demand <- function(logit_shares,
     demandF=demandF[,.(iso, year, Value_demand=demand_EJ, demand_F, CES_node, sector)]
 
     demandF=demandF[,.(Value_demand=sum(Value_demand),
-                       Value_intensity=sum(Value_demand)/sum(demand_F)), #in EJ/million pkm
+                       Value_intensity=sum(demand_F)/sum(Value_demand)), #in million pkm/EJ
                     by=c("iso","year","CES_node","sector")]
 
     ## from wide to long format
