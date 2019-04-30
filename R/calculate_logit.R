@@ -98,11 +98,9 @@ calculate_logit <- function(prices,
     ## FV load technology prices and merge with value of time (~technology price for
     ## non-motorized)
 
-    base <- prices[year %in% years,]
-
     ## non-fuel prices
     price_nonmot <- vot_data[["price_nonmot"]]
-    base= merge(base, price_nonmot, all = TRUE,
+    base <- merge(prices, price_nonmot, all = TRUE,
                 by = c("tot_price","iso","year",
                        "technology","vehicle_type",
                        "subsector_L1","subsector_L2","subsector_L3","sector"))
@@ -113,7 +111,10 @@ calculate_logit <- function(prices,
     base[is.na(non_fuel_price), non_fuel_price := 0]
 
     ## energy intensity
-    mj_vkm_data <- readRDS(path2intensities)[, MJ_vkm := EJ_Mpkm_final/CONV_MJ_EJ*CONV_unit_million]  ## MJ/pkm
+    mj_vkm_data <- readRDS(path2intensities)[, MJ_vkm := EJ_Mpkm_final
+                                             * 1e12 # to MJ
+                                             * 1e-6 # MJ/pkm
+                                             ]
     mj_vkm_data <- mj_vkm_data[,-c("EJ_Mpkm","EJ_Mpkm_adjusted","lambda","EJ_Mpkm","EJ_Mpkm_final")]
 
     FV_all <- X2Xcalc(base, mj_vkm_data,

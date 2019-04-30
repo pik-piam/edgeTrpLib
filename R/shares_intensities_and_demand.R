@@ -5,11 +5,14 @@
 #' @param demand_input
 #' @import dplyr
 #' @import data.table
-#' @importFrom rmndt toISO_dt toRegions_dt
+#' @importFrom rmndt toISO_dt toRegions_dt approx_dt
 #' @export
 
 shares_intensity_and_demand <- function(logit_shares,
                                         MJ_vkm_base,
+                                        REMIND2ISO_MAPPING,
+                                        EDGE2CESmap,
+                                        REMINDyears,
                                         demand_input=NULL){
 
     ## load the shares at each level
@@ -18,9 +21,6 @@ shares_intensity_and_demand <- function(logit_shares,
     S1S2_shares <- logit_shares[["S1S2_shares"]][,-c("fuel_price_pkm", "non_fuel_price", "tot_VOT_price")]
     VS1_shares <- logit_shares[["VS1_shares"]][,-c("fuel_price_pkm", "non_fuel_price", "tot_VOT_price")]
     FV_shares <- logit_shares[["FV_shares"]][,-c("fuel_price_pkm", "non_fuel_price", "tot_VOT_price")]
-    ## load the mapping to CES nodes
-    mapping_CESnodes_EDGE=fread(file.path(edge_path, "data/input/mapping_CESnodes_EDGE.csv"))
-
     ## create a normalized total demand OR loads absolute demand if given
     if (is.null(demand_input)) {
         demand=CJ(iso=unique(S3S_shares$iso),
@@ -53,14 +53,21 @@ shares_intensity_and_demand <- function(logit_shares,
     ## Calculate demand in EJ
     ## merge the demand in pkm with the energy intensity
     demandF=merge(demand,MJ_vkm_base,all=FALSE, by = c("iso", "sector", "year", "subsector_L3", "subsector_L2", "subsector_L1", "vehicle_type", "technology"))
-    demandF[,demand_EJ:=demand_F*MJ_vkm*CONV_millionkm_km*CONV_MJ_EJ] #convert from million pkm to EJ
+
+    demandF[,demand_EJ:=demand_F # in Mvkm
+            * 1e6 # in vkm
+            * MJ_vkm # in MJ
+            * 1e-12 # in EJ
+            ]
 
     demandF_plot_EJ=copy(demandF)
 
 
     ## downscale to ISO level the pkm demand
     ## first I need to merge with a mapping that represents how the entries match to the CES
-    demandF=merge(demandF,mapping_CESnodes_EDGE,all=TRUE,by = c("sector", "subsector_L3", "subsector_L2", "subsector_L1", "vehicle_type", "technology"))
+    demandF=merge(demandF, EDGE2CESmap, all=TRUE,
+                  by = c("sector", "subsector_L3", "subsector_L2",
+                         "subsector_L1", "vehicle_type", "technology"))
 
     ## calculate both shares and average energy intensity
     demandF=demandF[,.(iso, year, Value_demand=demand_EJ, demand_F, CES_node, sector)]
@@ -81,7 +88,7 @@ shares_intensity_and_demand <- function(logit_shares,
 
     ## calculate demand
     demand=demandF[variable == "Value_demand", .(iso, year, CES_node, value)]
-    demand=approx_dt(demand, years,
+    demand=approx_dt(demand, REMINDyears,
                      idxcols = c("iso", "CES_node"),
                      extrapolate=T)
     demand=demand[order(iso,year,CES_node)]
@@ -96,7 +103,7 @@ shares_intensity_and_demand <- function(logit_shares,
 
     ## calculate intensity
     demandI=demandF[variable == "Value_intensity", .(iso, year, CES_node, value)]
-    demandI=approx_dt(demandI, years,
+    demandI=approx_dt(demandI, REMINDyears,
                       idxcols = c("iso", "CES_node"),
                       extrapolate=T)
 
