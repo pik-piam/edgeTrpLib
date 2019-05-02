@@ -9,7 +9,7 @@
 #' @export
 
 shares_intensity_and_demand <- function(logit_shares,
-                                        MJ_vkm_base,
+                                        MJ_km_base,
                                         REMIND2ISO_MAPPING,
                                         EDGE2CESmap,
                                         REMINDyears,
@@ -52,11 +52,11 @@ shares_intensity_and_demand <- function(logit_shares,
 
     ## Calculate demand in EJ
     ## merge the demand in pkm with the energy intensity
-    demandF=merge(demand,MJ_vkm_base,all=FALSE, by = c("iso", "sector", "year", "subsector_L3", "subsector_L2", "subsector_L1", "vehicle_type", "technology"))
+    demandF=merge(demand,MJ_km_base,all=FALSE, by = c("iso", "sector", "year", "subsector_L3", "subsector_L2", "subsector_L1", "vehicle_type", "technology"))
 
-    demandF[,demand_EJ:=demand_F # in Mvkm
-            * 1e6 # in vkm
-            * MJ_vkm # in MJ
+    demandF[,demand_EJ:=demand_F # in Mpkm or Mtkm
+            * 1e6 # in pkm or tkm
+            * MJ_km # in MJ
             * 1e-12 # in EJ
             ]
 
