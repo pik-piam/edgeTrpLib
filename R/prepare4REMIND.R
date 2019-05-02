@@ -42,7 +42,7 @@ prepare4REMIND <- function(share, intensity, capCost,
 
     budget[,value:=value ## in 1990USD/pkm
                    /conv_2005USD_1990USD ## in [2005USD/pkm]
-                   *1e-12                ## in [2005USD/trillionpkm]
+                   *1e+12                ## in [2005USD/trillionpkm]
                      ]
 
     ## set columns order
