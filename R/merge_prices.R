@@ -2,14 +2,16 @@
 #'
 #' @param gdx
 #' @param REMINDmapping
-#' @param path2intensities
-#' @param path2UCD
+#' @param intensity_data
+#' @param nonfuel_costs
 #' @import remind
 #' @import data.table
 #' @importFrom rmndt toISO_dt toRegions_dt magpie2dt
 #' @export
 
-merge_prices <- function(gdx, REMINDmapping, REMINDyears, path2intensities, path2nonfuel) {
+merge_prices <- function(gdx, REMINDmapping, REMINDyears,
+                         intensity_data,
+                         nonfuel_costs) {
     ## report prices from REMIND gdx in 2005$/MJ
 
     tdptwyr2dpgj <- 31.71  #TerraDollar per TWyear to Dollar per GJ
@@ -78,8 +80,7 @@ merge_prices <- function(gdx, REMINDmapping, REMINDyears, path2intensities, path
 
     ## join with vehicle intensity and load factor to get the 1990USD/pkm
 
-    km_intensity <- readRDS(path2intensities)
-    km_intensity <- km_intensity[year %in% REMINDyears]
+    km_intensity <- intensity_data[year %in% REMINDyears]
     fuel_price_REMIND <- merge(fuel_price_REMIND, km_intensity, by = c("iso",
         "year", "sector_fuel"), all.y = TRUE)
 
@@ -89,8 +90,7 @@ merge_prices <- function(gdx, REMINDmapping, REMINDyears, path2intensities, path
     tech_cost2=tech_cost2[,-c("EJ_Mpkm","EJ_Mpkm_adjusted","lambda","EJ_Mpkm")]
 
     ## merge the non energy prices, they are $/pkm
-    non_energy_cost_result <- readRDS(path2nonfuel)
-    tech_cost2 <- merge(tech_cost2, non_energy_cost_result,
+    tech_cost2 <- merge(tech_cost2, nonfuel_costs,
                         by = c("iso", "year", "technology",
                                "vehicle_type", "subsector_L1",
                                "subsector_L2", "subsector_L3","sector"),

@@ -1,10 +1,10 @@
 #' Merge REMIND-derived fuel prices with non-fuel costs.
 #'
 #' @param prices
-#' @param path2VOT
-#' @param path2calibration_outpu
-#' @param path2logitparam
-#' @param path2intensities
+#' @param vot_data
+#' @param sw_data
+#' @param logit_parms
+#' @param intensity_data
 #' @param full_data
 #' @import remind
 #' @import data.table
@@ -12,19 +12,16 @@
 #' @export
 
 calculate_logit <- function(prices,
-                            path2VOT,
-                            path2calibration_output,
-                            path2logitparam,
-                            path2intensities,
+                            vot_data,
+                            sw_data,
+                            logit_params,
+                            intensity_data,
                             full_data = F) {
-    logit_data <- readRDS(path2logitparam)
-    sw_data <- readRDS(path2calibration_output)
-    vot_data <- readRDS(path2VOT)
 
     ## X2Xcalc is used to traverse the logit tree, calculating shares and intensities
     X2Xcalc <- function(prices, mj_km_data, level_base, level_next, group_value) {
         final_SW <- sw_data[[paste0(level_next, "_SW")]]
-        logit_exponent <- logit_data[[paste0("logit_exponent_", level_next)]]
+        logit_exponent <- logit_params[[paste0("logit_exponent_", level_next)]]
 
         ## data contains all the prices in the beginning
         all_subsectors <- c("technology", "vehicle_type", "subsector_L1", "subsector_L2",
@@ -109,7 +106,7 @@ calculate_logit <- function(prices,
     base[is.na(non_fuel_price), non_fuel_price := 0]
 
     ## energy intensity
-    mj_km_data <- readRDS(path2intensities)[, MJ_km := EJ_Mpkm_final
+    mj_km_data <- intensity_data[, MJ_km := EJ_Mpkm_final
                                              * 1e12 # to MJ
                                              * 1e-6 # MJ/km
                                              ]
