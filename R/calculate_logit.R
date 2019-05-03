@@ -5,7 +5,6 @@
 #' @param path2calibration_outpu
 #' @param path2logitparam
 #' @param path2intensities
-#' @param path2UCD
 #' @param full_data
 #' @import remind
 #' @import data.table
@@ -17,7 +16,6 @@ calculate_logit <- function(prices,
                             path2calibration_output,
                             path2logitparam,
                             path2intensities,
-                            path2UCD,
                             full_data = F) {
     logit_data <- readRDS(path2logitparam)
     sw_data <- readRDS(path2calibration_output)
