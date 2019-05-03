@@ -3,7 +3,6 @@
 #' @param logit_shares
 #' @param path2intensities
 #' @param demand_input
-#' @import dplyr
 #' @import data.table
 #' @importFrom rmndt toISO_dt toRegions_dt approx_dt
 #' @export
