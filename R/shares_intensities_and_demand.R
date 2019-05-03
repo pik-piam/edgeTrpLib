@@ -4,7 +4,7 @@
 #' @param path2intensities
 #' @param demand_input
 #' @import data.table
-#' @importFrom rmndt toISO_dt toRegions_dt approx_dt
+#' @importFrom rmndt toRegions_dt approx_dt
 #' @export
 
 shares_intensity_and_demand <- function(logit_shares,

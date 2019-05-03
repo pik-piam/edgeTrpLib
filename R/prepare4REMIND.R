@@ -41,9 +41,7 @@ prepare4REMIND <- function(share, intensity, capCost,
                      extrapolate=T)
 
     budget[,value:=value ## in 1990USD/pkm
-                   /conv_2005USD_1990USD ## in [2005USD/pkm]
-                   *1e+12                ## in [2005USD/trillionpkm]
-                     ]
+                   /conv_2005USD_1990USD] ## in [2005USD/pkm]
 
     ## set columns order
     setcolorder(budget, c("tall", "all_regi", "all_teEs", "value"))

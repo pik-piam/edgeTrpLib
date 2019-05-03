@@ -6,31 +6,33 @@
 #' @param path2UCD
 #' @import remind
 #' @import data.table
-#' @importFrom rmndt toISO_dt toRegions_dt
+#' @importFrom rmndt toISO_dt toRegions_dt magpie2dt
 #' @export
 
-merge_prices <- function(gdx, REMINDmapping, path2intensities, path2nonfuel) {
+merge_prices <- function(gdx, REMINDmapping, REMINDyears, path2intensities, path2nonfuel) {
     ## report prices from REMIND gdx in 2005$/MJ
+
     tdptwyr2dpgj <- 31.71  #TerraDollar per TWyear to Dollar per GJ
+    CONV_2005USD_1990USD <- 0.67
 
     ## load entries from the gdx
     fety <- readGDX(gdx, c("entyFe", "fety"), format = "first_found")
     pebal_subset <- c("pegas", "pecoal")
 
     febal.m <- readGDX(gdx, name = c("q_balFe", "q_febal"), types = "equations",
-                       field = "m", format = "first_found")[, years, fety]
+                       field = "m", format = "first_found")[, REMINDyears, fety]
     budget.m <- readGDX(gdx, name = "qm_budget", types = "equations", field = "m",
-                        format = "first_found")[, years,]  # Alternative: calcPrice
+                        format = "first_found")[, REMINDyears,]  # Alternative: calcPrice
     pebal.m <- readGDX(gdx, name = c("q_balPe", "qm_pebal"), types = "equations",
-                       field = "m", format = "first_found")[, years, pebal_subset]
+                       field = "m", format = "first_found")[, REMINDyears, pebal_subset]
 
     tmp <- setNames(abs(lowpass(febal.m[, , "feelt"]/(budget.m + 1e-10), fix = "both",
-                                altFilter = match(2010, years))) * tdptwyr2dpgj, "Price|Final Energy|Electricity|Transport|Moving Avg (US$2005/GJ)")
+                                altFilter = match(2010, REMINDyears))) * tdptwyr2dpgj, "Price|Final Energy|Electricity|Transport|Moving Avg (US$2005/GJ)")
 
     tmp <- mbind(tmp, setNames(abs(lowpass(febal.m[, , "feh2t"]/(budget.m + 1e-10),
-                                           fix = "both", altFilter = match(2010, years))) * tdptwyr2dpgj, "Price|Final Energy|Hydrogen|Transport|Moving Avg (US$2005/GJ)"))
+                                           fix = "both", altFilter = match(2010, REMINDyears))) * tdptwyr2dpgj, "Price|Final Energy|Hydrogen|Transport|Moving Avg (US$2005/GJ)"))
     tmp <- mbind(tmp, setNames(abs(lowpass(febal.m[, , "fedie"]/(budget.m + 1e-10),
-                                           fix = "both", altFilter = match(2010, years))) * tdptwyr2dpgj, "Price|Final Energy|Liquids|Transport|Moving Avg (US$2005/GJ)"))
+                                           fix = "both", altFilter = match(2010, REMINDyears))) * tdptwyr2dpgj, "Price|Final Energy|Liquids|Transport|Moving Avg (US$2005/GJ)"))
     tmp <- mbind(tmp, setNames(pebal.m[, , "pegas"]/(budget.m + 1e-10) * tdptwyr2dpgj,
                                "Price|Natural Gas|Primary Level (US$2005/GJ)"))
     tmp <- mbind(tmp, setNames(pebal.m[, , "pecoal"]/(budget.m + 1e-10) * tdptwyr2dpgj,
@@ -77,7 +79,7 @@ merge_prices <- function(gdx, REMINDmapping, path2intensities, path2nonfuel) {
     ## join with vehicle intensity and load factor to get the 1990USD/pkm
 
     km_intensity <- readRDS(path2intensities)
-    km_intensity <- km_intensity[year %in% years,]
+    km_intensity <- km_intensity[year %in% REMINDyears]
     fuel_price_REMIND <- merge(fuel_price_REMIND, km_intensity, by = c("iso",
         "year", "sector_fuel"), all.y = TRUE)
 
