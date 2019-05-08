@@ -12,6 +12,7 @@ shares_intensity_and_demand <- function(logit_shares,
                                         REMIND2ISO_MAPPING,
                                         EDGE2CESmap,
                                         REMINDyears,
+                                        scenario,
                                         demand_input=NULL){
 
     ## load the shares at each level
@@ -106,7 +107,7 @@ shares_intensity_and_demand <- function(logit_shares,
                       idxcols = c("iso", "CES_node"),
                       extrapolate=T)
 
-    gdp <- getRMNDGDP(usecache=T)
+    gdp <- getRMNDGDP(scenario = scenario, usecache = T)
     demandI=aggregate_dt(demandI,REMIND2ISO_MAPPING,
                          datacols = "CES_node",
                          valuecol = "value",

@@ -14,7 +14,8 @@ calculate_capCosts <-function(base_price, Fdemand_ES,
                               EDGE2CESmap,
                               EDGE2teESmap,
                               REMIND2ISO_MAPPING,
-                              REMINDyears){
+                              REMINDyears,
+                              scenario){
   ## the non fuel price is to be calculated only for motorized entries
   Fdemand_ES=Fdemand_ES[!subsector_L3 %in% c("Walk","Cycle"),]
   ## merge prices and demand
@@ -43,7 +44,7 @@ calculate_capCosts <-function(base_price, Fdemand_ES,
   non_fuel_price[,variable:=NULL]
   non_fuel_price=non_fuel_price[order(iso,year,teEs)]
 
-  gdp <- getRMNDGDP(usecache=T)
+  gdp <- getRMNDGDP(scenario = scenario, usecache = T)
   non_fuel_price=aggregate_dt(non_fuel_price, REMIND2ISO_MAPPING,
                               datacols = "teEs",
                               valuecol = "value",
