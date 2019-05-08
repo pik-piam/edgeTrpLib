@@ -4,7 +4,7 @@
 #' @param path2intensities
 #' @param demand_input
 #' @import data.table
-#' @importFrom rmndt toRegions_dt approx_dt
+#' @importFrom rmndt aggregate_dt approx_dt
 #' @export
 
 shares_intensity_and_demand <- function(logit_shares,
@@ -92,8 +92,8 @@ shares_intensity_and_demand <- function(logit_shares,
                      extrapolate=T)
     demand=demand[order(iso,year,CES_node)]
 
-    demand=toRegions_dt(demand,REMIND2ISO_MAPPING,
-                        datacol = "CES_node",
+    demand=aggregate_dt(demand,REMIND2ISO_MAPPING,
+                        datacols = "CES_node",
                         valuecol = "value")
 
     ## calculation of shares
@@ -106,11 +106,11 @@ shares_intensity_and_demand <- function(logit_shares,
                       idxcols = c("iso", "CES_node"),
                       extrapolate=T)
 
-    demandI=toRegions_dt(demandI,REMIND2ISO_MAPPING,
-                         datacol = "CES_node",
+    gdp <- getRMNDGDP(usecache=T)
+    demandI=aggregate_dt(demandI,REMIND2ISO_MAPPING,
+                         datacols = "CES_node",
                          valuecol = "value",
-                         strategy = "gdp",
-                         usecache = T)
+                         weights = gdp)
 
 
     demand_list=list(demand=demand,

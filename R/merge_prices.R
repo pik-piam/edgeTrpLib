@@ -6,7 +6,7 @@
 #' @param nonfuel_costs
 #' @import remind
 #' @import data.table
-#' @importFrom rmndt toISO_dt toRegions_dt magpie2dt
+#' @importFrom rmndt disaggregate_dt magpie2dt
 #' @export
 
 merge_prices <- function(gdx, REMINDmapping, REMINDyears,
@@ -43,7 +43,7 @@ merge_prices <- function(gdx, REMINDmapping, REMINDyears,
     tmp <- magpie2dt(tmp, regioncol = "region",
                      yearcol = "year", datacols = "sector_fuel")
 
-    fuel_price_REMIND <- toISO_dt(tmp, mapping = REMINDmapping)
+    fuel_price_REMIND <- disaggregate_dt(tmp, mapping = REMINDmapping)
 
     fuel_price_REMIND[, `:=`(sector_fuel, ifelse(grepl("Electricity", sector_fuel),
                                                  "elect_td_trn", sector_fuel))]

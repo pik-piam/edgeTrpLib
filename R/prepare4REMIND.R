@@ -7,7 +7,7 @@
 #' @param REMINDtall
 #' @import remind
 #' @import data.table
-#' @importFrom rmndt toISO_dt toRegions_dt approx_dt
+#' @importFrom rmndt approx_dt
 #' @export
 
 prepare4REMIND <- function(share, intensity, capCost,

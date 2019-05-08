@@ -8,7 +8,6 @@
 #' @param full_data
 #' @import remind
 #' @import data.table
-#' @importFrom rmndt toISO_dt toRegions_dt
 #' @export
 
 calculate_logit <- function(prices,

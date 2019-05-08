@@ -7,7 +7,7 @@
 #' @param REMIND2ISO_MAPPING
 #' @param REMINDyears
 #' @import data.table
-#' @importFrom rmndt toRegions_dt approx_dt
+#' @importFrom rmndt aggregate_dt approx_dt
 #' @export
 
 calculate_capCosts <-function(base_price, Fdemand_ES,
@@ -42,12 +42,12 @@ calculate_capCosts <-function(base_price, Fdemand_ES,
   non_fuel_price=non_fuel_price[variable=="non_fuel_price",]
   non_fuel_price[,variable:=NULL]
   non_fuel_price=non_fuel_price[order(iso,year,teEs)]
-  
-  non_fuel_price=toRegions_dt(non_fuel_price,REMIND2ISO_MAPPING,
-                              datacol = "teEs",
+
+  gdp <- getRMNDGDP(usecache=T)
+  non_fuel_price=aggregate_dt(non_fuel_price, REMIND2ISO_MAPPING,
+                              datacols = "teEs",
                               valuecol = "value",
-                              strategy = "gdp",
-                              usecache = T)
+                              weights=gdp)
   
   return(non_fuel_price)
 }
