@@ -4,8 +4,8 @@
 \alias{shares_intensity_and_demand}
 \title{Derive shares, demand and intensities from the logit tree.}
 \usage{
-shares_intensity_and_demand(logit_shares, MJ_vkm_base,
-  demand_input = NULL)
+shares_intensity_and_demand(logit_shares, MJ_km_base, REMIND2ISO_MAPPING,
+  EDGE2CESmap, REMINDyears, scenario, demand_input = NULL)
 }
 \description{
 Derive shares, demand and intensities from the logit tree.

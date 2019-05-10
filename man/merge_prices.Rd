@@ -4,7 +4,8 @@
 \alias{merge_prices}
 \title{Merge REMIND-derived fuel prices with non-fuel costs.}
 \usage{
-merge_prices(gdx, REMINDmapping, path2intensities, path2UCD)
+merge_prices(gdx, REMINDmapping, REMINDyears, intensity_data,
+  nonfuel_costs)
 }
 \description{
 Merge REMIND-derived fuel prices with non-fuel costs.

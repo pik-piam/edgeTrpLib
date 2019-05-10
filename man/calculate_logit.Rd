@@ -4,8 +4,8 @@
 \alias{calculate_logit}
 \title{Merge REMIND-derived fuel prices with non-fuel costs.}
 \usage{
-calculate_logit(gdx, REMINDmapping, path2VOT, path2calibration_output,
-  path2logitparam, path2intensities, path2UCD, full_data = F)
+calculate_logit(prices, vot_data, sw_data, logit_params, intensity_data,
+  full_data = F)
 }
 \description{
 Merge REMIND-derived fuel prices with non-fuel costs.
