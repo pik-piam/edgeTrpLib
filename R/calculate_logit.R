@@ -19,7 +19,7 @@ calculate_logit <- function(prices,
 
     ## X2Xcalc is used to traverse the logit tree, calculating shares and intensities
     X2Xcalc <- function(prices, mj_km_data, level_base, level_next, group_value) {
-        final_SW <- sw_data[[paste0(level_next, "_SW")]]
+        final_SW <- sw_data[[paste0(level_next, "_final_SW")]]
         logit_exponent <- logit_params[[paste0("logit_exponent_", level_next)]]
 
         ## data contains all the prices in the beginning
