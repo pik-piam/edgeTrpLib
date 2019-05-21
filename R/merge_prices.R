@@ -14,6 +14,10 @@ merge_prices <- function(gdx, REMINDmapping, REMINDyears,
                          nonfuel_costs) {
     ## report prices from REMIND gdx in 2005$/MJ
 
+    lowpass_no_warnings <- function(...){
+        suppressWarnings(lowpass(...))
+    }
+
     tdptwyr2dpgj <- 31.71  #TerraDollar per TWyear to Dollar per GJ
     CONV_2005USD_1990USD <- 0.67
 
@@ -28,12 +32,12 @@ merge_prices <- function(gdx, REMINDmapping, REMINDyears,
     pebal.m <- readGDX(gdx, name = c("q_balPe", "qm_pebal"), types = "equations",
                        field = "m", format = "first_found")[, REMINDyears, pebal_subset]
 
-    tmp <- setNames(abs(lowpass(febal.m[, , "feelt"]/(budget.m + 1e-10), fix = "both",
+    tmp <- setNames(abs(lowpass_no_warnings(febal.m[, , "feelt"]/(budget.m + 1e-10), fix = "both",
                                 altFilter = match(2010, REMINDyears))) * tdptwyr2dpgj, "Price|Final Energy|Electricity|Transport|Moving Avg (US$2005/GJ)")
 
-    tmp <- mbind(tmp, setNames(abs(lowpass(febal.m[, , "feh2t"]/(budget.m + 1e-10),
+    tmp <- mbind(tmp, setNames(abs(lowpass_no_warnings(febal.m[, , "feh2t"]/(budget.m + 1e-10),
                                            fix = "both", altFilter = match(2010, REMINDyears))) * tdptwyr2dpgj, "Price|Final Energy|Hydrogen|Transport|Moving Avg (US$2005/GJ)"))
-    tmp <- mbind(tmp, setNames(abs(lowpass(febal.m[, , "fedie"]/(budget.m + 1e-10),
+    tmp <- mbind(tmp, setNames(abs(lowpass_no_warnings(febal.m[, , "fedie"]/(budget.m + 1e-10),
                                            fix = "both", altFilter = match(2010, REMINDyears))) * tdptwyr2dpgj, "Price|Final Energy|Liquids|Transport|Moving Avg (US$2005/GJ)"))
     tmp <- mbind(tmp, setNames(pebal.m[, , "pegas"]/(budget.m + 1e-10) * tdptwyr2dpgj,
                                "Price|Natural Gas|Primary Level (US$2005/GJ)"))
@@ -65,14 +69,14 @@ merge_prices <- function(gdx, REMINDmapping, REMINDyears,
 
     ## apply the markup fro NG and coal (coal can be negative!!, as a workaround I
     ## make it positive and apply the markup):
-    fuel_price_REMIND[, fuel_price := ifelse(sector_fuel == "delivered gas", fuel_price/0.2,
-                                                fuel_price)]
+    fuel_price_REMIND[, fuel_price := ifelse(sector_fuel == "delivered gas",
+                                             abs(fuel_price/0.2), fuel_price)]
     fuel_price_REMIND[, fuel_price := ifelse(sector_fuel == "delivered coal",
                                                 abs(fuel_price/0.2), fuel_price)]
 
     if(all(fuel_price_REMIND[year == 1990]$fuel_price == 0)){
         ## if no 1990 prices are found, lets use 2005 prices and issue warning
-        warning("No 1990 fuel prices found in REMIND, using 2005 prices.")
+        print("No 1990 fuel prices found in REMIND, using 2005 prices.")
         fuel_price_REMIND[year == 1990, fuel_price := fuel_price_REMIND[year==2005]$fuel_price]
     }
 
