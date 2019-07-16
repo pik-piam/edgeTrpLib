@@ -109,7 +109,7 @@ calculate_logit <- function(prices,
                                              * 1e12 # to MJ
                                              * 1e-6 # MJ/km
                                              ]
-    mj_km_data <- mj_km_data[,-c("EJ_Mpkm","EJ_Mpkm_adjusted","lambda","EJ_Mpkm","EJ_Mpkm_final")]
+    mj_km_data <- mj_km_data[,-"EJ_Mpkm_final"]
 
     FV_all <- X2Xcalc(base, mj_km_data,
                       level_base = "base",
