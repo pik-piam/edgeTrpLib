@@ -1,5 +1,14 @@
+#' Creates RDS files for iterative REMIND-EDGE runs from csv input files.
+#'
+#' @param input_path
+#' @import data.table
+#' @importFrom stats setNames
+#' @export
+
+
 createRDS <- function(input_path){
-  if (length(list.files(path = "input_EDGE", pattern = "RDS")) == 5) {
+  if (length(list.files(path = "input_EDGE", pattern = "RDS")) > 0) {
+    ## RDS files have been created and previously saved in the expected folder
     print("Loading local RDS input files...")
 
   } else {
