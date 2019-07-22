@@ -97,9 +97,6 @@ merge_prices <- function(gdx, REMINDmapping, REMINDyears,
     ## rename the fuel price
     setnames(fuel_price_REMIND, old = c("value"), new = c("fuel_price"))
 
-    ## apply the markup for NG that represents fuel taxes:
-    fuel_price_REMIND[, fuel_price := ifelse(sector_fuel == "delivered gas",fuel_price/0.2, fuel_price)]
-
     ## fuel price in 2005USD/GJ -> 1990USD/EJ
 
     fuel_price_REMIND[, fuel_price := fuel_price * CONV_2005USD_1990USD * 1e9]
