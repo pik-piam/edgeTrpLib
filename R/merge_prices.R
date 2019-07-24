@@ -17,19 +17,20 @@ merge_prices <- function(gdx, REMINDmapping, REMINDyears,
 
     tdptwyr2dpgj <- 31.71  #TerraDollar per TWyear to Dollar per GJ
     CONV_2005USD_1990USD <- 0.67
+    startyear <- 2020
 
     ## load entries from the gdx
     fety <- readGDX(gdx, c("entyFe", "fety"), format = "first_found")
     pebal_subset <- c("pegas")
 
     budget.m <- readGDX(gdx, name = "qm_budget", types = "equations", field = "m",
-                        format = "first_found")[, REMINDyears[REMINDyears>=2010],]  # Alternative: calcPrice
+                        format = "first_found")[, REMINDyears[REMINDyears >= startyear],]  # Alternative: calcPrice
 
     interpolate_first_timesteps <- function(obj){
-        ## interpolate values for 1990 and 2005
-        obj = mbind(time_interpolate(obj, 2005), obj)
-        obj = mbind(setYears(obj[, 2005,], 1990), obj)
-
+        ## interpolate values for 1990, 2005 and 2010
+        obj = time_interpolate(obj, c(1990, seq(2005, startyear, 5)),
+                             integrate_interpolated_years=T,
+                             extrapolation_type = "constant")
         return(obj)
     }
 
@@ -40,7 +41,7 @@ merge_prices <- function(gdx, REMINDmapping, REMINDyears,
         bal_eq <- "qm_balFeForCesAndEs"
         febal.m <- readGDX(gdx, name = bal_eq, types = "equations",
                            field = "m", format = "first_found")[
-        , REMINDyears[REMINDyears>=2010], fety]
+        , REMINDyears[REMINDyears>=startyear], fety]
 
         if(any(febal.m > 0)){
             sprintf("Found positive marginals on %s. We correct this, but the issue should be adressed.", bal_eq)
@@ -50,14 +51,14 @@ merge_prices <- function(gdx, REMINDmapping, REMINDyears,
         febal.m <- interpolate_first_timesteps(febal.m)
 
         ## in some regions and time steps, 0 final energy demand for an entry could give problems
-        tmp <- setNames(lowpass(lowpass(febal.m[, , "fegat"]))/(budget.m + 1e-10) * tdptwyr2dpgj, "delivered gas")
+        tmp <- magclass::setNames(lowpass(lowpass(febal.m[, , "fegat"]))/(budget.m + 1e-10) * tdptwyr2dpgj, "delivered gas")
     }else{
         bal_eq <- "q_balFe"
         pebal.m <- readGDX(gdx, name = c("q_balPe", "qm_pebal"), types = "equations",
-                           field = "m", format = "first_found")[, REMINDyears[REMINDyears>=2010],
+                           field = "m", format = "first_found")[, REMINDyears[REMINDyears>=startyear],
                                                                 pebal_subset]
         febal.m <- readGDX(gdx, name = bal_eq, types = "equations",
-                           field = "m", format = "first_found")[, REMINDyears[REMINDyears>=2010],
+                           field = "m", format = "first_found")[, REMINDyears[REMINDyears>=startyear],
                                                                 fety]
         if(any(febal.m > 0)){
             sprintf("Found positive marginals on %s. We correct this, but the issue should be adressed.", bal_eq)
@@ -68,15 +69,15 @@ merge_prices <- function(gdx, REMINDmapping, REMINDyears,
         pebal.m <- interpolate_first_timesteps(pebal.m)
 
         ## Nat. Gas too cheap on PE level (4x)
-        tmp <- setNames(4*lowpass(lowpass(pebal.m[, , "pegas"]))/(budget.m + 1e-10) * tdptwyr2dpgj, "delivered gas")
+        tmp <- magclass::setNames(4*lowpass(lowpass(pebal.m[, , "pegas"]))/(budget.m + 1e-10) * tdptwyr2dpgj, "delivered gas")
     }
     sprintf("Loading prices for module `%s` from eq. `%s`.", module, bal_eq)
 
-    tmp <- mbind(tmp, setNames(lowpass(lowpass(febal.m[, , "feelt"]))/(budget.m + 1e-10) * tdptwyr2dpgj, "elect_td_trn"))
+    tmp <- mbind(tmp, magclass::setNames(lowpass(lowpass(febal.m[, , "feelt"]))/(budget.m + 1e-10) * tdptwyr2dpgj, "elect_td_trn"))
 
-    tmp <- mbind(tmp, setNames(lowpass(lowpass(febal.m[, , "feh2t"]))/(budget.m + 1e-10) * tdptwyr2dpgj, "H2 enduse"))
+    tmp <- mbind(tmp, magclass::setNames(lowpass(lowpass(febal.m[, , "feh2t"]))/(budget.m + 1e-10) * tdptwyr2dpgj, "H2 enduse"))
 
-    tmp <- mbind(tmp, setNames((lowpass(febal.m[, , "fedie"]) + lowpass(febal.m[, , "fepet"]))/(2*budget.m + 1e-10) * tdptwyr2dpgj, "refined liquids enduse"))
+    tmp <- mbind(tmp, magclass::setNames((dimSums(lowpass(febal.m[, , "fedie"] + febal.m[, , "fepet"]), dim=3))/(2*budget.m + 1e-10) * tdptwyr2dpgj, "refined liquids enduse"))
 
     tmp <- magpie2dt(tmp, regioncol = "region", yearcol = "year", datacols = "sector_fuel")
 
