@@ -15,10 +15,6 @@ merge_prices <- function(gdx, REMINDmapping, REMINDyears,
                          module="edge_esm") {
     ## report prices from REMIND gdx in 2005$/MJ
 
-    lowpass_no_warnings <- function(...){
-        suppressWarnings(lowpass(...))
-    }
-
     tdptwyr2dpgj <- 31.71  #TerraDollar per TWyear to Dollar per GJ
     CONV_2005USD_1990USD <- 0.67
 
@@ -29,63 +25,60 @@ merge_prices <- function(gdx, REMINDmapping, REMINDyears,
     budget.m <- readGDX(gdx, name = "qm_budget", types = "equations", field = "m",
                         format = "first_found")[, REMINDyears[REMINDyears>=2010],]  # Alternative: calcPrice
 
-    ## interpolate values for 1990 and 2005
-    budget.m = mbind(
-      (setYears(budget.m[,2010,], 2005)*2+
-         setYears(budget.m[,2015,], 2005))/3,budget.m)
+    interpolate_first_timesteps <- function(obj){
+        ## interpolate values for 1990 and 2005
+        obj = mbind(time_interpolate(obj, 2005), obj)
+        obj = mbind(setYears(obj[, 2005,], 1990), obj)
 
-    budget.m = mbind(
-      (setYears(budget.m[,2005,], 1990)*2+
-         setYears(budget.m[,2010,], 1990))/3,budget.m)
+        return(obj)
+    }
 
+    budget.m <- interpolate_first_timesteps(budget.m)
+    budget.m <- lowpass(budget.m)
 
     if(module == "edge_esm"){
         bal_eq <- "qm_balFeForCesAndEs"
         febal.m <- readGDX(gdx, name = bal_eq, types = "equations",
-                           field = "m", format = "first_found")[, REMINDyears[REMINDyears>=2010], fety]
+                           field = "m", format = "first_found")[
+        , REMINDyears[REMINDyears>=2010], fety]
 
-        ## interpolate values for 1990 and 2005
-        febal.m = mbind(
-          (setYears(febal.m[,2010,], 2005)*2+
-             setYears(febal.m[,2015,], 2005))/3,febal.m)
+        if(any(febal.m > 0)){
+            sprintf("Found positive marginals on %s. We correct this, but the issue should be adressed.", bal_eq)
+            febal.m[febal.m > 0] <- -1e-10
+        }
 
-        febal.m = mbind(
-          (setYears(febal.m[,2005,], 1990)*2+
-             setYears(febal.m[,2010,], 1990))/3,febal.m)
-
+        febal.m <- interpolate_first_timesteps(febal.m)
 
         ## in some regions and time steps, 0 final energy demand for an entry could give problems
-        budget.m <- abs(lowpass_no_warnings(budget.m, fix = "both",
-                                            altFilter = match(2010, REMINDyears)))
-        tmp <- setNames(abs(lowpass_no_warnings(febal.m[, , "fegat"]/(budget.m + 1e-10), fix="both",
-                                            altFilter=match(2010,REMINDyears))) * tdptwyr2dpgj, "delivered gas")
+        tmp <- setNames(lowpass(lowpass(febal.m[, , "fegat"]))/(budget.m + 1e-10) * tdptwyr2dpgj, "delivered gas")
     }else{
         bal_eq <- "q_balFe"
         pebal.m <- readGDX(gdx, name = c("q_balPe", "qm_pebal"), types = "equations",
-                           field = "m", format = "first_found")[, REMINDyears, pebal_subset]
+                           field = "m", format = "first_found")[, REMINDyears[REMINDyears>=2010],
+                                                                pebal_subset]
         febal.m <- readGDX(gdx, name = bal_eq, types = "equations",
-                           field = "m", format = "first_found")[, REMINDyears, fety]
+                           field = "m", format = "first_found")[, REMINDyears[REMINDyears>=2010],
+                                                                fety]
+        if(any(febal.m > 0)){
+            sprintf("Found positive marginals on %s. We correct this, but the issue should be adressed.", bal_eq)
+            febal.m[febal.m > 0] <- -1e-10
+        }
+
+        febal.m <- interpolate_first_timesteps(febal.m)
+        pebal.m <- interpolate_first_timesteps(pebal.m)
+
         ## Nat. Gas too cheap on PE level (4x)
-        tmp <- setNames(4*pebal.m[, , "pegas"]/(budget.m + 1e-10) * tdptwyr2dpgj, "delivered gas")
+        tmp <- setNames(4*lowpass(lowpass(pebal.m[, , "pegas"]))/(budget.m + 1e-10) * tdptwyr2dpgj, "delivered gas")
     }
     sprintf("Loading prices for module `%s` from eq. `%s`.", module, bal_eq)
 
-    tmp <- mbind(tmp, setNames(abs(lowpass_no_warnings(febal.m[, , "feelt"]/(budget.m + 1e-10), fix = "both",
-                                altFilter = match(2010, REMINDyears))) * tdptwyr2dpgj, "elect_td_trn"))
+    tmp <- mbind(tmp, setNames(lowpass(lowpass(febal.m[, , "feelt"]))/(budget.m + 1e-10) * tdptwyr2dpgj, "elect_td_trn"))
 
-    tmp <- mbind(tmp, setNames(abs(lowpass_no_warnings(febal.m[, , "feh2t"]/(budget.m + 1e-10),
-                                           fix = "both", altFilter = match(2010, REMINDyears))) * tdptwyr2dpgj, "H2 enduse"))
+    tmp <- mbind(tmp, setNames(lowpass(lowpass(febal.m[, , "feh2t"]))/(budget.m + 1e-10) * tdptwyr2dpgj, "H2 enduse"))
 
-    tmp <- mbind(tmp, setNames(abs(lowpass_no_warnings(febal.m[, , "fedie"]/(budget.m + 1e-10),
-                                           fix = "both", altFilter = match(2010, REMINDyears))) * tdptwyr2dpgj, "refined liquids enduse"))
+    tmp <- mbind(tmp, setNames((lowpass(febal.m[, , "fedie"]) + lowpass(febal.m[, , "fepet"]))/(2*budget.m + 1e-10) * tdptwyr2dpgj, "refined liquids enduse"))
 
     tmp <- magpie2dt(tmp, regioncol = "region", yearcol = "year", datacols = "sector_fuel")
-
-    if(all(tmp[year == 1990]$value == 0)){
-        ## if no 1990 prices are found, lets use 2005 prices and issue warning
-        print("No 1990 fuel prices found in REMIND, using 2005 prices.")
-        tmp[year == 1990, value := tmp[year==2005]$value]
-    }
 
     test <- tmp[year > 2005 & value <= 0]
     if(nrow(test)){
@@ -109,7 +102,6 @@ merge_prices <- function(gdx, REMINDmapping, REMINDyears,
 
     ## fuel_price [$/EJ * EJ/Mpkm * Mpkm/pkm],
     tech_cost2 <- fuel_price_REMIND[, fuel_price_pkm := fuel_price * EJ_Mpkm_final * 1e-6]
-    tech_cost2=tech_cost2[,-c("EJ_Mpkm","EJ_Mpkm_adjusted","lambda","EJ_Mpkm")]
 
     ## merge the non energy prices, they are $/pkm
     tech_cost2 <- merge(tech_cost2, nonfuel_costs,
