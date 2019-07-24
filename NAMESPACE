@@ -2,6 +2,7 @@
 
 export(calculate_capCosts)
 export(calculate_logit)
+export(createRDS)
 export(getRMNDGDP)
 export(merge_prices)
 export(prepare4REMIND)
@@ -12,3 +13,4 @@ importFrom(rmndt,aggregate_dt)
 importFrom(rmndt,approx_dt)
 importFrom(rmndt,disaggregate_dt)
 importFrom(rmndt,magpie2dt)
+importFrom(stats,setNames)
