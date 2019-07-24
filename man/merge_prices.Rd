@@ -5,7 +5,7 @@
 \title{Merge REMIND-derived fuel prices with non-fuel costs.}
 \usage{
 merge_prices(gdx, REMINDmapping, REMINDyears, intensity_data,
-  nonfuel_costs)
+  nonfuel_costs, module = "edge_esm")
 }
 \description{
 Merge REMIND-derived fuel prices with non-fuel costs.
