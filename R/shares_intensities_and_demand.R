@@ -83,35 +83,21 @@ shares_intensity_and_demand <- function(logit_shares,
     ## get rid on NaNs energy intensity (they appear wherever demand is 0, so they are not useful)
     demandF=demandF[!is.nan(value),]
 
-    demandF[,sector:=NULL]
-
-
     ## calculate demand
     demand=demandF[variable == "Value_demand", .(iso, year, CES_node, value)]
     demand=approx_dt(demand, REMINDyears,
                      idxcols = c("iso", "CES_node"),
                      extrapolate=T)
-    demand=demand[order(iso,year,CES_node)]
 
-    demand=aggregate_dt(demand,REMIND2ISO_MAPPING,
-                        datacols = "CES_node",
-                        valuecol = "value")
-
-    ## calculation of shares
-    demand[,CES_parent:=sub("(.*?)(_.*)","\\2",CES_node)]
-    demand[,shares:=value/sum(value),by=.(region,year,CES_parent)]
+    ## create parent node
+    demand[, CES_parent:= sub("^[^_]*_", "",CES_node)]
+    setcolorder(demand, neworder = c("iso", "year", "CES_parent", "CES_node", "value"))
 
     ## calculate intensity
     demandI=demandF[variable == "Value_intensity", .(iso, year, CES_node, value)]
     demandI=approx_dt(demandI, REMINDyears,
                       idxcols = c("iso", "CES_node"),
                       extrapolate=T)
-
-    gdp <- getRMNDGDP(scenario = scenario, usecache = T)
-    demandI=aggregate_dt(demandI,REMIND2ISO_MAPPING,
-                         datacols = "CES_node",
-                         valuecol = "value",
-                         weights = gdp)
 
 
     demand_list=list(demand=demand,

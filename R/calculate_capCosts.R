@@ -44,12 +44,6 @@ calculate_capCosts <-function(base_price, Fdemand_ES,
   non_fuel_price[,variable:=NULL]
   non_fuel_price=non_fuel_price[order(iso,year,teEs)]
 
-  gdp <- getRMNDGDP(scenario = scenario, usecache = T)
-  non_fuel_price=aggregate_dt(non_fuel_price, REMIND2ISO_MAPPING,
-                              datacols = "teEs",
-                              valuecol = "value",
-                              weights=gdp)
-  
   return(non_fuel_price)
 }
 
