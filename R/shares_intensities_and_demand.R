@@ -9,11 +9,11 @@
 
 shares_intensity_and_demand <- function(logit_shares,
                                         MJ_km_base,
-                                        REMIND2ISO_MAPPING,
                                         EDGE2CESmap,
                                         REMINDyears,
                                         scenario,
-                                        demand_input=NULL){
+                                        demand_input=NULL,
+                                        REMIND2ISO_MAPPING=NULL){
 
     ## load the shares at each level
     S3S_shares <- logit_shares[["S3S_shares"]][,-c("fuel_price_pkm", "non_fuel_price", "tot_VOT_price")]
@@ -30,6 +30,11 @@ shares_intensity_and_demand <- function(logit_shares,
     }else {
         demand=demand_input
     }
+
+    ## define regional aggregation
+    if (!is.null(REMIND2ISO_MAPPING)) {
+      regcol = "region"
+    } else { regcol = "iso"}
 
     ## calculate demand in million pkm for each level
     #S->S3
@@ -89,15 +94,33 @@ shares_intensity_and_demand <- function(logit_shares,
                      idxcols = c("iso", "CES_node"),
                      extrapolate=T)
 
+
+    if (!is.null(REMIND2ISO_MAPPING)) {
+      demand=aggregate_dt(demand,REMIND2ISO_MAPPING,
+                          datacols = "CES_node",
+                          valuecol = "value")
+    }
+
+
     ## create parent node
     demand[, CES_parent:= sub("^[^_]*_", "",CES_node)]
-    setcolorder(demand, neworder = c("iso", "year", "CES_parent", "CES_node", "value"))
+    setcolorder(demand, neworder = c(regcol, "year", "CES_parent", "CES_node", "value"))
 
     ## calculate intensity
     demandI=demandF[variable == "Value_intensity", .(iso, year, CES_node, value)]
     demandI=approx_dt(demandI, REMINDyears,
                       idxcols = c("iso", "CES_node"),
                       extrapolate=T)
+
+    if (!is.null(REMIND2ISO_MAPPING)) {
+      gdp <- getRMNDGDP(scenario = scenario, usecache = T)
+
+      demandI=aggregate_dt(demandI,REMIND2ISO_MAPPING,
+                           datacols = "CES_node",
+                           valuecol = "value",
+                           weights = gdp)
+    }
+
 
 
     demand_list=list(demand=demand,
