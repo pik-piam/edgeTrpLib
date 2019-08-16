@@ -6,7 +6,6 @@
 #' @param logit_parms
 #' @param intensity_data
 #' @param full_data
-#' @import remind
 #' @import data.table
 #' @export
 

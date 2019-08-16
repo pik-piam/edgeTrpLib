@@ -25,7 +25,4 @@ getRMNDGDP(scenario = "gdp_SSP2", yearcol = "year", isocol = "iso",
 Load GDP data using `moinput` on ISO country resolution for a scenario as data.table object with given colnames.
 By default, the
 }
-\examples{
-gdp <- getRMNDGDP()
-}
 \keyword{gdp}

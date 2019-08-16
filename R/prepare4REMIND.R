@@ -5,7 +5,6 @@
 #' @param capCosts
 #' @param EDGE2teESmap
 #' @param REMINDtall
-#' @import remind
 #' @import data.table
 #' @importFrom rmndt approx_dt
 #' @export

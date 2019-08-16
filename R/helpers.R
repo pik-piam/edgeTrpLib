@@ -9,9 +9,8 @@
 #' @param gdpfile, if caching is required, specify the filename here, default is "GDPcache.rds"
 #' @keywords gdp
 #' @import data.table
+#' @importFrom madrat calcOutput
 #' @export
-#' @examples
-#' gdp <- getRMNDGDP()
 
 getRMNDGDP <- function(scenario="gdp_SSP2",
                       yearcol="year",
@@ -25,7 +24,7 @@ getRMNDGDP <- function(scenario="gdp_SSP2",
         return(readRDS(gdpfile))
     }
 
-    GDPppp_country <- madrat::calcOutput("GDPppp", aggregate = F)[,, scenario]
+    GDPppp_country <- calcOutput("GDPppp", aggregate = F)[,, scenario]
 
     gdp <- as.data.table(GDPppp_country)[variable == scenario]
     gdp[, (yearcol) := as.numeric(gsub("y", "", Year))][, Year := NULL]

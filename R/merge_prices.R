@@ -4,9 +4,10 @@
 #' @param REMINDmapping
 #' @param intensity_data
 #' @param nonfuel_costs
-#' @import remind
 #' @import data.table
 #' @importFrom rmndt disaggregate_dt magpie2dt
+#' @importFrom gdx readGDX
+#' @importFrom magclass time_interpolate lowpass dimSums mbind
 #' @export
 
 merge_prices <- function(gdx, REMINDmapping, REMINDyears,

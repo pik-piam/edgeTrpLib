@@ -2,7 +2,6 @@
 #'
 #' @param input_path
 #' @import data.table
-#' @importFrom stats setNames
 #' @export
 
 
@@ -21,11 +20,11 @@ createRDS <- function(input_path){
         tmp = list.files(path=input_path, pattern = pattern)
         tmp <- paste0(input_path, tmp)
         tmp_dfs <- stats::setNames(object = lapply(tmp, function(f)
-          data.table(read.csv(f, stringsAsFactors = FALSE))),nm = sub(".*/([^.]*).*", "\\1", tmp))
+          fread(f)),nm = sub(".*/([^.]*).*", "\\1", tmp))
         saveRDS(tmp_dfs, paste0("input_EDGE/", filename,".RDS"))
       } else{
         ## for one object only RDS files
-        tmp=data.table(read.csv(paste0(input_path, pattern, ".csv"), stringsAsFactors = FALSE))
+        tmp=fread(paste0(input_path, pattern, ".csv"), stringsAsFactors = FALSE)
         saveRDS(tmp, paste0("input_EDGE/", filename,".RDS"))
       }
 

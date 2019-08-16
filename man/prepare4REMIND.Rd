@@ -4,7 +4,7 @@
 \alias{prepare4REMIND}
 \title{Prepare outputs for REMIND: Set correct tech names, CES node names and years.}
 \usage{
-prepare4REMIND(share, intensity, capCost, EDGE2teESmap, REMINDtall)
+prepare4REMIND(demByTech, intensity, capCost, EDGE2teESmap, REMINDtall)
 }
 \description{
 Prepare outputs for REMIND: Set correct tech names, CES node names and years.
