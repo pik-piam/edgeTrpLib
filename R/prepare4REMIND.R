@@ -57,10 +57,10 @@ prepare4REMIND <- function(demByTech, intensity, capCost,
                 by="CES_node", all.x=TRUE)
     demByTech=demByTech[, c("year", regcol, "all_enty", "all_in", "teEs", "value"),with = F]
     setnames(demByTech, old = c("year", "teEs"), new = c("tall", "all_teEs"))
-    demByTech=approx_dt(dt=demByTech, xdata=REMINDtall,
-                    xcol="tall",
-                    idxcols=c(regcol,"all_in","all_enty","all_teEs"),
-                    extrapolate=T)
+    demByTech <- approx_dt(dt=demByTech, xdata=REMINDtall,
+                        xcol="tall",
+                        idxcols=c(regcol,"all_in","all_enty","all_teEs"),
+                        extrapolate=T)[, value := EJ_2_Twa * value] ## in TWa
     setcolorder(demByTech, c("tall", regcol,"all_enty","all_in","all_teEs","value"))
 
     if (!is.null(REMIND2ISO_MAPPING)) {
