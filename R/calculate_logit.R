@@ -14,6 +14,7 @@ calculate_logit <- function(prices,
                             sw_data,
                             logit_params,
                             intensity_data,
+                            price_nonmot,
                             full_data = F) {
 
     ## X2Xcalc is used to traverse the logit tree, calculating shares and intensities
@@ -88,11 +89,9 @@ calculate_logit <- function(prices,
     }
 
 
-    ## FV load technology prices and merge with value of time (~technology price for
-    ## non-motorized)
+    ## FV merge non-motorized prices with value of time (~technology price for non-motorized)
 
     ## non-fuel prices
-    price_nonmot <- vot_data[["price_nonmot"]]
     base <- merge(prices, price_nonmot, all = TRUE,
                 by = c("tot_price","iso","year",
                        "technology","vehicle_type",
