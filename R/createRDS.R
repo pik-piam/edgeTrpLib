@@ -4,54 +4,66 @@
 #' @import data.table
 #' @export
 
-
-createRDS <- function(input_path){
+createRDS <- function(input_path, SSP_scenario, EDGE_scenario){
   if (length(list.files(path = "input_EDGE", pattern = "RDS")) > 0) {
     ## RDS files have been created and previously saved in the expected folder
     print("Loading local RDS input files...")
+
 
   } else {
     print("Loading csv data from input folder and creating RDS files...")
     dir.create(file.path("input_EDGE/"), showWarnings = FALSE)
     ## function that loads the csv input files and converts them into RDS local files
-    csv2RDS = function(pattern, filename, input_path, ismultiple = TRUE){
-      if (ismultiple) {
-        ## for multiple csv files that have to be grouped in one single RDS file
-        tmp = list.files(path=input_path, pattern = pattern)
-        tmp <- paste0(input_path, tmp)
-        tmp_dfs <- stats::setNames(object = lapply(tmp, function(f)
-          fread(f)),nm = sub(".*/([^.]*).*", "\\1", tmp))
-        saveRDS(tmp_dfs, paste0("input_EDGE/", filename,".RDS"))
-      } else{
-        ## for one object only RDS files
-        tmp=fread(paste0(input_path, pattern, ".csv"), stringsAsFactors = FALSE)
-        saveRDS(tmp, paste0("input_EDGE/", filename,".RDS"))
+    csv2RDS = function(pattern, filename, input_path, names_dt){
+      tmp=fread(paste0(input_path, pattern, ".cs4r"), stringsAsFactors = FALSE, col.names = names_dt, skip = 5)[SSPscen == SSP_scenario & EDGEscen == EDGE_scenario][, -c("SSPscen", "EDGEscen")]
+      tmp[,vehicle_type := gsub("DOT", ".", vehicle_type)]
+      tmp_list <- split(tmp,tmp$entry)
+
+      for (i in names(tmp_list)) {
+        removecol = names_dt[names_dt %in% c("entry", "varname")]
+        tmp_list[[i]][, grep(removecol, colnames(tmp_list[[i]])):=NULL]
+        tmp_list[[i]] = tmp_list[[i]][,which(unlist(lapply(tmp_list[[i]], function(x)!any(x == "tmp")))),with=F]
       }
+
+      if (length(tmp_list) == 1) {
+        tmp_list = tmp_list[[1]]
+      }
+
+      saveRDS(tmp_list, paste0("input_EDGE/", filename,".RDS"))
 
     }
 
     ## create RDS files for lists
     csv2RDS(pattern = "SW",
             filename = "SW",
-            input_path = input_path)
+            input_path = input_path,
+            names_dt = c("year", "iso", "SSPscen", "EDGEscen", "sector", "subsector_L3", "subsector_L2", "subsector_L1", "vehicle_type", "technology", "entry", "sw"))
 
     csv2RDS(pattern = "logit_exponent",
             filename = "logit_exp",
-            input_path = input_path)
+            input_path = input_path,
+            names_dt = c("SSPscen", "EDGEscen", "sector", "subsector_L3", "subsector_L2", "subsector_L1", "vehicle_type", "entry", "var_name", "logit.exponent"))
 
-    csv2RDS(pattern = "value_time|price_non",
+    csv2RDS(pattern = "value_time",
             filename = "VOT_iso",
-            input_path = input_path)
+            input_path = input_path,
+            names_dt = c("year", "iso", "SSPscen", "EDGEscen", "sector", "subsector_L3", "subsector_L2", "subsector_L1", "vehicle_type", "entry", "time_price"))
+
+    csv2RDS(pattern = "price_nonmot",
+            filename = "price_nonmot",
+            input_path = input_path,
+            names_dt = c("year", "iso", "SSPscen", "EDGEscen", "sector", "subsector_L3", "subsector_L2", "subsector_L1", "vehicle_type", "technology", "entry", "tot_price"))
 
     ## create RDS files for single dataframes
     csv2RDS(pattern = "harmonized_intensities",
             filename = "harmonized_intensities",
             input_path = input_path,
-            ismultiple = FALSE)
+            names_dt = c("year", "iso", "SSPscen", "EDGEscen", "sector", "subsector_L3", "subsector_L2", "subsector_L1", "vehicle_type", "technology", "entry", "sector_fuel", "EJ_Mpkm_final"))
 
     csv2RDS(pattern = "UCD_NEC_iso",
             filename = "UCD_NEC_iso",
             input_path = input_path,
-            ismultiple = FALSE)
+            names_dt = c("year", "iso", "SSPscen", "EDGEscen", "sector", "subsector_L3", "subsector_L2", "subsector_L1", "vehicle_type", "technology", "entry", "non_fuel_price"))
+
   }
 }
