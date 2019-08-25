@@ -33,6 +33,8 @@ calculate_logit <- function(prices,
 
         ## joins the previous df with gathe df containing the sw
         df <- merge(df, final_SW, by=intersect( names(df),names(final_SW)), all.y=TRUE)
+        ## delete entries that have a SW == 0 (not present in the mix) but have a non-fuel price since they exist as options
+        df <- df[ !(is.na(tot_price) & sw == 0)]
 
         ## needs random lambdas for the sectors that are not explicitly calculated
         df <- df[ is.na(logit.exponent), logit.exponent := -10]
@@ -40,6 +42,9 @@ calculate_logit <- function(prices,
         ## calculate the shares given prices, lambda and sw
         df <- df[, share := sw * tot_price^logit.exponent/sum(sw * tot_price^logit.exponent),
                  by = c(group_value, "iso", "year")]
+
+        ## filter out NaNs that appear when SW=0 for all the choices in the nest
+        df <- df[ !is.nan(share),]
 
         ## merge value of time for the selected level and assign 0 to the entries that don't have it
         df <- merge(df, value_time, by=intersect(names(df),names(value_time)), all.x=TRUE)
