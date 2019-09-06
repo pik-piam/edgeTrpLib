@@ -42,7 +42,7 @@ createRDS <- function(input_path, SSP_scenario, EDGE_scenario){
     csv2RDS(pattern = "logit_exponent",
             filename = "logit_exp",
             input_path = input_path,
-            names_dt = c("SSPscen", "EDGEscen", "sector", "subsector_L3", "subsector_L2", "subsector_L1", "vehicle_type", "entry", "var_name", "logit.exponent"))
+            names_dt = c("SSPscen", "EDGEscen", "sector", "subsector_L3", "subsector_L2", "subsector_L1", "vehicle_type", "entry", "logit.exponent"))
 
     csv2RDS(pattern = "value_time",
             filename = "VOT_iso",
