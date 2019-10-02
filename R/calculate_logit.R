@@ -16,7 +16,6 @@ calculate_logit <- function(prices,
                             intensity_data,
                             price_nonmot,
                             full_data = F) {
-
     ## X2Xcalc is used to traverse the logit tree, calculating shares and intensities
     X2Xcalc <- function(prices, mj_km_data, level_base, level_next, group_value) {
         final_SW <- sw_data[[paste0(level_next, "_final_SW")]]
@@ -118,9 +117,10 @@ calculate_logit <- function(prices,
                       level_base = "base",
                       level_next = "FV",
                       group_value = "vehicle_type")
+
     FV <- FV_all[[1]]
     MJ_km_FV <- FV_all[[2]]
-    FV_shares <- FV_all[[3]]
+    FV_shares <- FV_all[[3]][,.(share, iso, year, technology, vehicle_type, subsector_L1)]
 
     # VS1
     VS1_all <- X2Xcalc(FV, MJ_km_FV,
@@ -130,13 +130,14 @@ calculate_logit <- function(prices,
 
     VS1 <- VS1_all[[1]]
     MJ_km_VS1 <- VS1_all[[2]]
-    VS1_shares <- VS1_all[[3]]
+    VS1_shares <- VS1_all[[3]][,.(share, iso, year, vehicle_type, subsector_L1)]
 
     # S1S2
     S1S2_all <- X2Xcalc(VS1, MJ_km_VS1,
                         level_base = "VS1",
                         level_next = "S1S2",
                         group_value = "subsector_L2")
+
     S1S2 <- S1S2_all[[1]]
     MJ_km_S1S2 <- S1S2_all[[2]]
     S1S2_shares <- S1S2_all[[3]]
