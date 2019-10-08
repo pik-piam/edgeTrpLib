@@ -66,7 +66,7 @@ calcVint <- function(shares, totdem_regr, prices, mj_km_data, years){
                       extrapolate=T)
   setnames(passdem, old = "value", new = "totdem")                      ## rename back column
 
-  paux = 20   ## approximate lifetime of a car
+  paux = 15   ## approximate lifetime of a car
   Ddt = data.table(index_yearly = seq(1,length(tall)-1,1))
   Ddt[, D := 1-((index_yearly-0.5)/paux)^4]
   Ddt[, D := ifelse(D<0,0,D)]
@@ -115,7 +115,17 @@ calcVint <- function(shares, totdem_regr, prices, mj_km_data, years){
     y = tall[tall>baseyear][i]
     ## starting value of capacity built up in the current year
     Cval_t = merge(passdem[year == y, c("totdem", "iso", "subsector_L1", "sector")], Vint[year == y, c("vint", "iso", "subsector_L1", "sector")], by = c("iso", "subsector_L1", "sector"))
-    Cval_t = Cval_t[,.(C_t = totdem-vint, iso, subsector_L1, sector)]
+    ## distinguish between the standard vintaging and the early retirement case (when the vintages are higher than the new additions)
+    Cval_t = Cval_t[, check := ifelse(totdem-vint>0, "standardVintaging", "earlyRet"), by = c("iso", "subsector_L1", "sector")]
+    Cval_t[check =="standardVintaging", C_t := totdem-vint]         ## for the standard vintaging, the new additions are total-vintages
+    ## early vintages assumes 5% new additions as firs step (95%vintages)
+    perc=0.1
+    Cval_t[check =="earlyRet", C_t := totdem - (1-perc)*totdem, by = c("iso", "subsector_L1", "sector")]            ## for the early retirement cases, half of the demand goes to new additions
+    Cval_t[check =="earlyRet", decrease := (1-perc)*totdem/vint]         ## this is how much we need the vintages to contract
+    ## extract only early retired entries
+    earlyret = Cval_t[check == "earlyRet"][,c("iso", "subsector_L1", "sector", "check", "decrease")]
+
+    Cval_t = Cval_t[,.(C_t, iso, subsector_L1, sector)]
     Cap_t = merge(Cval_t, tmp, by = c("iso", "subsector_L1", "sector"))
     ## merge with depreciation (the 1st year is the current one, so there is no depreciation)
     Cap_t = merge(Cap_t, Ddt[index %in% c(seq(0,length(index)-i-1,1))][, year:= tall[tall>=y]], by = "year") ## smaller than length(index)-i-1
@@ -127,11 +137,26 @@ calcVint <- function(shares, totdem_regr, prices, mj_km_data, years){
     setnames(Cap_t, old = "C_t", new = paste0("C_", y))
     ## add the vintaging capacity to the vintage dt
     Vint = merge(Vint, Cap_t[year > y], by = c("iso","subsector_L1", "year", "sector"), all = TRUE)
+    ## decrease the vintages if needed (from the current time step on)
+    Vint = merge(Vint, earlyret, all = TRUE, by = c("iso", "subsector_L1", "sector"))
+    Vint[, decrease := ifelse(is.na(decrease), 1, decrease)]  ## attribute the decrease to 1 if there is no decrease due to early retirement
+    Vint[year < y, decrease := 1]                             ## for the years of the past, vintages should be left untouched
+    Vint[year == y, vint := vint*decrease]                    ## aggregated vintages is decreased for the current time step
+    ## only the colums of the old capacities need to be decreased (all but the current year)
+    n = grep("C_", colnames(Vint))
+    n = n[n!=grep(paste0(y), colnames(Vint))]
+    listCol <- colnames(Vint)[n]
+    ## apply the decrease to all the columns
+    for (col in listCol)
+      Vint[, (col) := Vint[[col]]*decrease]
+
+    Vint[,c("check", "decrease") := NULL]
     ## find all column names of the capacities
     listCol <- colnames(Vint)[grep("C_", colnames(Vint))]
     ## sum up all depreciating capacity for the current time step
-    Vint = Vint[year == tall[tall>baseyear][i+1], vint := Reduce(`+`, .SD), .SDcols=c(listCol), by = c("iso", "subsector_L1", "sector")][]
-  }
+    Vint = Vint[year == tall[tall>baseyear][i+1], vint := Reduce(`+`, .SD), .SDcols=c(listCol), by = c("iso", "subsector_L1", "sector")]
+
+    }
 
   ## melt according to the columns of the "starting" year
   listCol <- colnames(Vint)[grep("C_", colnames(Vint))]
@@ -141,10 +166,8 @@ calcVint <- function(shares, totdem_regr, prices, mj_km_data, years){
   Vint$variable <- factor(Vint$variable, levels = sort(listCol, decreasing =TRUE))
 
   ## composition of the vintages is inherited from the logit (depending on the base year): find the share of each tech-veh with respect to the starting total demand of passenger transport
-  shares_tech = merge(shares_4W, VS1[subsector_L1 =="trn_pass_road_LDV_4W"], by = c("iso", "year", "subsector_L1"))
-  shares_tech[, share := share*shareVS1]
-  shares_tech = merge(shares_tech, FV[subsector_L1 =="trn_pass_road_LDV_4W"], by = c("iso", "year", "vehicle_type", "subsector_L1"), all.y =TRUE)
-  shares_tech[, share := share*shareFV]
+  shares_tech = merge(VS1[subsector_L1 =="trn_pass_road_LDV_4W"], FV[subsector_L1 =="trn_pass_road_LDV_4W"], by = c("iso", "year", "vehicle_type", "subsector_L1"), all.y =TRUE)
+  shares_tech[, share := shareVS1*shareFV]
   setnames(shares_tech, old = "share", new = "value") ## rename otherwise approx_dt complains
   shares_tech = approx_dt(dt = shares_tech, xdata = tall,
                           idxcols = c("iso",  "subsector_L1", "vehicle_type", "technology"),
