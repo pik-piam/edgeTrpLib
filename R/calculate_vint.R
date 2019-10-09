@@ -1,9 +1,11 @@
 #' calculates vintages composition, costs and intensity
 #'
-#'
 #' @param shares
 #' @param totdem_regr
 #' @param costs
+#' @param mj_km_data
+#' @param years
+#' @import rmndt
 
 
 calcVint <- function(shares, totdem_regr, prices, mj_km_data, years){
