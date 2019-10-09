@@ -167,6 +167,7 @@ calcVint <- function(shares, totdem_regr, prices, mj_km_data, years){
   Vint = Vint[!is.na(value)]
   Vint$variable <- factor(Vint$variable, levels = sort(listCol, decreasing =TRUE))
 
+
   ## composition of the vintages is inherited from the logit (depending on the base year): find the share of each tech-veh with respect to the starting total demand of passenger transport
   shares_tech = merge(VS1[subsector_L1 =="trn_pass_road_LDV_4W"], FV[subsector_L1 =="trn_pass_road_LDV_4W"], by = c("iso", "year", "vehicle_type", "subsector_L1"), all.y =TRUE)
   shares_tech[, share := shareVS1*shareFV]
@@ -174,23 +175,23 @@ calcVint <- function(shares, totdem_regr, prices, mj_km_data, years){
   shares_tech = approx_dt(dt = shares_tech, xdata = tall,
                           idxcols = c("iso",  "subsector_L1", "vehicle_type", "technology"),
                           extrapolate=T)
-  setnames(shares_tech, old = "value", new = "share")  ## rename back
-  shares_tech = shares_tech[, .(iso, year, subsector_L1, vehicle_type, technology, share)]
+  setnames(shares_tech, old = "value", new = "shareFVVS1")  ## rename back
+  shares_tech = shares_tech[, .(iso, year, subsector_L1, vehicle_type, technology, shareFVVS1)]
   shares_tech[, variable := paste0("C_", year)] ## attribute to the column variable the year in wich the logit based value starts
   shares_tech = shares_tech[, year := NULL] ## the composition is interesting only concerning the starting year
-
   ## find vintages composition
   vintcomp_startyear = merge(shares_tech, Vint, by = c("iso", "variable", "subsector_L1"), allow.cartesian =TRUE)
-  vintcomp_startyear[, value :=share*value]
+  vintcomp_startyear[, demVintEachYear := shareFVVS1*value]
+  vintcomp_startyear[, shareFVVS1:= NULL]
 
   ## vintages represent a certain share of the 4W total demand
-  sharevint = vintcomp_startyear[,.(vintdem = sum(value)), by = c("iso", "year", "subsector_L1")][, sector := "trn_pass"]
+  sharevint = Vint[year %in% tall][,.(vintdem = mean(vint)), by = c("iso", "year", "subsector_L1","sector")]
   sharevint= merge(passdem, sharevint, by = c("iso", "year", "subsector_L1", "sector"))
   sharevint[, sharevint := vintdem/totdem]
 
 
   ## I don't care anymore when something was built, so I aggregate by vintaging starting year, and then find the share of every technology within every vehicle type
-  vintcomp = vintcomp_startyear[,.(value = sum(value)), by = c("iso", "year", "sector", "subsector_L1", "vehicle_type", "technology")]
+  vintcomp = vintcomp_startyear[,.(value = sum(demVintEachYear)), by = c("iso", "year", "sector", "subsector_L1", "vehicle_type", "technology")]
   vintcomp[, sharetech:= value/sum(value),c("iso", "year", "subsector_L1", "sector", "vehicle_type") ]
   vintcomp = merge(vintcomp, sharevint, by = c("iso", "sector", "subsector_L1", "year"))
   vintcomp[, sharetech_vint := sharevint*sharetech] ## relative weight of the vintage structure is given by the shares multiplied times the share of vintages on total demand of 4W
@@ -204,12 +205,11 @@ calcVint <- function(shares, totdem_regr, prices, mj_km_data, years){
   FV_4W = merge(vintcomp, newcomp, by = c("iso", "subsector_L1", "year", "totdem", "vehicle_type", "technology", "sector"))
   FV_4W = FV_4W[,.(shareFV = sum(sharetech_vint, sharetech_new)), by = c("iso", "year", "subsector_L1", "vehicle_type", "technology")]
   ## extend to 2110 2130 2150 using 2100 value
-  FV_4W2100 = FV_4W[year == 2100]
-  FV_4W = rbind(FV_4W, FV_4W2100[, year := 2110], FV_4W2100[, year := 2130], FV_4W2100[, year := 2150])
+  FV_4W = rbind(FV_4W, FV_4W[year == 2100][, year := 2110], FV_4W[year == 2100][, year := 2130], FV_4W[year == 2100][, year := 2150])
 
 
   ## updated values of FV_shares
-  shares$FV_shares = merge(FV[(subsector_L1 != "trn_pass_road_LDV_4W")| (subsector_L1 == "trn_pass_road_LDV_4W" & year == 2010)],
+  shares$FV_shares = merge(FV[(subsector_L1 != "trn_pass_road_LDV_4W")| (subsector_L1 == "trn_pass_road_LDV_4W" & year %in% c(1990, 2005,2010))],
                            FV_4W[year %in% years[years>baseyear]], by = names(FV_4W), all = TRUE)
   setnames(shares$FV_shares, old = "shareFV", new = "share")
 
@@ -225,7 +225,7 @@ calcVint <- function(shares, totdem_regr, prices, mj_km_data, years){
                    by = c("iso", "variable", "sector", "subsector_L1", "technology", "vehicle_type"), allow.cartesian =TRUE)
 
   ## calculate relative share of each "starting year" with respect of the current year
-  vintcost[, relative_share := value/sum(value), by = c("iso", "year","technology", "vehicle_type", "subsector_L1")]
+  vintcost[, relative_share := demVintEachYear/sum(demVintEachYear), by = c("iso", "year","technology", "vehicle_type", "subsector_L1")]
   ## only entries that are "really" in the mix have to be averaged
   vintcost = vintcost[!is.nan(relative_share)]
   ## aggregate non fuel price of the vintages fleet
@@ -242,8 +242,7 @@ calcVint <- function(shares, totdem_regr, prices, mj_km_data, years){
   ## calculate new tot cost as sum of fuel cost and non fuel cost
   totcost[, tot_price := fuel_price_pkm + non_fuel_price]
   ## extend to 2110 2130 2150 using 2100 value
-  totcost2100 = totcost[year == 2100]
-  totcost = rbind(totcost, totcost2100[, year := 2110], totcost2100[, year := 2130], totcost2100[, year := 2150])
+  totcost = rbind(totcost, totcost[year == 2100][, year := 2110], totcost[year == 2100][, year := 2130], totcost[year == 2100][, year := 2150])
   ## updated values of FV_shares
   prices$base = merge(prices$base[(subsector_L1 != "trn_pass_road_LDV_4W")| (subsector_L1 == "trn_pass_road_LDV_4W" & year %in% c(1990, 2005,2010))],
                 totcost[year %in% years[years>baseyear], c("iso", "technology", "year", "vehicle_type", "subsector_L1", "subsector_L2", "subsector_L3", "sector", "non_fuel_price", "tot_price", "fuel_price", "fuel_price_pkm", "EJ_Mpkm_final", "tot_VOT_price", "sector_fuel")], by = names(prices$base), all = TRUE)
@@ -260,7 +259,7 @@ calcVint <- function(shares, totdem_regr, prices, mj_km_data, years){
                    by = c("iso", "variable", "sector", "subsector_L1", "technology", "vehicle_type"), allow.cartesian =TRUE)
 
   ## calculate relative share of each "starting year" with respect of the current year
-  vintint[, relative_share := value/sum(value), by = c("iso", "year","technology", "vehicle_type", "subsector_L1")]
+  vintint[, relative_share := demVintEachYear/sum(demVintEachYear), by = c("iso", "year","technology", "vehicle_type", "subsector_L1")]
   ## only entries that are "really" in the mix have to be averaged
   vintint = vintint[!is.nan(relative_share)]
   ## aggregate non fuel price of the vintages fleet
@@ -277,8 +276,7 @@ calcVint <- function(shares, totdem_regr, prices, mj_km_data, years){
   ## weighted average to find the total cost of the LDV fleet
   totint = totint[, totint := sum(sharevint*MJ_km_vint +(1-sharevint)*MJ_km), by = c("iso", "year", "subsector_L1", "technology", "vehicle_type", "sector")]
   ## extend to 2110 2130 2150 using 2100 value
-  totint2100 = totint[year == 2100]
-  totint = rbind(totint, totint2100[, year := 2110], totint2100[, year := 2130], totint2100[, year := 2150])
+  totint = rbind(totint, totint[year == 2100][, year := 2110], totint[year == 2100][, year := 2130], totint[year == 2100][, year := 2150])
   ## updated values of FV_shares
   mj_km_data = merge(mj_km_data[(subsector_L1 != "trn_pass_road_LDV_4W")| (subsector_L1 == "trn_pass_road_LDV_4W" & year %in% c(1990, 2005,2010))],
                       totint[year %in% years[years>baseyear], c("iso", "technology", "year", "vehicle_type", "subsector_L1", "subsector_L2", "subsector_L3", "sector", "sector_fuel", "MJ_km")], by = names(mj_km_data), all = TRUE)
