@@ -10,16 +10,6 @@
 
 calcVint <- function(shares, totdem_regr, prices, mj_km_data, years){
 
-  ## function that allows to find the depreciation for the already partially depreciated capacity (e.g. a 5 years old car)
-  find2010depreciation = function(Ddt, val_ref){
-    Ddt_2010x = Ddt[index_yearly>= which.min(abs(Ddt[,D] -                 ## depreciation already started at some point in the past: we are not anymore at index 0
-                                                   val_ref))]            ## to find the index, I have to look for the closest value D in the table, to then find the index at which it belongs
-    Ddt_2010x = Ddt_2010x[,index := seq(1,length(index_yearly),1)]  ## reset so that 1st index is named 1
-    Ddt_2010x[, index_yearly:= NULL]                                         ## remove yearly index
-    Ddt_2010x=rbind(data.table(index = c(0), D = 1), Ddt_2010x)              ## add starting value
-    return(Ddt_2010x)
-  }
-
   ## function that allows to calculate , given the depreciation trend for the capacity built before 2010
   find2010cap = function(percentage, dem, cap, Ddt){
     Cap_2010x = copy(dem)
@@ -37,8 +27,6 @@ calcVint <- function(shares, totdem_regr, prices, mj_km_data, years){
     setnames(Cap_2010x, old = "C_2010x", new =paste0("C_2010", cap))
     return(Cap_2010x)
   }
-
-
 
   ## vintages all equal time steps, equal to 1 year
   tall = seq(2010, 2100,1)
@@ -76,33 +64,27 @@ calcVint <- function(shares, totdem_regr, prices, mj_km_data, years){
   ## first time step has no depreciation
   Ddt = rbind(data.table(index_yearly = 0, D = 1), Ddt)
 
-  ## to find average depreciated historical capacity, I have to identify the reference depreciation state of 3 groups:
-  value_new = Ddt[index_yearly == 0, D]                                ## new vehicles (less then 1 year)
-  value_old10 = Ddt[index_yearly == 10, D]                               ## around 10 years old vehicles
-  value_old15 = Ddt[index_yearly == 15, D]                               ## around 15 years old vehicles
-  value_mean = mean(Ddt[index_yearly>0 & index_yearly<10 ,D])            ## all other vehicles (between 1.1 and 9.9 years)
+  ## composition of 2010 is from equal contributions from the 14 years before, +1 (2010 itself)
+  sum_dep = sum(Ddt[, D]) ## each year has same weight (new additions each year are constant)
+  Cap_eachyear = passdem[year == 2010][, year:=NULL]
+  Cap_eachyear[, totdem := totdem/sum_dep]
+  years_past = data.table(index_yearly = seq(0,15,1))
+  ## all the yearly additions (from 1995) depreciate at the same pace, each starting at its original year
+  Cap_eachyear = setkey(Cap_eachyear[, c(k=1,.SD)], k)[years_past[, c(k=1, .SD)], allow.cartesian=TRUE][, k := NULL]
+  Cap_2010 = merge(Cap_eachyear, Ddt, all.x=TRUE)
+  Cap_2010[, totdem := totdem*D]
+  ## attribute an year of origin to all the initial capacities
+  years_origin = data.table(years_origin=seq(1995,2010,1)) ##oldest non 0 value is 1995, since it all previous vehicles depreciated to 0
+  Cap_2010 = setkey(Cap_2010[, c(k=1, .SD)], k)[years_origin[, c(k=1,.SD)], allow.cartesian=TRUE][, k := NULL]
+  ## what survives in every year depends on when the sales were done and the years the car is old
+  Cap_2010[, year := years_origin + index_yearly]
+  Cap_2010 = Cap_2010[year>=2010, .(C_2010=sum(totdem)), by = c("iso","year","sector","subsector_L1")]
+  ## after the last year when 2010 sales disappear from the fleet, all values should be 0
+  tmp = CJ(year = seq(2026,2100,1), iso = unique(Cap_2010$iso), subsector_L1 = unique(Cap_2010$subsector_L1), sector = unique(Cap_2010$sector), C_2010 = 0)
+  Cap_2010 = rbind(Cap_2010, tmp)
 
-  ## the depreciation in time for the corresponding categories is given by:
-  Ddt_2010_new = find2010depreciation(Ddt, value_new)
-  Ddt_2010_old10 = find2010depreciation(Ddt, value_old10)
-  Ddt_2010_old15 = find2010depreciation(Ddt, value_old15)
-  Ddt_2010_mean = find2010depreciation(Ddt, value_mean)
-
-  ## the historical capacity from each group is found. Data from https://www.acea.be/uploads/statistic_documents/ACEA_Report_Vehicles_in_use-Europe_2018.pdf
-  Cap_2010new = find2010cap(0.05, dem = passdem,"new", Ddt_2010_new[, year:= tall])
-  Cap_2010old10 = find2010cap(0.1, dem = passdem, "old10", Ddt_2010_old10[, year:= tall[1:nrow(Ddt_2010_old10)]])
-  Cap_2010old15 = find2010cap(0.2, dem = passdem, "old15", Ddt_2010_old15[, year:= tall[1:nrow(Ddt_2010_old15)]])
-  Cap_2010mean = find2010cap(0.65, dem = passdem, "mean", Ddt_2010_mean[, year:= tall[1:nrow(Ddt_2010_mean)]])
-
-  ## find the total historical depreciation
-  Cap_2010 <- list(Cap_2010new, Cap_2010old10, Cap_2010old15, Cap_2010mean)
-  keys=c("iso","year","sector","subsector_L1")
-  Cap_2010 = lapply(Cap_2010, function(i) setkeyv(i, keys))
-  Cap_2010 <- Reduce(function(...) merge(..., all = T), Cap_2010)
-  Cap_2010[, C_2010 := C_2010new + C_2010old10 + C_2010old15 + C_2010mean][, c("C_2010new", "C_2010mean","C_2010old15", "C_2010old10") := NULL]
-
-  ## create vintages of base year capacity
   Vint = Cap_2010[year > baseyear]
+
   Vint[year == tall[tall>baseyear][1], vint := C_2010]
 
   ## five years time steps: only what happens every 5 years matters
