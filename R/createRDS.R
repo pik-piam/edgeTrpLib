@@ -39,6 +39,11 @@ createRDS <- function(input_path, SSP_scenario, EDGE_scenario){
             input_path = input_path,
             names_dt = c("year", "iso", "SSPscen", "EDGEscen", "sector", "subsector_L3", "subsector_L2", "subsector_L1", "vehicle_type", "technology", "entry", "sw"))
 
+    csv2RDS(pattern = "inconv",
+            filename = "inconv",
+            input_path = input_path,
+            names_dt = c("year", "iso", "SSPscen", "EDGEscen", "sector", "subsector_L3", "subsector_L2", "subsector_L1", "vehicle_type", "technology", "entry", "pinco"))
+
     csv2RDS(pattern = "logit_exponent",
             filename = "logit_exp",
             input_path = input_path,
@@ -66,4 +71,31 @@ createRDS <- function(input_path, SSP_scenario, EDGE_scenario){
             names_dt = c("year", "iso", "SSPscen", "EDGEscen", "sector", "subsector_L3", "subsector_L2", "subsector_L1", "vehicle_type", "technology", "entry", "non_fuel_price"))
 
   }
+
+
+  ## load input data
+  vot_data <- readRDS(datapath("VOT_iso.RDS"))
+  sw_data <- readRDS(datapath("SW.RDS"))
+  inco_data <- readRDS(datapath("inconv.RDS"))
+  logit_params <- readRDS(datapath("logit_exp.RDS"))
+  int_dat <- readRDS(datapath("harmonized_intensities.RDS"))
+  nonfuel_costs <- readRDS(datapath("UCD_NEC_iso.RDS"))
+  price_nonmot <- readRDS(datapath("price_nonmot.RDS"))
+
+  ## FIXME: hotfix to make the (empty) vot_data$value_time_VS1 with the right column types. Probably there is another way to do that, did not look for it.
+  vot_data$value_time_VS1$iso = as.character(vot_data$value_time_VS1$iso)
+  vot_data$value_time_VS1$subsector_L1 = as.character(vot_data$value_time_VS1$subsector_L1)
+  vot_data$value_time_VS1$vehicle_type = as.character(vot_data$value_time_VS1$vehicle_type)
+  vot_data$value_time_VS1$year = as.numeric(vot_data$value_time_VS1$year)
+  vot_data$value_time_VS1$time_price = as.numeric(vot_data$value_time_VS1$time_price)
+
+  output = list(vot_data = vot_data,
+                sw_data = sw_data,
+                inco_data = inco_data,
+                logit_params = logit_params,
+                int_dat = int_dat,
+                nonfuel_costs = nonfuel_costs,
+                price_nonmot = price_nonmot)
+
+  return(output)
 }
