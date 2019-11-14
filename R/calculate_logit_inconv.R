@@ -18,7 +18,6 @@ calculate_logitinconv <- function(prices,
                             full_data = F) {
   ## X2Xcalc is used to traverse the logit tree, calculating shares and intensities
   X2Xcalc <- function(prices, mj_km_data, level_base, level_next, group_value) {
-# browser()
     final_inco <- inco_data[[paste0(level_next, "_final_inconv")]]
     logit_exponent <- logit_params[[paste0("logit_exponent_", level_next)]]
 
@@ -34,8 +33,7 @@ calculate_logitinconv <- function(prices,
     ## joins the previous df with gathe df containing the sw
     df <- merge(df, final_inco, by=intersect( names(df),names(final_inco)), all.y=TRUE)
     ## delete entries that have a SW == 0 (not present in the mix) but have a non-fuel price since they exist as options
-    df <- df[ !(is.na(tot_price))]
-
+    df <- df[ !(is.na(tot_price)) & non_fuel_price>0]
     ## needs random lambdas for the sectors that are not explicitly calculated
     df <- df[ is.na(logit.exponent), logit.exponent := -10]
 
