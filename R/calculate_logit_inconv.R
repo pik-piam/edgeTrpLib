@@ -16,6 +16,7 @@ calculate_logitinconv <- function(prices,
                             intensity_data,
                             price_nonmot,
                             full_data = F) {
+
   ## X2Xcalc is used to traverse the logit tree, calculating shares and intensities
   X2Xcalc <- function(prices, mj_km_data, level_base, level_next, group_value) {
     final_inco <- inco_data[[paste0(level_next, "_final_inconv")]]
@@ -30,18 +31,20 @@ calculate_logitinconv <- function(prices,
     df <- merge(prices, logit_exponent,
                 by=intersect(names(prices), names(logit_exponent)), all.x = TRUE)
 
-    ## joins the previous df with gathe df containing the sw
+    ## joins the previous df with gathe df containing the inconvenience costs
     df <- merge(df, final_inco, by=intersect( names(df),names(final_inco)), all.y=TRUE)
-    ## delete entries that have a SW == 0 (not present in the mix) but have a non-fuel price since they exist as options
-    df <- df[ !(is.na(tot_price)) & non_fuel_price>0]
+    ## delete entries have tot_price NA (e.g. 1900 BEV)
+    df <- df[ !(is.na(tot_price))]
+    ## entries that are not present in the mix have non_fuel_price == 0, but also Walk and Cycle: delete all the not-present in the mix options
+    df <- df[(non_fuel_price>0)|(non_fuel_price==0 & subsector_L3 %in% c("Walk", "Cycle"))]
     ## needs random lambdas for the sectors that are not explicitly calculated
     df <- df[ is.na(logit.exponent), logit.exponent := -10]
 
-    ## calculate the shares given prices, lambda and sw
+    ## calculate the shares given prices, lambda and pinco
     df <- df[, share := (tot_price+pinco)^logit.exponent/(sum((tot_price+pinco)^logit.exponent)),
              by = c(group_value, "iso", "year")]
 
-    ## filter out NaNs that appear when SW=0 for all the choices in the nest
+    ## filter out NaNs that appear when there are no choices in the nest
     df <- df[ !is.nan(share),]
 
     ## merge value of time for the selected level and assign 0 to the entries that don't have it
