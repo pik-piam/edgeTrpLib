@@ -118,6 +118,7 @@ calculate_logit <- function(prices,
                       level_next = "FV",
                       group_value = "vehicle_type")
 
+    base <- base[, c("EJ_Mpkm_final", "fuel_price") := NULL]
     FV <- FV_all[[1]]
     MJ_km_FV <- FV_all[[2]]
     FV_shares <- FV_all[[3]][,.(share, iso, year, technology, vehicle_type, subsector_L1)]

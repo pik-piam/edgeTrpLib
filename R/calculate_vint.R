@@ -98,11 +98,12 @@ calcVint <- function(shares, totdem_regr, prices, mj_km_data, years){
     ## time step that is considered in the current iteration
     y = tall[tall>baseyear][i]
     ## starting value of capacity built up in the current year
-    Cval_t = merge(passdem[year == y, c("totdem", "iso", "subsector_L1", "sector")], Vint[year == y, c("vint", "iso", "subsector_L1", "sector")], by = c("iso", "subsector_L1", "sector"))
+    Cval_t = merge(passdem[year == y, c("totdem", "iso", "subsector_L1", "sector")], Vint[year == y, c("vint", "iso", "subsector_L1", "sector")],
+                   by = c("iso", "subsector_L1", "sector"))
     ## distinguish between the standard vintaging and the early retirement case (when the vintages are higher than the new additions)
     Cval_t = Cval_t[, check := ifelse(totdem-vint>0, "standardVintaging", "earlyRet"), by = c("iso", "subsector_L1", "sector")]
     Cval_t[check =="standardVintaging", C_t := totdem-vint]         ## for the standard vintaging, the new additions are total-vintages
-    ## early vintages assumes 5% new additions as firs step (95%vintages)
+    ## early vintages assumes 10% new additions as first step (90%vintages)
     perc=0.1
     Cval_t[check =="earlyRet", C_t := totdem - (1-perc)*totdem, by = c("iso", "subsector_L1", "sector")]            ## for the early retirement cases, half of the demand goes to new additions
     Cval_t[check =="earlyRet", decrease := (1-perc)*totdem/vint]         ## this is how much we need the vintages to contract
@@ -141,7 +142,6 @@ calcVint <- function(shares, totdem_regr, prices, mj_km_data, years){
     Vint = Vint[year == tall[tall>baseyear][i+1], vint := Reduce(`+`, .SD), .SDcols=c(listCol), by = c("iso", "subsector_L1", "sector")]
 
     }
-
   ## melt according to the columns of the "starting" year
   listCol <- colnames(Vint)[grep("C_", colnames(Vint))]
   Vint = melt(Vint, id.vars = c("year", "vint", "iso", "subsector_L1", "sector"), measure.vars = listCol)
@@ -199,7 +199,7 @@ calcVint <- function(shares, totdem_regr, prices, mj_km_data, years){
   price4W = prices$base[ subsector_L1 == "trn_pass_road_LDV_4W",]
   price4W[, variable := paste0("C_", year)] ## attribute to the column variable the year in wich the logit based value starts
   price4W_techtmp = copy(price4W) ## create a temporary copy, it is used not to delete the year column in the original dt
-  price4W_techtmp = price4W_techtmp[, c("year", "EJ_Mpkm_final", "tot_VOT_price", "tot_price", "fuel_price") := NULL]
+  price4W_techtmp = price4W_techtmp[, c("year", "tot_VOT_price", "tot_price") := NULL]
 
   ## calculate costs of the average vintage category
   vintcost = merge(price4W_techtmp,      ## costs of the technology depending on the original year
@@ -227,7 +227,7 @@ calcVint <- function(shares, totdem_regr, prices, mj_km_data, years){
   totcost = rbind(totcost, totcost[year == 2100][, year := 2110], totcost[year == 2100][, year := 2130], totcost[year == 2100][, year := 2150])
   ## updated values of FV_shares
   prices$base = merge(prices$base[(subsector_L1 != "trn_pass_road_LDV_4W")| (subsector_L1 == "trn_pass_road_LDV_4W" & year %in% c(1990, 2005,2010))],
-                totcost[year %in% years[years>baseyear], c("iso", "technology", "year", "vehicle_type", "subsector_L1", "subsector_L2", "subsector_L3", "sector", "non_fuel_price", "tot_price", "fuel_price", "fuel_price_pkm", "EJ_Mpkm_final", "tot_VOT_price", "sector_fuel")], by = names(prices$base), all = TRUE)
+                totcost[year %in% years[years>baseyear], c("iso", "technology", "year", "vehicle_type", "subsector_L1", "subsector_L2", "subsector_L3", "sector", "non_fuel_price", "tot_price", "fuel_price_pkm",  "tot_VOT_price", "sector_fuel")], by = names(prices$base), all = TRUE)
 
   ## calculate the average intensity of the fleet
   mj_km_data4W = mj_km_data[ subsector_L1 == "trn_pass_road_LDV_4W",]
