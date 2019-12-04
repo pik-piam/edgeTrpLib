@@ -65,10 +65,29 @@ shares_intensity_and_demand <- function(logit_shares,
             * 1e-12 # in EJ
             ]
 
+    ## plug in hybrids need to be redistributed on liquids and BEVs (on fuel consumtpion)
+    demandFPIH = demandF[technology == "Hybrid Electric"]
+    demandFPIH[, c("demand_EJel", "demand_EJliq") := list(0.4*demand_EJ, 0.6*demand_EJ)]
+    demandFPIH[, c("MJ_kmel", "MJ_kmliq") := list((demand_EJel+demand_EJliq)*MJ_km/demand_EJel, (demand_EJel+demand_EJliq)*MJ_km/demand_EJliq)]
+    demandFPIH[, c("demand_Fel", "demand_Fliq") := list(demand_EJel/(1e6*MJ_kmel*1e-12), demand_EJel/(1e6*MJ_kmliq*1e-12))]
+    demandFPIH[, c("demand_EJ", "demand_F", "technology", "sector_fuel", "MJ_kmel", "MJ_kmliq") := NULL]
+    demandFPIH = melt(demandFPIH, id.vars = c("iso", "sector", "year", "subsector_L3", "subsector_L2", "subsector_L1", "vehicle_type", "MJ_km"),
+                      measure.vars = c("demand_Fel", "demand_Fliq", "demand_EJel", "demand_EJliq"))
+    demandFPIH[, technology := ifelse(variable %in%  c("demand_Fel", "demand_EJel"), "BEV", "Liquids")]
+    demandFPIHEJ = demandFPIH[variable %in%  c("demand_EJliq", "demand_EJel")]
+    setnames(demandFPIHEJ, old = "value", new = "demand_EJ")
+    demandFPIHEJ[, variable := NULL]
+    demandFPIHF = demandFPIH[variable %in%  c("demand_Fliq", "demand_Fel")]
+    setnames(demandFPIHF, old = "value", new = "demand_F")
+    demandFPIHF[, variable := NULL]
+
+    demandFPIH = merge(demandFPIHF, demandFPIHEJ, all = TRUE)
+    demandFPIH[, sector_fuel := ifelse(technology =="BEV", "elect_td_trn", "refined liquids enduse")]
+    demandF = rbind(demandFPIH, demandF[technology != "Hybrid Electric"])
+
+
     demandF_plot_EJ = copy(demandF)
 
-
-    ## downscale to ISO level the pkm demand
     ## first I need to merge with a mapping that represents how the entries match to the CES
     demandF = merge(demandF, EDGE2CESmap, all=TRUE,
                   by = c("sector", "subsector_L3", "subsector_L2",

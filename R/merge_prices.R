@@ -82,6 +82,14 @@ merge_prices <- function(gdx, REMINDmapping, REMINDyears,
 
     tmp <- magpie2dt(tmp, regioncol = "region", yearcol = "year", datacols = "sector_fuel")
 
+    ## define plug in hybrid as consuming 60% liquids and 40% electricity
+    tmp_PIH <- tmp[sector_fuel %in% c("elect_td_trn", "refined liquids enduse")]
+    tmp_PIH[, pih := 0.6*value[sector_fuel == "refined liquids enduse"] + 0.4*value[sector_fuel == "elect_td_trn"], by = c("region", "year")]
+    tmp_PIH <- tmp_PIH[sector_fuel == "elect_td_trn"][, c("sector_fuel", "value") := list("Liquids-Electricity", NULL)]
+    setnames(tmp_PIH, old = "pih", new = "value")
+
+    tmp <- rbind(tmp, tmp_PIH)
+
     test <- tmp[year > 2005 & value <= 0]
     if(nrow(test)){
         print(paste("Zero Fuel Prices found. Regions:", unique(test$region)))

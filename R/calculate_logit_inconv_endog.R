@@ -154,7 +154,7 @@ calculate_logittime = function(prices,
                                       (pmax(-4*pinco[year==2010]*(shareFS1[year == futyears[which(futyears==t)-1]]-shareFS1[year == 2010])+ pinco[year==2010]))),
                                pinco), by = c("iso", cols)]
 
-        othertechs = setdiff(c("BEV", "FCEV", "Hybrid Liquids"), techswitch)
+        othertechs = setdiff(c("BEV", "FCEV", "Hybrid Liquids", "Hybrid Electric"), techswitch)
 
         tmp[, pinco:= ifelse(year == futyears[which(futyears==t)] & technology %in% othertechs & subsector_L1 == "trn_pass_road_LDV_4W",
                              ifelse(shareFS1[year == futyears[which(futyears==t)-1]]<marketsharepush & year>=2020,
@@ -168,7 +168,7 @@ calculate_logittime = function(prices,
                              pmax(-acceptancy*pinco[year==2010]*(shareFS1[year == futyears[which(futyears==t)-1]]-shareFS1[year == 2010])+pinco[year==2010],0),
                              pinco), by = c("iso", cols)]
 
-        othertechs = setdiff(c("BEV", "FCEV", "Hybrid Liquids"), techswitch)
+        othertechs = setdiff(c("BEV", "FCEV", "Hybrid Liquids", "Hybrid Electric"), techswitch)
 
         tmp[, pinco:= ifelse(year == futyears[which(futyears==t)] & technology %in% othertechs & subsector_L1 == "trn_pass_road_LDV_4W",
                              pmax(-5*pinco[year==2010]*(shareFS1[year == futyears[which(futyears==t)-1]]-shareFS1[year == 2010])+pinco[year==2010],0),
@@ -183,7 +183,7 @@ calculate_logittime = function(prices,
                                     (pmax(-acceptancy*pinco[year==2010]*(shareFS1[year == futyears[which(futyears==t)-1]]-shareFS1[year == 2010])+ pinco[year==2010],0))),
                              pinco), by = c("iso", cols)]
 
-        othertechs = setdiff(c("BEV", "FCEV", "Hybrid Liquids"), techswitch)
+        othertechs = setdiff(c("BEV", "FCEV", "Hybrid Liquids", "Hybrid Electric"), techswitch)
 
         tmp[, pinco:= ifelse(year == futyears[which(futyears==t)] & technology %in% othertechs & subsector_L1 == "trn_pass_road_LDV_4W",
                              ifelse(shareFS1[year == futyears[which(futyears==t)-1]]<marketsharepush & year>=2020,
@@ -200,7 +200,7 @@ calculate_logittime = function(prices,
                                   0),
                              pinco), by = c("iso", cols)]
 
-        othertechs = setdiff(c("BEV", "FCEV", "Hybrid Liquids"), techswitch)
+        othertechs = setdiff(c("BEV", "FCEV", "Hybrid Liquids", "Hybrid Electric"), techswitch)
 
         tmp[, pinco:= ifelse(year == futyears[which(futyears==t)] & technology %in% othertechs & subsector_L1 == "trn_pass_road_LDV_4W",
                              pmax(-4*
@@ -355,7 +355,6 @@ calculate_logittime = function(prices,
     return(list(df, MJ_km, df_shares))
 
   }
-
 
 
   ## FV load technology prices and merge with value of time (~technology price for
