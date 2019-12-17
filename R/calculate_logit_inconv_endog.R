@@ -1,10 +1,10 @@
-calculate_logittime = function(prices,
-                               vot_data,
-                               inco_data,
-                               logit_params,
-                               intensity_data,
-                               price_nonmot,
-                               full_data = F) {
+calculate_logittimeprova = function(prices,
+                                    vot_data,
+                                    inco_data,
+                                    logit_params,
+                                    intensity_data,
+                                    price_nonmot,
+                                    full_data = F) {
   ## X2Xcalc is used to traverse the logit tree, calculating shares and intensities
   X2Xcalc <- function(prices, mj_km_data, level_base, level_next, group_value) {
     final_inco <- inco_data[[paste0(level_next, "_final_inconv")]]
@@ -90,6 +90,8 @@ calculate_logittime = function(prices,
     ## data contains all the prices in the beginning
     all_subsectors <- c("technology", "vehicle_type", "subsector_L1", "subsector_L2",
                         "subsector_L3", "sector")
+    ## clusters of technologies: BEV and PlugInH are together
+    mapcluster = data.table(cluster = c("Electric", "Electric", "Liquids", "Hybrid Liquids", "NG", "Hydrogen"), technology = c("BEV", "Hybrid Electric", "Liquids", "Hybrid Liquids", "NG", "FCEV"))
     ## takes the right files using the names as inputs
     value_time <- vot_data[[paste0("value_time_FV")]]
     ## joins the df containing the prices with the df containing the logit exponents
@@ -105,158 +107,241 @@ calculate_logittime = function(prices,
     ## needs random lambdas for the sectors that are not explicitly calculated
     df <- df[ is.na(logit.exponent), logit.exponent := -10]
 
-    cols <- all_subsectors[seq(match(group_value, all_subsectors) - 1,length(all_subsectors), 1)]
+    ## define the years on which the inconvenience price will be calculated on the basis of the previous time steps sales
+    futyears_all = seq(2010, 2100, 1)
 
-    futyears = years[years>=2010 & years <= 2110]
+    ## all modes other then 4W calculated with exogenous inconvenience costs
+    dfother = df[subsector_L1 != "trn_pass_road_LDV_4W", c("iso", "year", "subsector_L2", "subsector_L3", "sector", "subsector_L1", "vehicle_type", "technology", "tot_price", "logit.exponent", "pinco", "tot_VOT_price", "fuel_price_pkm", "non_fuel_price")]
+
+    ## 4W are calculated separately
+    df4W = df[subsector_L1 == "trn_pass_road_LDV_4W", c("iso", "year", "subsector_L1", "vehicle_type", "technology", "tot_price", "logit.exponent")]
+
+    ## extrapolate for all years
+    setnames(df4W, old = "tot_price", new = "value") ## rename otherwise approx_dt complains
+    df4W = approx_dt(dt = df4W, xdata = futyears_all,
+                            idxcols = c("iso",  "subsector_L1", "vehicle_type", "technology"),
+                            extrapolate=T)
+    setnames(df4W, old = "value", new = "tot_price")  ## rename back
+
+    ## other price components for 4W are useful later but will not be carried on in the yearly calculation
+    dfprices4W = df[subsector_L1 == "trn_pass_road_LDV_4W",  c("iso", "year", "subsector_L1", "vehicle_type", "technology", "fuel_price_pkm", "non_fuel_price")]
+
+    ## starting value for inconvenience cost of 2010 for 4W is needed as a starting point for the iterative calculations
+    dfpinco2010 = df[subsector_L1 == "trn_pass_road_LDV_4W" & year == 2010, c("iso", "subsector_L1", "vehicle_type", "technology", "pinco")]
+
+    ## merge the yearly values and the starting inconvenience cost
+    df = merge(df4W, dfpinco2010, all = TRUE, by = c("iso", "subsector_L1", "vehicle_type", "technology"))
+    ## apply the same logit exponent to all the years
+    df[, logit.exponent := ifelse(is.na(logit.exponent), mean(logit.exponent, na.rm = TRUE), logit.exponent), by = c("vehicle_type")]
+
+    ## for 4W the value of V->S1 market shares is needed on a yearly basis
+    final_incoVS1cp = final_incoVS1[subsector_L1 == "trn_pass_road_LDV_4W"]
+    setnames(final_incoVS1cp, old = "pinco", new = "value") ## rename otherwise approx_dt complains
+    final_incoVS1cp = approx_dt(dt = final_incoVS1cp, xdata = futyears_all,
+                   idxcols = c("iso", "vehicle_type", "subsector_L1", "subsector_L2", "subsector_L3", "sector"),
+                   extrapolate=T)
+    setnames(final_incoVS1cp, old = "value", new = "pinco")  ## rename back
+
+    ## initialize values needed for the for loop
+    tmp2past = NULL
     tmp1 = df[year <2010,]
     tmp1[, share := NA]
-    for (t in futyears[futyears>2010]) {
-      if (t > 2015) {
-        tmp2 <- df[year %in% c(futyears[which(futyears==t)]),]
-        tmp2[, share := NA]
-        tmp <- rbind(tmp2, tmp1[year %in% c(futyears[which(futyears==t)-1]),])
-        # print(tmp[iso=="ARM" & vehicle_type =="3W Rural"])
-        } else {
-          tmp <- df[year %in% c(futyears[which(futyears==t)-1], futyears[which(futyears==t)]),]
-        }
-      tmp <- tmp[year == futyears[which(futyears==t)-1], share := (tot_price+pinco)^logit.exponent/(sum((tot_price+pinco)^logit.exponent)),
-                   by = c(group_value, "year", "iso")]
-      tmp2 <- tmp[year==futyears[which(futyears==t)-1] & subsector_L1=="trn_pass_road_LDV_4W"]
-      tmp2 <- tmp2[,.(tot_price=sum(share*tot_price)),
-                   by = c("iso","year",
-                          all_subsectors[seq(match(group_value,all_subsectors),length(all_subsectors),1)]
-                          )]
-      ## joins the previous df with gathe df containing the inconvenience costs
-      tmp2 <- merge(tmp2, final_incoVS1, by=intersect( names(tmp2),names(final_incoVS1)), all.x=TRUE)
 
+    ## define the weight that has to be attributed to each year
+    paux = 15   ## approximate lifetime of a car
+    Ddt = data.table(index_yearly = seq(1,paux,1))
+    Ddt[, D := 1-((index_yearly-0.5)/paux)^4]
+    Ddt[, D := ifelse(D<0,0,D)]
+
+
+    for (t in futyears_all[futyears_all>2010]) {
+      if (t > 2011) {
+        tmp <- df[year == t,][, c("share") := NA]
+        tmp <- merge(tmp, tmp1, all = TRUE, by = intersect(names(tmp), names(tmp1)))
+      } else {
+        tmp <- df[year %in% c(2010, 2011),]
+      }
+      tmp <- tmp[year == (t-1), share := (tot_price+pinco)^logit.exponent/(sum((tot_price+pinco)^logit.exponent)),
+                 by = c(group_value, "year", "iso")]
+      tmp2 <- tmp[year == (t-1)]
+      tmp2 <- tmp2[,.(tot_price=sum(share*tot_price)),
+                   by = c("iso","year","vehicle_type","subsector_L1")]
+
+      ## calculate the average share FS1 (the vehicle type is not important)
+      tmp2 <- merge(tmp2, final_incoVS1cp, by=intersect( names(tmp2),names(final_incoVS1)), all.x=TRUE)
       tmp2 <- merge(tmp2, logit_exponentVS1,
                     by=intersect(names(tmp2), names(logit_exponentVS1)), all.x = TRUE)
-
-      tmp2 <- tmp2[year == futyears[which(futyears==t)-1], shareVS1 := (tot_price+pinco)^logit.exponent/(sum((tot_price+pinco)^logit.exponent)),
+      tmp2 <- tmp2[, shareVS1 := (tot_price+pinco)^logit.exponent/(sum((tot_price+pinco)^logit.exponent)),
                    by = c("subsector_L1", "year", "iso")]
       tmp2 <- tmp2[,.(subsector_L1, year, iso, vehicle_type, shareVS1)]
 
-      tmp2 <- merge(tmp2, tmp, by = c("iso", "year", "vehicle_type", "subsector_L1"))
-      tmp2[, share := share*shareVS1]
-      ## calculate the share of all technologies on the subsector_L1 (I don't care anymore about the vehicle_type)
-      tmp2 <- tmp2[,.(shareFS1=sum(share)),by=c("iso","technology","subsector_L1","year")]
+      ## attribute the cluster to each "group" (hybrid liquids and liquids are for the first part of the loop independent)
+      tmp2 <- merge(tmp2, tmp[year %in% (t-1),], by = c("iso", "year", "vehicle_type", "subsector_L1"))
+      tmp2[technology %in% c("BEV", "Hybrid Electric"), cluster := "Electric"]
+      tmp2[technology %in% c("Liquids"), cluster := "Liquids"]
+      tmp2[technology %in% c("Hybrid Liquids"), cluster := "Hybrid Liquids"]
+      tmp2[technology %in% c("NG"), cluster := "NG"]
+      tmp2[technology %in% c("FCEV"), cluster := "Hydrogen"]
+      ## calculate the share from the cluster to S1 (CS1)
+      tmp2[, shareCS1 := share*shareVS1]
 
-      tmp <- merge(tmp,tmp2, by=c("technology", "year", "iso", "subsector_L1"), all=TRUE)
-      if (t >2015) {
-        tmp = rbind(tmp, tmp2010)
+      ## calculate the share of all Clusters on the subsector_L1 (I don't care anymore about the vehicle_type)
+      tmp2 <- tmp2[,.(shareCS1=sum(shareCS1)),by=c("iso", "cluster", "subsector_L1","year")]
+      ## attribute the same (cluster) value to every (cluster) member
+      tmp2 <- merge(tmp2, mapcluster, all = TRUE, by = "cluster", allow.cartesian = TRUE)
+
+
+      ## merge with previous years' values
+      if (!is.null(tmp2past)) {
+        tmp3 <- rbind(tmp2, tmp2past)
+      } else {
+        tmp3 <- copy(tmp2)
       }
 
-      if (selfmarket_policypush & !selfmarket_acceptancy ) {
-        marketsharepush = 0.1
-        tmp[, pinco:= ifelse(year == futyears[which(futyears==t)] & technology %in% techswitch & subsector_L1 == "trn_pass_road_LDV_4W",
-                               ifelse(shareFS1[year == futyears[which(futyears==t)-1]]<marketsharepush & year>=2020,
-                                      (pmax(-4*pinco[year==2010]*(shareFS1[year == futyears[which(futyears==t)-1]]-shareFS1[year == 2010] + marketsharepush)+pinco[year==2010],0)),
-                                      (pmax(-4*pinco[year==2010]*(shareFS1[year == futyears[which(futyears==t)-1]]-shareFS1[year == 2010])+ pinco[year==2010]))),
-                               pinco), by = c("iso", cols)]
+      ## save the values of the past for the next iteration
+      tmp2past <- copy(tmp3)
 
-        othertechs = setdiff(c("BEV", "FCEV", "Hybrid Liquids", "Hybrid Electric"), techswitch)
+      ## merge the CS1 shares to the FV shares
+      tmp <- merge(tmp,tmp3, by= c("technology", "year", "iso", "subsector_L1"), all=TRUE)
 
-        tmp[, pinco:= ifelse(year == futyears[which(futyears==t)] & technology %in% othertechs & subsector_L1 == "trn_pass_road_LDV_4W",
-                             ifelse(shareFS1[year == futyears[which(futyears==t)-1]]<marketsharepush & year>=2020,
-                                    (pmax(-4*pinco[year==2010]*(shareFS1[year == futyears[which(futyears==t)-1]]-shareFS1[year == 2010] + marketsharepush)+pinco[year==2010],0)),
-                                    (pmax(-4*pinco[year==2010]*(shareFS1[year == futyears[which(futyears==t)-1]]-shareFS1[year == 2010])+ pinco[year==2010]))),
-                             pinco), by = c("iso", cols)]
+      ## find depreciation to attribute to each time step
+      Ddt1 = copy(Ddt)
+      Ddt1 = Ddt1[, year := seq(t-1,t-paux,-1)]
+      Ddt1 = Ddt1[year>=2010]
 
-      } else if (selfmarket_acceptancy & !selfmarket_policypush) {
-        acceptancy = 5 ## meaning: reaches 0 inconvenience cost at 1/4=0.25 market share
-        tmp[, pinco:= ifelse(year == futyears[which(futyears==t)] & technology %in% techswitch & subsector_L1 == "trn_pass_road_LDV_4W",
-                             pmax(-acceptancy*pinco[year==2010]*(shareFS1[year == futyears[which(futyears==t)-1]]-shareFS1[year == 2010])+pinco[year==2010],0),
-                             pinco), by = c("iso", cols)]
+      tmp = merge(tmp, Ddt1, all.x = TRUE, by = "year")
+      tmp[is.na(D), D := 0]
+      tmp[is.na(shareCS1), shareCS1 := 0]
 
-        othertechs = setdiff(c("BEV", "FCEV", "Hybrid Liquids", "Hybrid Electric"), techswitch)
+      ## weighted shares are the weighted average of each time step's CS1 share and how much it depreciated in time
+      tmp[, weighted_shares := mean(shareCS1*D), by = c("iso", "cluster", "vehicle_type", "subsector_L1", "year")]
+      ## for 2010, we assume the value was constant for all the previous years (hence the value for 2010 coincides with the share)
+      tmp[, weighted_sharessum := ifelse(year == 2010, weighted_shares, NA)]
+      print(paste0("time is ", t))
+      tmp[, weighted_sharessum := ifelse(year == (t-1), sum(weighted_shares[year<t])/sum(D[year<t]), weighted_sharessum), by = c("iso", "technology", "vehicle_type", "subsector_L1")]
 
-        tmp[, pinco:= ifelse(year == futyears[which(futyears==t)] & technology %in% othertechs & subsector_L1 == "trn_pass_road_LDV_4W",
-                             pmax(-5*pinco[year==2010]*(shareFS1[year == futyears[which(futyears==t)-1]]-shareFS1[year == 2010])+pinco[year==2010],0),
-                             pinco), by = c("iso", cols)]
+      if (selfmarket_acceptancy & selfmarket_policypush) {
 
-      } else if (selfmarket_acceptancy & selfmarket_policypush) {
-        acceptancy = 5 ## meaning: reaches 0 inconvenience cost at 1/4=0.25 market share
-        marketsharepush = 0.1
-        tmp[, pinco:= ifelse(year == futyears[which(futyears==t)] & technology %in% techswitch & subsector_L1 == "trn_pass_road_LDV_4W",
-                             ifelse(shareFS1[year == futyears[which(futyears==t)-1]]<marketsharepush & year>=2020,
-                                    (pmax(-acceptancy*pinco[year==2010]*(shareFS1[year == futyears[which(futyears==t)-1]]-shareFS1[year == 2010] + marketsharepush)+pinco[year==2010],0)),
-                                    (pmax(-acceptancy*pinco[year==2010]*(shareFS1[year == futyears[which(futyears==t)-1]]-shareFS1[year == 2010])+ pinco[year==2010],0))),
-                             pinco), by = c("iso", cols)]
-
-        othertechs = setdiff(c("BEV", "FCEV", "Hybrid Liquids", "Hybrid Electric"), techswitch)
-
-        tmp[, pinco:= ifelse(year == futyears[which(futyears==t)] & technology %in% othertechs & subsector_L1 == "trn_pass_road_LDV_4W",
-                             ifelse(shareFS1[year == futyears[which(futyears==t)-1]]<marketsharepush & year>=2020,
-                                    (pmax(-5*pinco[year==2010]*(shareFS1[year == futyears[which(futyears==t)-1]]-shareFS1[year == 2010] + marketsharepush)+pinco[year==2010],0)),
-                                    (pmax(-5*pinco[year==2010]*(shareFS1[year == futyears[which(futyears==t)-1]]-shareFS1[year == 2010])+ pinco[year==2010],0))),
-                             pinco), by = c("iso", cols)]
+        acceptancy = 5 ## meaning: reaches 0 inconvenience cost at 1/5=0.2 market share
+        marketsharepush = 0.05
+        additional_inconv_liq = 0.1 ## inconvenience for ICE increases
 
       } else {
-        tmp[, pinco:= ifelse(year == futyears[which(futyears==t)]& technology %in% techswitch  & subsector_L1 == "trn_pass_road_LDV_4W",
-                             pmax(-4*
-                                    pinco[year==2010]*
-                                    (shareFS1[year == futyears[which(futyears==t)-1]]-shareFS1[year == 2010])+
-                                    pinco[year==2010],
-                                  0),
-                             pinco), by = c("iso", cols)]
 
-        othertechs = setdiff(c("BEV", "FCEV", "Hybrid Liquids", "Hybrid Electric"), techswitch)
-
-        tmp[, pinco:= ifelse(year == futyears[which(futyears==t)] & technology %in% othertechs & subsector_L1 == "trn_pass_road_LDV_4W",
-                             pmax(-4*
-                                    pinco[year==2010]*
-                                    (shareFS1[year == futyears[which(futyears==t)-1]]-shareFS1[year == 2010])+
-                                    pinco[year==2010],
-                                  0),
-                             pinco), by = c("iso", cols)]
+        acceptancy = 10 ## meaning: reaches 0 inconvenience cost at 1/10=0.1 market share
+        marketsharepush = 0
+        additional_inconv_liq = 0 ## inconvenience for ICE increases
 
       }
 
-      tmp[, pinco:= ifelse(year == futyears[which(futyears==t)]& technology %in% c("Liquids")  & subsector_L1 == "trn_pass_road_LDV_4W",
-                           ifelse(shareFS1[year == futyears[which(futyears==t)-1]]>0.2 & year>=2020,pinco[year==2010], pmin(1.25*
-                                  0.4*
-                                  (-shareFS1[year == futyears[which(futyears==t)-1]]+shareFS1[year == 2010]),
-                                0.4)),
-                           pinco), by = c("iso", cols)]
+      ## attribute inconvenience update to the "policy focused" technology
+      tmp[, pinco:= ifelse(year == t & technology %in% techswitch,
+                           pmax(-acceptancy*pinco[year==2010]*(weighted_sharessum[year == (t-1)] - weighted_sharessum[year == 2010] + ifelse(year > 2020, marketsharepush, 0))+pinco[year==2010],0),
+                           pinco), by = c("iso", "technology", "vehicle_type", "subsector_L1")]
 
-      tmp[, pinco:= ifelse(year == futyears[which(futyears==t)]& technology=="NG"  & subsector_L1 == "trn_pass_road_LDV_4W",
-                           pmax(-4*
+      othertechs = setdiff(c("BEV", "FCEV", "Hybrid Electric"), techswitch)
+
+      ## all other alternative technologies have benefits
+      tmp[, pinco:= ifelse(year == t & technology %in% othertechs,
+                           pmax(-5*pinco[year==2010]*(weighted_sharessum[year == (t-1)] - weighted_sharessum[year == 2010] + ifelse(year > 2020, 2/3*marketsharepush, 0))+pinco[year==2010],0),
+                           pinco), by = c("iso", "technology", "vehicle_type", "subsector_L1")]
+
+      ## hybrid liquids and liquids belong to the same "uppercluster" (because they need to be independent on the cluster level)
+      tmp=tmp[technology=="Hybrid Liquids", uppercluster := "Liq"]
+      tmp=tmp[technology=="Liquids", uppercluster := "Liq"]
+      tmp[is.na(uppercluster), uppercluster:= technology]
+
+      ## hybrid liquids are "an alternative tehnology" until there are a few of them
+      tmp[, pinco:= ifelse(year == t & technology %in% c("Hybrid Liquids"),
+                           ifelse(shareCS1[year == (t-1)]<0.2,
+                                  pmax(-5*pinco[year==2010]*
+                                         (weighted_sharessum[year == (t-1)]-weighted_sharessum[year == 2010])+
+                                         pinco[year==2010],ifelse(t>=2020,additional_inconv_liq,0)),
+                                  NA
+                           ),pinco),
+          by = c("iso", "technology", "vehicle_type", "subsector_L1")]
+
+      ## hybrid liquids become a "conventional technology" if there is scarcity of refuelling stations (when there are little conventional+hybrid liquids):
+      ## I need to define a column that represents the combined share of Hybrid Liquids and Liquids
+      tmp[, combined_share:= sum(weighted_sharessum), by = c("iso", "vehicle_type", "subsector_L1", "uppercluster", "year")]
+
+
+      ## until Liquids are well established they don't have inconvenience, unless exogenously driven by policies
+      tmp[, pinco:= ifelse(year == t & technology %in% c("Hybrid Liquids") &
+                             shareCS1[year == (t-1)] >0.2 &
+                             combined_share[year == (t-1)]>0.2,
+                                  pinco[year == (t-1)] + ifelse(t>=2020,additional_inconv_liq,0),
+                                  pinco
+                           ),
+          by = c("iso", "technology", "vehicle_type", "subsector_L1")]
+
+
+      ## hybrid liquids become a "conventional technology" if there is scarcity of refuelling stations (when there are little conventional+hybrid liquids)
+      tmp[, pinco:= ifelse(year == t & technology %in% c("Hybrid Liquids"),
+                           ifelse(is.na(pinco),
+                                  pmax(-5*(pinco[year==2010]+ifelse(t>=2020,additional_inconv_liq,0))*
+                                         (combined_share[year == (t-1) & technology == "Hybrid Liquids"])+
+                                         pinco[year==2010]+ifelse(t>=2020,additional_inconv_liq,0),
+                                    0.3+ifelse(t>=2020,additional_inconv_liq,0)),
+                                  pinco),
+                           pinco),
+          by = c("iso", "vehicle_type", "subsector_L1", "uppercluster")]
+
+      ## until Liquids are well established they don't have inconvenience, unless exogenously driven by policies
+      tmp[, pinco:= ifelse(year == t & technology %in% c("Liquids"),
+                           ifelse(combined_share[year == (t-1) & technology == "Liquids"]>0.2,
+                                  pinco[year==2010] + ifelse(t>=2020,additional_inconv_liq,0),
+                                  NA
+                           ),pinco),
+          by = c("iso", "technology", "vehicle_type", "subsector_L1")]
+
+      ## when they become less established, they have increasing inconvenience
+      tmp[, pinco:= ifelse(year == t & technology %in% c("Liquids"),
+                           ifelse(is.na(pinco),
+                                  pmax(-5*(0.3+ifelse(t>=2020,additional_inconv_liq,0))*
+                                         (combined_share[year == (t-1) & technology == "Liquids"])+
+                                         0.3+ifelse(t>=2020,additional_inconv_liq,0),
+                                       0),
+                                  pinco
+                           ),pinco),
+          by = c("iso","vehicle_type", "subsector_L1", "uppercluster" )]
+
+      ## Hybrid Electric partially suffer from lack of infrastructure of Liquids
+      tmp[, pinco:= ifelse(year == t & technology == "Hybrid Electric" & combined_share[year == (t-1) & technology == "Liquids"]<0.2,
+                                  pinco[year == (t) & technology == "Liquids"],
+                           pinco),
+          by = c("iso", "vehicle_type", "subsector_L1")]
+
+      ## NG is not incentivized but its inconvenience cost is allowed to decrease
+      tmp[, pinco:= ifelse(year == t & technology %in% c("NG"),
+                           pmax(-5*
                                   pinco[year==2010]*
-                                  (shareFS1[year == futyears[which(futyears==t)-1]]-shareFS1[year == 2010])+
+                                  (weighted_sharessum[year == (t-1)]-weighted_sharessum[year == 2010])+
                                   pinco[year==2010],
                                 0),
-                           pinco), by = c("iso", cols)]
+                           pinco), by = c("iso", "technology", "vehicle_type", "subsector_L1")]
 
+      ## remove "temporary" columns
+      tmp[, c("uppercluster", "combined_share","shareCS1","D", "weighted_shares", "weighted_sharessum", "cluster", "index_yearly") := NULL]
 
-      if(t==2015){
-        tmp2010 = tmp[year == 2010]
+      if (t<tail(futyears_all,1)) {
+        tmp1 = copy(tmp)
       }
 
-      if(t>2015){
-        tmp = tmp[year>2010]
-      }
+    }
 
+    tmp1 <- tmp1[year == 2100, share := (tot_price+pinco)^logit.exponent/(sum((tot_price+pinco)^logit.exponent)),
+                 by = c(group_value, "year", "iso")]
 
+    tmp1[, c("subsector_L2", "subsector_L3", "sector", "tot_VOT_price") := list("trn_pass_road_LDV", "trn_pass_road", "trn_pass", 0)]
 
-
-      tmp[, shareFS1 := NULL]
-
-      if (t > 2015) {
-        tmp1 <-rbind(tmp1[year != futyears[which(futyears==t)-1]], tmp)
-        } else {
-          tmp1 <- rbind(tmp1,tmp)
-        }
-      }
-
-    tmp1 <- tmp1[, share := (tot_price+pinco)^logit.exponent/(sum((tot_price+pinco)^logit.exponent)),
-                   by = c(group_value, "year", "iso")]
-
-    df <- tmp1
-
+    tmp1 = merge(tmp1[year %in% unique(dfother$year)], dfprices4W, all = TRUE, by = intersect(names(tmp1), names(dfprices4W)))
+    df <- rbind(dfother[, share := NA], tmp1)
 
     ## merge value of time for the selected level and assign 0 to the entries that don't have it
     df <- merge(df, value_time, by=intersect(names(df),names(value_time)), all.x=TRUE)
-
+    df[is.na(share), share := (tot_price+pinco)^logit.exponent/(sum((tot_price+pinco)^logit.exponent)),
+       by = c(group_value, "year", "iso")]
 
     inconv=copy(df[,.(year,iso,sector,subsector_L3,subsector_L2,subsector_L1,vehicle_type,technology,pinco)])
 
@@ -403,8 +488,8 @@ calculate_logittime = function(prices,
 
 
   FV_all <- F2Vcalc(prices = base,
-                      mj_km_data,
-                      group_value = "vehicle_type")
+                    mj_km_data,
+                    group_value = "vehicle_type")
   FV <- FV_all[[1]]
   MJ_km_FV <- FV_all[[2]]
   FV_shares <- FV_all[[3]]
