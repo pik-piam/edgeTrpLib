@@ -1,4 +1,4 @@
-calculate_logittimeprova = function(prices,
+calculate_logit_inconv_endog = function(prices,
                                     vot_data,
                                     inco_data,
                                     logit_params,
@@ -108,9 +108,8 @@ calculate_logittimeprova = function(prices,
 
     ## define the years on which the inconvenience price will be calculated on the basis of the previous time steps sales
     futyears_all = seq(2010, 2100, 1)
-
     ## all modes other then 4W calculated with exogenous inconvenience costs
-    dfother = df[subsector_L1 != "trn_pass_road_LDV_4W", c("iso", "year", "subsector_L2", "subsector_L3", "sector", "subsector_L1", "vehicle_type", "technology", "tot_price", "logit.exponent", "pinco", "tot_VOT_price", "fuel_price_pkm", "non_fuel_price")]
+    dfother = df[(subsector_L1 != "trn_pass_road_LDV_4W")|(subsector_L1 == "trn_pass_road_LDV_4W" & year < 2010), c("iso", "year", "subsector_L2", "subsector_L3", "sector", "subsector_L1", "vehicle_type", "technology", "tot_price", "logit.exponent", "pinco", "tot_VOT_price", "fuel_price_pkm", "non_fuel_price")]
 
     ## 4W are calculated separately
     df4W = df[subsector_L1 == "trn_pass_road_LDV_4W", c("iso", "year", "subsector_L1", "vehicle_type", "technology", "tot_price", "logit.exponent")]
@@ -123,7 +122,7 @@ calculate_logittimeprova = function(prices,
     setnames(df4W, old = "value", new = "tot_price")  ## rename back
 
     ## other price components for 4W are useful later but will not be carried on in the yearly calculation
-    dfprices4W = df[subsector_L1 == "trn_pass_road_LDV_4W",  c("iso", "year", "subsector_L1", "vehicle_type", "technology", "fuel_price_pkm", "non_fuel_price")]
+    dfprices4W = df[subsector_L1 == "trn_pass_road_LDV_4W" & year >= 2010,  c("iso", "year", "subsector_L1", "vehicle_type", "technology", "fuel_price_pkm", "non_fuel_price")]
 
     ## starting value for inconvenience cost of 2010 for 4W is needed as a starting point for the iterative calculations
     dfpinco2010 = df[subsector_L1 == "trn_pass_road_LDV_4W" & year == 2010, c("iso", "subsector_L1", "vehicle_type", "technology", "pinco")]
@@ -333,7 +332,9 @@ calculate_logittimeprova = function(prices,
                                 0),
                            pinco), by = c("iso", "technology", "vehicle_type", "subsector_L1")]
 
-      saveRDS(tmp, level1path("yearly_values_sales.RDS"))
+      if (t == 2100) {
+        saveRDS(tmp, level1path("yearly_values_sales.RDS"))
+      }
 
       ## remove "temporary" columns
       tmp[, c("cluster", "combined_shareEL", "combined_shareLiq", "shareFS1","D", "weighted_shares", "weighted_sharessum", "index_yearly") := NULL]
@@ -344,10 +345,8 @@ calculate_logittimeprova = function(prices,
 
     }
 
-
-
-    tmp1 <- tmp1[year == 2100, share := (tot_price+pinco)^logit.exponent/(sum((tot_price+pinco)^logit.exponent)),
-                 by = c(group_value, "year", "iso")]
+    tmp1 <- tmp[, share := (tot_price+pinco)^logit.exponent/(sum((tot_price+pinco)^logit.exponent)),
+                 by = c("vehicle_type", "year", "iso")]
 
     tmp1[, c("subsector_L2", "subsector_L3", "sector", "tot_VOT_price") := list("trn_pass_road_LDV", "trn_pass_road", "trn_pass", 0)]
 
@@ -356,7 +355,7 @@ calculate_logittimeprova = function(prices,
 
     ## merge value of time for the selected level and assign 0 to the entries that don't have it
     df <- merge(df, value_time, by=intersect(names(df),names(value_time)), all.x=TRUE)
-    df[is.na(share), share := (tot_price+pinco)^logit.exponent/(sum((tot_price+pinco)^logit.exponent)),
+    df[, share := ifelse(is.na(share),(tot_price+pinco)^logit.exponent/(sum((tot_price+pinco)^logit.exponent)), share),
        by = c(group_value, "year", "iso")]
 
     inconv=copy(df[,.(year,iso,sector,subsector_L3,subsector_L2,subsector_L1,vehicle_type,technology,pinco)])
@@ -506,7 +505,6 @@ calculate_logittimeprova = function(prices,
                         mj_km_dataEF)
 
   }
-
 
   FV_all <- F2Vcalc(prices = base,
                     mj_km_data,

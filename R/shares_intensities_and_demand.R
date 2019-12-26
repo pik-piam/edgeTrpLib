@@ -14,7 +14,6 @@ shares_intensity_and_demand <- function(logit_shares,
                                         scenario,
                                         demand_input=NULL,
                                         REMIND2ISO_MAPPING=NULL){
-
     ## load the shares at each level
     S3S_shares <- logit_shares[["S3S_shares"]]
     S2S3_shares <- logit_shares[["S2S3_shares"]]
@@ -84,6 +83,8 @@ shares_intensity_and_demand <- function(logit_shares,
     demandFPIH = merge(demandFPIHF, demandFPIHEJ, all = TRUE)
     demandFPIH[, sector_fuel := ifelse(technology =="BEV", "elect_td_trn", "refined liquids enduse")]
     demandF = rbind(demandFPIH, demandF[technology != "Hybrid Electric"])
+    demandF = demandF[,.(demand_EJ = sum(demand_EJ), demand_F = sum(demand_F)),
+            by = c("year","iso", "sector", "subsector_L3", "subsector_L2","subsector_L1", "vehicle_type", "technology")]
 
 
     demandF_plot_EJ = copy(demandF)
