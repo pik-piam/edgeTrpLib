@@ -82,7 +82,6 @@ calculate_logit_inconv_endog = function(prices,
 
 
   F2Vcalc <- function(prices, mj_km_data, group_value) {
-
     final_incoFV <- inco_data[["FV_final_inconv"]]
     final_incoVS1 <- inco_data[["VS1_final_inconv"]]
     logit_exponentFV <- logit_params[["logit_exponent_FV"]]
@@ -130,6 +129,7 @@ calculate_logit_inconv_endog = function(prices,
     ## merge the yearly values and the starting inconvenience cost
     df = merge(df4W, dfpinco2010, all = TRUE, by = c("iso", "subsector_L1", "vehicle_type", "technology"))
     ## apply the same logit exponent to all the years
+    df[, logit.exponent := as.double(logit.exponent)]
     df[, logit.exponent := ifelse(is.na(logit.exponent), mean(logit.exponent, na.rm = TRUE), logit.exponent), by = c("vehicle_type")]
 
     ## for 4W the value of V->S1 market shares is needed on a yearly basis
@@ -334,6 +334,7 @@ calculate_logit_inconv_endog = function(prices,
 
       if (t == 2100) {
         saveRDS(tmp, level1path("yearly_values_sales.RDS"))
+        saveRDS(tmp, levelVWpath(scenarioVW = techswitch, "yearly_values_sales.RDS"))
       }
 
       ## remove "temporary" columns
