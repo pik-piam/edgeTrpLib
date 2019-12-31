@@ -332,8 +332,8 @@ calculate_logit_inconv_endog = function(prices,
                                 0),
                            pinco), by = c("iso", "technology", "vehicle_type", "subsector_L1")]
 
-      if (t == 2100) {
-        saveRDS(tmp, level1path("yearly_values_sales.RDS"))
+      ## if I want to make a reporting, I need the temporary input to be saved
+      if (t == 2100 & savetpminput) {
         saveRDS(tmp, levelVWpath(scenarioVW = techswitch, "yearly_values_sales.RDS"))
       }
 
