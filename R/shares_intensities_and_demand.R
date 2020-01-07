@@ -52,6 +52,9 @@ shares_intensity_and_demand <- function(logit_shares,
     demand = merge(demand, FV_shares, all=TRUE, by = c("iso", "year", "subsector_L1", "vehicle_type"))
     demand = demand[,.(demand_F = demand_V*share, iso, sector, year, subsector_L3, subsector_L2, subsector_L1, vehicle_type, technology)]
 
+    ## put aside the non motorized modes
+    demandNM = demand[subsector_L3 %in% c("Cycle", "Walk")]
+
     ## Calculate demand in EJ
     ## merge the demand in pkm with the energy intensity
     demandF = merge(demand, MJ_km_base, all=FALSE, by = c("iso", "sector", "year", "subsector_L3", "subsector_L2", "subsector_L1", "vehicle_type", "technology"))
@@ -83,8 +86,7 @@ shares_intensity_and_demand <- function(logit_shares,
     demandF = rbind(demandFPIH[,MJ_km := NULL], demandF[technology != "Hybrid Electric"][,MJ_km := NULL])
     demandF = demandF[,.(demand_EJ = sum(demand_EJ), demand_F = sum(demand_F)),
             by = c("year","iso", "sector", "subsector_L3", "subsector_L2","subsector_L1", "vehicle_type", "technology")]
-
-    demandF_plot_pkm = copy(demandF)
+    demandF_plot_pkm = rbind(demandNM, demandF[,c("demand_F", "year","iso", "sector", "subsector_L3", "subsector_L2","subsector_L1", "vehicle_type", "technology")])
     demandF_plot_EJ = copy(demandF)
 
     ## first I need to merge with a mapping that represents how the entries match to the CES

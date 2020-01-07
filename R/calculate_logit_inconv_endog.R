@@ -333,7 +333,7 @@ calculate_logit_inconv_endog = function(prices,
                            pinco), by = c("iso", "technology", "vehicle_type", "subsector_L1")]
 
       ## if I want to make a reporting, I need the temporary input to be saved
-      if (t == 2100 & savetpminput) {
+      if (t == 2100 & savetmpinput) {
         saveRDS(tmp, levelVWpath(scenarioVW = techswitch, "yearly_values_sales.RDS"))
       }
 
@@ -488,7 +488,10 @@ calculate_logit_inconv_endog = function(prices,
     baseEF[type =="advanced", non_fuel_price := non_fuel_price*1.3]
     baseEF[type =="normal" & technology %in% c("Liquids", "NG"), non_fuel_price := non_fuel_price*1.3]
 
-    baseEF[, c("fuel_price_pkm", "MJ_km") := list(fuel_price*MJ_km*1e-12, NULL)]
+    baseEF[, c("fuel_price_pkm", "MJ_km") := list(fuel_price    ## in $/EJ
+                                                  *MJ_km        ## in MJ/km
+                                                  *1e-12,       ## in $/km
+                                                  NULL)]
 
     baseEF[, tot_price := fuel_price_pkm + non_fuel_price]
 
