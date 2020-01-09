@@ -207,8 +207,12 @@ calculate_logit_inconv_endog = function(prices,
       ## weighted shares are the weighted average of each time step's CS1 share and how much it depreciated in time
       tmp[, weighted_shares := mean(shareFS1*D), by = c("iso", "technology", "vehicle_type", "subsector_L1", "year")]
 
-      print(paste0("time is ", t))
+      ## print(paste0("time is ", t))
+      start <- Sys.time()
       tmp[, weighted_sharessum := ifelse(year == (t-1), sum(weighted_shares[year<t])/sum(D[year<t]), 0), by = c("iso", "technology", "vehicle_type", "subsector_L1")]
+      print(paste("Iterative logit calculation finished in",
+                  difftime(Sys.time(), start, units="mins"),
+                  "Minutes")
 
       ## for 2010, we assume the value was constant for all the previous years (hence the value for 2010 coincides with the share)
       if (t == 2011) {
