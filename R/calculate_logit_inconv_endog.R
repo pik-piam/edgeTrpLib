@@ -348,7 +348,7 @@ calculate_logit_inconv_endog = function(prices,
     }
     print(paste("Iterative logit calculation finished in",
                 difftime(Sys.time(), start, units="mins"),
-                "Minutes")
+                "Minutes"))
 
     tmp1 <- tmp[, share := (tot_price+pinco)^logit.exponent/(sum((tot_price+pinco)^logit.exponent)),
                  by = c("vehicle_type", "year", "iso")]
