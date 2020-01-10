@@ -248,11 +248,16 @@ calculate_logit_inconv_endog = function(prices,
                            pmax(-acceptancy*pinco[year==2010]*(combined_shareEL[year == (t-1)] - combined_shareEL[year == 2010] + ifelse(year > 2020, marketsharepush, 0))+pinco[year==2010],0),
                            pinco), by = c("iso", "technology", "vehicle_type", "subsector_L1")]
 
-      othertechs = setdiff(c("BEV", "FCEV", "Hybrid Electric"), techswitch)
+      othertechs = setdiff(c("BEV", "FCEV"), techswitch)
 
-      ## all other alternative technologies have benefits
+      ## other alternative technologies don't have benefits from the market push
       tmp[, pinco:= ifelse(year == t & technology %in% othertechs,
-                           pmax(-5*pinco[year==2010]*(combined_shareEL[year == (t-1)] - combined_shareEL[year == 2010] + ifelse(year > 2020, 2/3*marketsharepush, 0))+pinco[year==2010],0),
+                           pmax(-5*pinco[year==2010]*(combined_shareEL[year == (t-1)] - combined_shareEL[year == 2010])+pinco[year==2010],0),
+                           pinco), by = c("iso", "technology", "vehicle_type", "subsector_L1")]
+
+      ## Hybrid Electric has a floor cost set to 0.1$/km
+      tmp[, pinco:= ifelse(year == t & technology == "Hybrid Electric",
+                           pmax(-5*pinco[year==2010]*(combined_shareEL[year == (t-1)] - combined_shareEL[year == 2010])+pinco[year==2010], ifelse(t>=2020,additional_inconv_liq,0)),
                            pinco), by = c("iso", "technology", "vehicle_type", "subsector_L1")]
 
       ## hybrid liquids and liquids belong to the same cluster (because they need to be independent on the cluster level)
@@ -313,14 +318,14 @@ calculate_logit_inconv_endog = function(prices,
                                   pmax(-5*(0.3+ifelse(t>=2020,additional_inconv_liq,0))*
                                          (combined_shareLiq[year == (t-1) & technology == "Liquids"])+
                                          0.3+ifelse(t>=2020,additional_inconv_liq,0),
-                                       0),
+                                       ifelse(t>=2020,additional_inconv_liq,0)),
                                   pinco
                            ),pinco),
           by = c("iso","vehicle_type", "subsector_L1", "cluster")]
 
       ## Hybrid Electric partially suffer from lack of infrastructure of Liquids
       tmp[, pinco:= ifelse(year == t & technology == "Hybrid Electric" & combined_shareLiq[year == (t-1) & technology == "Liquids"]<0.2,
-                                  0.5*pinco[year == (t) & technology == "Liquids"],
+                                  pmax(0.5*pinco[year == (t) & technology == "Liquids"], ifelse(t>=2020,additional_inconv_liq,0)),
                            pinco),
           by = c("iso", "vehicle_type", "subsector_L1")]
 
