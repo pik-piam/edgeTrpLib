@@ -228,7 +228,7 @@ calculate_logit_inconv_endog = function(prices,
 
       } else {
 
-        acceptancy = 10 ## meaning: reaches 0 inconvenience cost at 1/10=0.1 market share
+        acceptancy = 3 ## meaning: reaches 0 inconvenience cost at 1/3=0.33 market share
         marketsharepush = 0
         additional_inconv_liq = 0 ## inconvenience for ICE increases
 
@@ -299,7 +299,7 @@ calculate_logit_inconv_endog = function(prices,
                                   pmax(-5*(pinco[year==2010]+ifelse(t>=2020,additional_inconv_liq,0))*
                                          (combined_shareLiq[year == (t-1) & technology == "Hybrid Liquids"])+
                                          pinco[year==2010]+ifelse(t>=2020,additional_inconv_liq,0),
-                                    0.3+ifelse(t>=2020,additional_inconv_liq,0)),
+                                    0.4+ifelse(t>=2020,additional_inconv_liq,0)),
                                   pinco),
                            pinco),
           by = c("iso", "vehicle_type", "subsector_L1", "cluster")]
@@ -315,9 +315,9 @@ calculate_logit_inconv_endog = function(prices,
       ## when they become less established, they have increasing inconvenience
       tmp[, pinco:= ifelse(year == t & technology %in% c("Liquids"),
                            ifelse(is.na(pinco),
-                                  pmax(-5*(0.3+ifelse(t>=2020,additional_inconv_liq,0))*
+                                  pmax(-5*(0.4+ifelse(t>=2020,additional_inconv_liq,0))*
                                          (combined_shareLiq[year == (t-1) & technology == "Liquids"])+
-                                         0.3+ifelse(t>=2020,additional_inconv_liq,0),
+                                         0.4+ifelse(t>=2020,additional_inconv_liq,0),
                                        ifelse(t>=2020,additional_inconv_liq,0)),
                                   pinco
                            ),pinco),
@@ -329,13 +329,12 @@ calculate_logit_inconv_endog = function(prices,
                            pinco),
           by = c("iso", "vehicle_type", "subsector_L1")]
 
-      ## NG is not incentivized but its inconvenience cost is allowed to decrease
+      ## NG is not incentivized but its inconvenience cost is allowed to decrease (slowly)
       tmp[, pinco:= ifelse(year == t & technology %in% c("NG"),
-                           pmax(-5*
-                                  pinco[year==2010]*
+                           pmax(-2*pinco[year==2010]*
                                   (weighted_sharessum[year == (t-1)]-weighted_sharessum[year == 2010])+
                                   pinco[year==2010],
-                                0),
+                                ifelse(t>=2020,additional_inconv_liq,0)),
                            pinco), by = c("iso", "technology", "vehicle_type", "subsector_L1")]
 
       ## if I want to make a reporting, I need the temporary input to be saved
@@ -416,7 +415,7 @@ calculate_logit_inconv_endog = function(prices,
   }
 
   E2Fcalc <- function(pricesLDV, mj_km_data){
-    logit_exponent <- -8
+    logit_exponent <- -4
     ## joins the df containing the prices with the df containing the logit exponents
     df <- pricesLDV[, logit.exponent := logit_exponent]
     ## delete entries have tot_price NA (e.g. 1900 BEV)
@@ -495,7 +494,7 @@ calculate_logit_inconv_endog = function(prices,
                    mj_km_dataEF[,c("iso", "year", "technology", "vehicle_type", "type", "MJ_km"), ],
                    by = c("iso", "year", "technology", "vehicle_type"))
     baseEF[type =="advanced", non_fuel_price := non_fuel_price*1.3]
-    baseEF[type =="normal" & technology %in% c("Liquids", "NG"), non_fuel_price := non_fuel_price*1.3]
+
 
     baseEF[, c("fuel_price_pkm", "MJ_km") := list(fuel_price    ## in $/EJ
                                                   *MJ_km        ## in MJ/km
