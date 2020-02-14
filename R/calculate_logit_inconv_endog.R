@@ -245,19 +245,19 @@ calculate_logit_inconv_endog = function(prices,
 
       ## attribute inconvenience update to the "policy focused" technology
       tmp[, pinco:= ifelse(year == t & technology %in% techswitch,
-                           pmax(-acceptancy*pinco[year==2010]*(combined_shareEL[year == (t-1)] - combined_shareEL[year == 2010] + ifelse(year > 2020, marketsharepush, 0))+pinco[year==2010],0),
+                           pmax(-acceptancy*pinco[year==2010]*(combined_shareEL[year == (t-1)] + ifelse(year > 2020, marketsharepush, 0))+pinco[year==2010],0),
                            pinco), by = c("iso", "technology", "vehicle_type", "subsector_L1")]
 
       othertechs = setdiff(c("BEV", "FCEV"), techswitch)
 
       ## other alternative technologies don't have benefits from the market push
       tmp[, pinco:= ifelse(year == t & technology %in% othertechs,
-                           pmax(-5*pinco[year==2010]*(combined_shareEL[year == (t-1)] - combined_shareEL[year == 2010])+pinco[year==2010],0),
+                           pmax(-5*pinco[year==2010]*(combined_shareEL[year == (t-1)])+pinco[year==2010],0),
                            pinco), by = c("iso", "technology", "vehicle_type", "subsector_L1")]
 
       ## Hybrid Electric has a floor cost set to 0.1$/km
       tmp[, pinco:= ifelse(year == t & technology == "Hybrid Electric",
-                           pmax(-5*pinco[year==2010]*(combined_shareEL[year == (t-1)] - combined_shareEL[year == 2010])+pinco[year==2010], ifelse(t>=2020,additional_inconv_liq,0)),
+                           pmax(-5*pinco[year==2010]*(combined_shareEL[year == (t-1)])+pinco[year==2010], ifelse(t>=2020,additional_inconv_liq,0)),
                            pinco), by = c("iso", "technology", "vehicle_type", "subsector_L1")]
 
       ## hybrid liquids and liquids belong to the same cluster (because they need to be independent on the cluster level)
@@ -272,7 +272,7 @@ calculate_logit_inconv_endog = function(prices,
       tmp[, pinco:= ifelse(year == t & technology %in% c("Hybrid Liquids"),
                            ifelse(shareFS1[year == (t-1)]<0.2,
                                   pmax(-5*pinco[year==2010]*
-                                         (weighted_sharessum[year == (t-1)]-weighted_sharessum[year == 2010])+
+                                         (weighted_sharessum[year == (t-1)])+
                                          pinco[year==2010],ifelse(t>=2020,additional_inconv_liq,0)),
                                   NA
                            ),pinco),
@@ -299,7 +299,7 @@ calculate_logit_inconv_endog = function(prices,
                                   pmax(-5*(pinco[year==2010]+ifelse(t>=2020,additional_inconv_liq,0))*
                                          (combined_shareLiq[year == (t-1) & technology == "Hybrid Liquids"])+
                                          pinco[year==2010]+ifelse(t>=2020,additional_inconv_liq,0),
-                                    0.4+ifelse(t>=2020,additional_inconv_liq,0)),
+                                    0.7),
                                   pinco),
                            pinco),
           by = c("iso", "vehicle_type", "subsector_L1", "cluster")]
@@ -315,9 +315,9 @@ calculate_logit_inconv_endog = function(prices,
       ## when they become less established, they have increasing inconvenience
       tmp[, pinco:= ifelse(year == t & technology %in% c("Liquids"),
                            ifelse(is.na(pinco),
-                                  pmax(-5*(0.4+ifelse(t>=2020,additional_inconv_liq,0))*
+                                  pmax(-5*0.7*
                                          (combined_shareLiq[year == (t-1) & technology == "Liquids"])+
-                                         0.4+ifelse(t>=2020,additional_inconv_liq,0),
+                                         0.7,
                                        ifelse(t>=2020,additional_inconv_liq,0)),
                                   pinco
                            ),pinco),
@@ -332,7 +332,7 @@ calculate_logit_inconv_endog = function(prices,
       ## NG is not incentivized but its inconvenience cost is allowed to decrease (slowly)
       tmp[, pinco:= ifelse(year == t & technology %in% c("NG"),
                            pmax(-2*pinco[year==2010]*
-                                  (weighted_sharessum[year == (t-1)]-weighted_sharessum[year == 2010])+
+                                  (weighted_sharessum[year == (t-1)])+
                                   pinco[year==2010],
                                 ifelse(t>=2020,additional_inconv_liq,0)),
                            pinco), by = c("iso", "technology", "vehicle_type", "subsector_L1")]
@@ -487,15 +487,24 @@ calculate_logit_inconv_endog = function(prices,
 
   if (endogeff) {
     ## create choice of  more expensive, more efficient alternatives (for now only Liquids)
-    mj_km_dataEF <- rbind(mj_km_data[subsector_L1 == "trn_pass_road_LDV_4W" & year > 2020][, c("type", "MJ_km") := list("advanced", MJ_km*0.8)],
-                          mj_km_data[subsector_L1 == "trn_pass_road_LDV_4W" & year > 2020][, type := "normal"])
+    mj_km_dataEF <- rbind(mj_km_data[subsector_L1 == "trn_pass_road_LDV_4W" & year > 2020 & technology =="Liquids"][, c("type", "MJ_km") := list("advanced", MJ_km*0.6)],
+                          mj_km_data[subsector_L1 == "trn_pass_road_LDV_4W" & year > 2020 & technology =="Liquids"][, c("type", "MJ_km") := list("middle", MJ_km*0.35)],
+                          mj_km_data[subsector_L1 == "trn_pass_road_LDV_4W" & year > 2020 & technology =="Liquids"][, type := "normal"])
 
-    baseEF = merge(base[subsector_L1 == "trn_pass_road_LDV_4W" & year > 2020],
+    baseEF = merge(base[subsector_L1 == "trn_pass_road_LDV_4W" & year > 2020 & technology =="Liquids"],
                    mj_km_dataEF[,c("iso", "year", "technology", "vehicle_type", "type", "MJ_km"), ],
                    by = c("iso", "year", "technology", "vehicle_type"))
-    baseEF[type =="advanced", non_fuel_price := non_fuel_price*1.3]
 
+    ## temporary shortcut to roughly represent the increase in non fuel price due to additional 3500 dollars purchase cost
+    tmp = data.table(vehicle_type = c("Mini Car", "Subcompact Car", "Compact Car", "Midsize Car", "Large Car", "Large Car and SUV", "Van", "Light Truck and SUV", "Multipurpose Vehicle"),
+                     dpp_nfp = c(0.27, 0.15, 0.1, 0.07, 0.05, 0.05, 0.05, 0.05, 0.05)) ## PP'=PP+3500$ -> PP~50%NFP, for small cars 3500$=55%PP, for big cars 3500$=10%PP ->small cars: 55%*50%~27%, big cars 10%*50%~5%
 
+    baseEF = merge(baseEF, tmp, by = c("vehicle_type"))
+    baseEF[type == "advanced", non_fuel_price := (1+dpp_nfp)*non_fuel_price]
+    baseEF[type == "middle", non_fuel_price := (1+0.5*dpp_nfp)*non_fuel_price]
+    baseEF[, dpp_nfp := NULL]
+
+    ## fuel price needs to be recalculated as the energy intensity changed
     baseEF[, c("fuel_price_pkm", "MJ_km") := list(fuel_price    ## in $/EJ
                                                   *MJ_km        ## in MJ/km
                                                   *1e-12,       ## in $/km
@@ -510,10 +519,10 @@ calculate_logit_inconv_endog = function(prices,
     mj_km_dataEF <- E2F_all[[2]]
     EF_shares <- E2F_all[[3]]
 
-    base <- rbind(base[!(subsector_L1 == "trn_pass_road_LDV_4W" & year > 2020),  c("iso","year","technology","vehicle_type","subsector_L1","subsector_L2","subsector_L3","sector", "tot_price","fuel_price_pkm", "non_fuel_price", "tot_VOT_price", "sector_fuel")],
+    base <- rbind(base[!(subsector_L1 == "trn_pass_road_LDV_4W" & year > 2020 & technology =="Liquids"),  c("iso","year","technology","vehicle_type","subsector_L1","subsector_L2","subsector_L3","sector", "tot_price","fuel_price_pkm", "non_fuel_price", "tot_VOT_price", "sector_fuel")],
                   EF)
 
-    mj_km_data <- rbind(mj_km_data[!(subsector_L1 == "trn_pass_road_LDV_4W" & year > 2020), c("iso", "year", "technology", "vehicle_type", "subsector_L1", "subsector_L2", "subsector_L3", "sector", "MJ_km", "sector_fuel")],
+    mj_km_data <- rbind(mj_km_data[!(subsector_L1 == "trn_pass_road_LDV_4W" & year > 2020 & technology =="Liquids"), c("iso", "year", "technology", "vehicle_type", "subsector_L1", "subsector_L2", "subsector_L3", "sector", "MJ_km", "sector_fuel")],
                         mj_km_dataEF)
 
   }
