@@ -4,15 +4,16 @@
 #' @import data.table
 #' @export
 
-createRDS <- function(input_path, SSP_scenario, EDGE_scenario){
-  if (length(list.files(path = "input_EDGE", pattern = "RDS")) > 0) {
+createRDS <- function(input_path, data_path, SSP_scenario, EDGE_scenario){
+
+  if (length(list.files(path = data_path, pattern = "RDS")) > 0) {
     ## RDS files have been created and previously saved in the expected folder
     print("Loading local RDS input files...")
 
 
   } else {
     print("Loading csv data from input folder and creating RDS files...")
-    dir.create(file.path("input_EDGE/"), showWarnings = FALSE)
+    dir.create(file.path(data_path), showWarnings = FALSE)
     ## function that loads the csv input files and converts them into RDS local files
     csv2RDS = function(pattern, filename, input_path, names_dt){
       tmp=fread(paste0(input_path, pattern, ".cs4r"), stringsAsFactors = FALSE, col.names = names_dt, skip = 4)[SSPscen == SSP_scenario & EDGEscen == EDGE_scenario][, -c("SSPscen", "EDGEscen")]
@@ -29,7 +30,7 @@ createRDS <- function(input_path, SSP_scenario, EDGE_scenario){
         tmp_list = tmp_list[[1]]
       }
 
-      saveRDS(tmp_list, paste0("input_EDGE/", filename,".RDS"))
+      saveRDS(tmp_list, file.path(data_path, paste0(filename,".RDS")))
 
     }
 
@@ -74,7 +75,7 @@ createRDS <- function(input_path, SSP_scenario, EDGE_scenario){
     settingsEDGE <- data.table(settings = c("selfmarket_taxes", "selfmarket_policypush", "selfmarket_acceptancy", "techswitch", "enhancedtech", "rebates_febates"),
                                value = c(selfmarket_taxes, selfmarket_policypush, selfmarket_acceptancy, techswitch, enhancedtech, rebates_febates))
 
-    saveRDS(settingsEDGE, paste0("input_EDGE/settingsEDGE.RDS"))
+    saveRDS(settingsEDGE, file.path(data_path, "settingsEDGE.RDS"))
 
 
   }
