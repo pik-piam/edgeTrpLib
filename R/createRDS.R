@@ -85,14 +85,18 @@ createRDS <- function(input_path, data_path, SSP_scenario, EDGE_scenario){
 #' @export
 
 loadInputData <- function(data_path){
-  ## load input data
-  vot_data <- readRDS(data_path("VOT_iso.RDS"))
-  sw_data <- readRDS(data_path("SW.RDS"))
-  inco_data <- readRDS(data_path("inconv.RDS"))
-  logit_params <- readRDS(data_path("logit_exp.RDS"))
-  int_dat <- readRDS(data_path("harmonized_intensities.RDS"))
-  nonfuel_costs <- readRDS(data_path("UCD_NEC_iso.RDS"))
-  price_nonmot <- readRDS(data_path("price_nonmot.RDS"))
+
+  datapathForFile <- function(fname){
+    file.path(data_path, fname)
+  }
+
+  vot_data <- readRDS(datapathForFile("VOT_iso.RDS"))
+  sw_data <- readRDS(datapathForFile("SW.RDS"))
+  inco_data <- readRDS(datapathForFile("inconv.RDS"))
+  logit_params <- readRDS(datapathForFile("logit_exp.RDS"))
+  int_dat <- readRDS(datapathForFile("harmonized_intensities.RDS"))
+  nonfuel_costs <- readRDS(datapathForFile("UCD_NEC_iso.RDS"))
+  price_nonmot <- readRDS(datapathForFile("price_nonmot.RDS"))
 
   ## FIXME: hotfix to make the (empty) vot_data$value_time_VS1 with the right column types. Probably there is another way to do that, did not look for it.
   vot_data$value_time_VS1$iso = as.character(vot_data$value_time_VS1$iso)

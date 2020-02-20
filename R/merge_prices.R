@@ -109,12 +109,6 @@ merge_prices <- function(gdx, REMINDmapping, REMINDyears,
     setnames(fuel_price_REMIND, old = c("value"), new = c("fuel_price"))
 
 
-    ## if I want to make a reporting, I need the temporary input to be saved
-    if(savetmpinput){
-      saveRDS(fuel_price_REMIND,
-              file=levelVWpath(scenarioVW = techswitch, fname = "pricesREMIND.RDS"))
-    }
-
     ## fuel price in 2005USD/GJ -> 1990USD/EJ
 
     fuel_price_REMIND[, fuel_price := fuel_price * CONV_2005USD_1990USD * 1e9]
