@@ -75,7 +75,7 @@ calculate_logit_inconv_endog = function(prices,
                    seq(match(group_value,all_subsectors),
                        length(all_subsectors),1)])]
 
-    return(list(df, MJ_km, df_shares))
+    return(list(df = df, MJ_km = MJ_km, df_shares = df_shares))
 
   }
 
@@ -116,8 +116,8 @@ calculate_logit_inconv_endog = function(prices,
     ## extrapolate for all years
     setnames(df4W, old = "tot_price", new = "value") ## rename otherwise approx_dt complains
     df4W = approx_dt(dt = df4W, xdata = futyears_all,
-                            idxcols = c("iso",  "subsector_L1", "vehicle_type", "technology"),
-                            extrapolate=T)
+                     idxcols = c("iso",  "subsector_L1", "vehicle_type", "technology"),
+                     extrapolate=T)
     setnames(df4W, old = "value", new = "tot_price")  ## rename back
 
     ## other price components for 4W are useful later but will not be carried on in the yearly calculation
@@ -136,8 +136,8 @@ calculate_logit_inconv_endog = function(prices,
     final_incoVS1cp = final_incoVS1[subsector_L1 == "trn_pass_road_LDV_4W"]
     setnames(final_incoVS1cp, old = "pinco", new = "value") ## rename otherwise approx_dt complains
     final_incoVS1cp = approx_dt(dt = final_incoVS1cp, xdata = futyears_all,
-                   idxcols = c("iso", "vehicle_type", "subsector_L1", "subsector_L2", "subsector_L3", "sector"),
-                   extrapolate=T)
+                                idxcols = c("iso", "vehicle_type", "subsector_L1", "subsector_L2", "subsector_L3", "sector"),
+                                extrapolate=T)
     setnames(final_incoVS1cp, old = "value", new = "pinco")  ## rename back
 
     ## initialize values needed for the for loop
@@ -287,10 +287,10 @@ calculate_logit_inconv_endog = function(prices,
       tmp[, pinco:= ifelse(year == t & technology %in% c("Hybrid Liquids") &
                              shareFS1[year == (t-1)] >0.2 &
                              combined_shareLiq[year == (t-1)]>0.2,
-                                  pinco[year == (t-1)] + ifelse(t>=2020,additional_inconv_liq,0),
-                                  pinco
-                           ),
-          by = c("iso", "technology", "vehicle_type", "subsector_L1")]
+                           pinco[year == (t-1)] + ifelse(t>=2020,additional_inconv_liq,0),
+                           pinco
+      ),
+      by = c("iso", "technology", "vehicle_type", "subsector_L1")]
 
 
       ## hybrid liquids become a "conventional technology" if there is scarcity of refuelling stations (when there are little conventional+hybrid liquids)
@@ -299,7 +299,7 @@ calculate_logit_inconv_endog = function(prices,
                                   pmax(-5*(pinco[year==2010]+ifelse(t>=2020,additional_inconv_liq,0))*
                                          (combined_shareLiq[year == (t-1) & technology == "Hybrid Liquids"])+
                                          pinco[year==2010]+ifelse(t>=2020,additional_inconv_liq,0),
-                                    0.7),
+                                       0.7),
                                   pinco),
                            pinco),
           by = c("iso", "vehicle_type", "subsector_L1", "cluster")]
@@ -325,7 +325,7 @@ calculate_logit_inconv_endog = function(prices,
 
       ## Hybrid Electric partially suffer from lack of infrastructure of Liquids
       tmp[, pinco:= ifelse(year == t & technology == "Hybrid Electric" & combined_shareLiq[year == (t-1) & technology == "Liquids"]<0.2,
-                                  pmax(0.5*pinco[year == (t) & technology == "Liquids"], ifelse(t>=2020,additional_inconv_liq,0)),
+                           pmax(0.5*pinco[year == (t) & technology == "Liquids"], ifelse(t>=2020,additional_inconv_liq,0)),
                            pinco),
           by = c("iso", "vehicle_type", "subsector_L1")]
 
@@ -337,9 +337,9 @@ calculate_logit_inconv_endog = function(prices,
                                 ifelse(t>=2020,additional_inconv_liq,0)),
                            pinco), by = c("iso", "technology", "vehicle_type", "subsector_L1")]
 
-      ## if I want to make a reporting, I need the temporary input to be saved
-      if (t == 2100 & savetmpinput) {
-        saveRDS(tmp, levelVWpath(scenarioVW = techswitch, "yearly_values_sales.RDS"))
+      ## annual sales, needed for reporting purposes
+      if (t == 2100) {
+        annual_sales = tmp[, c("iso", "year", "technology", "shareFS1", "vehicle_type", "subsector_L1", "share")]
       }
 
       ## remove "temporary" columns
@@ -350,6 +350,7 @@ calculate_logit_inconv_endog = function(prices,
       }
 
     }
+
     print(paste("Iterative logit calculation finished in",
                 difftime(Sys.time(), start, units="mins"),
                 "Minutes"))
@@ -410,7 +411,7 @@ calculate_logit_inconv_endog = function(prices,
                    seq(match(group_value,all_subsectors),
                        length(all_subsectors),1)])]
 
-    return(list(df, MJ_km, df_shares, inconv))
+    return(list(df = df, MJ_km = MJ_km, df_shares = df_shares, inconv = inconv, annual_sales = annual_sales))
 
   }
 
@@ -461,7 +462,7 @@ calculate_logit_inconv_endog = function(prices,
                  "subsector_L1", "subsector_L2", "subsector_L3", "sector", "sector_fuel")]
 
 
-    return(list(df, MJ_km, df_shares))
+    return(list(df = df, MJ_km = MJ_km, df_shares = df_shares))
 
   }
 
@@ -515,9 +516,9 @@ calculate_logit_inconv_endog = function(prices,
 
     E2F_all <- E2Fcalc(baseEF,
                        mj_km_dataEF)
-    EF <- E2F_all[[1]]
-    mj_km_dataEF <- E2F_all[[2]]
-    EF_shares <- E2F_all[[3]]
+    EF <- E2F_all[["df"]]
+    mj_km_dataEF <- E2F_all[["MJ_km"]]
+    EF_shares <- E2F_all[["df_shares"]]
 
     base <- rbind(base[!(subsector_L1 == "trn_pass_road_LDV_4W" & year > 2020 & technology =="Liquids"),  c("iso","year","technology","vehicle_type","subsector_L1","subsector_L2","subsector_L3","sector", "tot_price","fuel_price_pkm", "non_fuel_price", "tot_VOT_price", "sector_fuel")],
                   EF)
@@ -530,10 +531,11 @@ calculate_logit_inconv_endog = function(prices,
   FV_all <- F2Vcalc(prices = base,
                     mj_km_data,
                     group_value = "vehicle_type")
-  FV <- FV_all[[1]]
-  MJ_km_FV <- FV_all[[2]]
-  FV_shares <- FV_all[[3]]
-  inconv <- FV_all[[4]]
+  FV <- FV_all[["df"]]
+  MJ_km_FV <- FV_all[["MJ_km"]]
+  FV_shares <- FV_all[["df_shares"]]
+  inconv <- FV_all[["inconv"]]
+  annual_sales <- FV_all[["annual_sales"]]
 
   # VS1
   VS1_all <- X2Xcalc(FV, MJ_km_FV,
@@ -541,9 +543,9 @@ calculate_logit_inconv_endog = function(prices,
                      level_next = "VS1",
                      group_value = "subsector_L1")
 
-  VS1 <- VS1_all[[1]]
-  MJ_km_VS1 <- VS1_all[[2]]
-  VS1_shares <- VS1_all[[3]]
+  VS1 <- VS1_all[["df"]]
+  MJ_km_VS1 <- VS1_all[["MJ_km"]]
+  VS1_shares <- VS1_all[["df_shares"]]
   VS1_shares=VS1_shares[,-c("sector","subsector_L2","subsector_L3")]
 
   # S1S2
@@ -551,9 +553,9 @@ calculate_logit_inconv_endog = function(prices,
                       level_base = "VS1",
                       level_next = "S1S2",
                       group_value = "subsector_L2")
-  S1S2 <- S1S2_all[[1]]
-  MJ_km_S1S2 <- S1S2_all[[2]]
-  S1S2_shares <- S1S2_all[[3]]
+  S1S2 <- S1S2_all[["df"]]
+  MJ_km_S1S2 <- S1S2_all[["MJ_km"]]
+  S1S2_shares <- S1S2_all[["df_shares"]]
 
 
   # S2S3
@@ -562,18 +564,18 @@ calculate_logit_inconv_endog = function(prices,
                       level_next = "S2S3",
                       group_value = "subsector_L3")
 
-  S2S3 <- S2S3_all[[1]]
-  MJ_km_S2S3 <- S2S3_all[[2]]
-  S2S3_shares <- S2S3_all[[3]]
+  S2S3 <- S2S3_all[["df"]]
+  MJ_km_S2S3 <- S2S3_all[["MJ_km"]]
+  S2S3_shares <- S2S3_all[["df_shares"]]
 
   # S3S
   S3S_all <- X2Xcalc(S2S3, MJ_km_S2S3,
                      level_base = "S2S3",
                      level_next = "S3S",
                      group_value = "sector")
-  S3S <- S3S_all[[1]]
-  MJ_km_S3S <- S3S_all[[2]]
-  S3S_shares <- S3S_all[[3]]
+  S3S <- S3S_all[["df"]]
+  MJ_km_S3S <- S3S_all[["MJ_km"]]
+  S3S_shares <- S3S_all[["df_shares"]]
 
   share_list=list(S3S_shares=S3S_shares,
                   S2S3_shares=S2S3_shares,
@@ -592,7 +594,8 @@ calculate_logit_inconv_endog = function(prices,
               prices_list=prices_list,
               share_list=share_list,
               inconv_cost=inconv,
-              EF_shares = EF_shares)
+              EF_shares = EF_shares,
+              annual_sales = annual_sales)
 
   return(result)
 }
