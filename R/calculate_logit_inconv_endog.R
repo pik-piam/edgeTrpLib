@@ -4,7 +4,9 @@ calculate_logit_inconv_endog = function(prices,
                                     logit_params,
                                     intensity_data,
                                     price_nonmot,
-                                    full_data = F) {
+                                    full_data = F,
+                                    selfmarket_policypush,
+                                    selfmarket_acceptancy) {
   ## X2Xcalc is used to traverse the logit tree, calculating shares and intensities
   X2Xcalc <- function(prices, mj_km_data, level_base, level_next, group_value) {
     final_inco <- inco_data[[paste0(level_next, "_final_inconv")]]
@@ -486,48 +488,48 @@ calculate_logit_inconv_endog = function(prices,
                                ]
   mj_km_data <- mj_km_data[,-"EJ_Mpkm_final"]
 
-  if (endogeff) {
-    ## create choice of  more expensive, more efficient alternatives (for now only Liquids)
-    mj_km_dataEF <- rbind(mj_km_data[subsector_L1 == "trn_pass_road_LDV_4W" & year > 2020 & technology =="Liquids"][, c("type", "MJ_km") := list("advanced", MJ_km*0.6)],
-                          mj_km_data[subsector_L1 == "trn_pass_road_LDV_4W" & year > 2020 & technology =="Liquids"][, c("type", "MJ_km") := list("middle", MJ_km*0.35)],
-                          mj_km_data[subsector_L1 == "trn_pass_road_LDV_4W" & year > 2020 & technology =="Liquids"][, type := "normal"])
+  ## Conventional Liquids energy intensity
 
-    baseEF = merge(base[subsector_L1 == "trn_pass_road_LDV_4W" & year > 2020 & technology =="Liquids"],
-                   mj_km_dataEF[,c("iso", "year", "technology", "vehicle_type", "type", "MJ_km"), ],
-                   by = c("iso", "year", "technology", "vehicle_type"))
+  ## create choice of  more expensive, more efficient alternatives (for now only Liquids)
+  mj_km_dataEF <- rbind(mj_km_data[subsector_L1 == "trn_pass_road_LDV_4W" & year > 2020 & technology =="Liquids"][, c("type", "MJ_km") := list("advanced", MJ_km*0.6)],
+                        mj_km_data[subsector_L1 == "trn_pass_road_LDV_4W" & year > 2020 & technology =="Liquids"][, c("type", "MJ_km") := list("middle", MJ_km*0.35)],
+                        mj_km_data[subsector_L1 == "trn_pass_road_LDV_4W" & year > 2020 & technology =="Liquids"][, type := "normal"])
 
-    ## temporary shortcut to roughly represent the increase in non fuel price due to additional 3500 dollars purchase cost
-    tmp = data.table(vehicle_type = c("Mini Car", "Subcompact Car", "Compact Car", "Midsize Car", "Large Car", "Large Car and SUV", "Van", "Light Truck and SUV", "Multipurpose Vehicle"),
-                     dpp_nfp = c(0.27, 0.15, 0.1, 0.07, 0.05, 0.05, 0.05, 0.05, 0.05)) ## PP'=PP+3500$ -> PP~50%NFP, for small cars 3500$=55%PP, for big cars 3500$=10%PP ->small cars: 55%*50%~27%, big cars 10%*50%~5%
+  baseEF = merge(base[subsector_L1 == "trn_pass_road_LDV_4W" & year > 2020 & technology =="Liquids"],
+                 mj_km_dataEF[,c("iso", "year", "technology", "vehicle_type", "type", "MJ_km"), ],
+                 by = c("iso", "year", "technology", "vehicle_type"))
 
-    baseEF = merge(baseEF, tmp, by = c("vehicle_type"))
-    baseEF[type == "advanced", non_fuel_price := (1+dpp_nfp)*non_fuel_price]
-    baseEF[type == "middle", non_fuel_price := (1+0.5*dpp_nfp)*non_fuel_price]
-    baseEF[, dpp_nfp := NULL]
+  ## temporary shortcut to roughly represent the increase in non fuel price due to additional 3500 dollars purchase cost
+  tmp = data.table(vehicle_type = c("Mini Car", "Subcompact Car", "Compact Car", "Midsize Car", "Large Car", "Large Car and SUV", "Van", "Light Truck and SUV", "Multipurpose Vehicle"),
+                   dpp_nfp = c(0.27, 0.15, 0.1, 0.07, 0.05, 0.05, 0.05, 0.05, 0.05)) ## PP'=PP+3500$ -> PP~50%NFP, for small cars 3500$=55%PP, for big cars 3500$=10%PP ->small cars: 55%*50%~27%, big cars 10%*50%~5%
 
-    ## fuel price needs to be recalculated as the energy intensity changed
-    baseEF[, c("fuel_price_pkm", "MJ_km") := list(fuel_price    ## in $/EJ
-                                                  *MJ_km        ## in MJ/km
-                                                  *1e-12,       ## in $/km
-                                                  NULL)]
+  baseEF = merge(baseEF, tmp, by = c("vehicle_type"))
+  baseEF[type == "advanced", non_fuel_price := (1+dpp_nfp)*non_fuel_price]
+  baseEF[type == "middle", non_fuel_price := (1+0.5*dpp_nfp)*non_fuel_price]
+  baseEF[, dpp_nfp := NULL]
 
-    baseEF[, tot_price := fuel_price_pkm + non_fuel_price]
+  ## fuel price needs to be recalculated as the energy intensity changed
+  baseEF[, c("fuel_price_pkm", "MJ_km") := list(fuel_price    ## in $/EJ
+                                                *MJ_km        ## in MJ/km
+                                                *1e-12,       ## in $/km
+                                                NULL)]
+
+  baseEF[, tot_price := fuel_price_pkm + non_fuel_price]
 
 
-    E2F_all <- E2Fcalc(baseEF,
-                       mj_km_dataEF)
-    EF <- E2F_all[["df"]]
-    mj_km_dataEF <- E2F_all[["MJ_km"]]
-    EF_shares <- E2F_all[["df_shares"]]
+  E2F_all <- E2Fcalc(baseEF,
+                     mj_km_dataEF)
+  EF <- E2F_all[["df"]]
+  mj_km_dataEF <- E2F_all[["MJ_km"]]
+  EF_shares <- E2F_all[["df_shares"]]
 
-    base <- rbind(base[!(subsector_L1 == "trn_pass_road_LDV_4W" & year > 2020 & technology =="Liquids"),  c("iso","year","technology","vehicle_type","subsector_L1","subsector_L2","subsector_L3","sector", "tot_price","fuel_price_pkm", "non_fuel_price", "tot_VOT_price", "sector_fuel")],
-                  EF)
+  base <- rbind(base[!(subsector_L1 == "trn_pass_road_LDV_4W" & year > 2020 & technology =="Liquids"),  c("iso","year","technology","vehicle_type","subsector_L1","subsector_L2","subsector_L3","sector", "tot_price","fuel_price_pkm", "non_fuel_price", "tot_VOT_price", "sector_fuel")],
+                EF)
 
-    mj_km_data <- rbind(mj_km_data[!(subsector_L1 == "trn_pass_road_LDV_4W" & year > 2020 & technology =="Liquids"), c("iso", "year", "technology", "vehicle_type", "subsector_L1", "subsector_L2", "subsector_L3", "sector", "MJ_km", "sector_fuel")],
-                        mj_km_dataEF)
+  mj_km_data <- rbind(mj_km_data[!(subsector_L1 == "trn_pass_road_LDV_4W" & year > 2020 & technology =="Liquids"), c("iso", "year", "technology", "vehicle_type", "subsector_L1", "subsector_L2", "subsector_L3", "sector", "MJ_km", "sector_fuel")],
+                      mj_km_dataEF)
 
-  }
-
+  ## FV
   FV_all <- F2Vcalc(prices = base,
                     mj_km_data,
                     group_value = "vehicle_type")
