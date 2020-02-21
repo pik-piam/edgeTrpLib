@@ -4,6 +4,7 @@
 #' @param input_path the path to the folder containing the input (csv-) files
 #' @param data_path the path to the output folder
 #' @param SSP_scenario the SSP dimension, usually this refers to the GDP scenario in REMIND
+#' @param EDGE_scenario the EDGE-T scenario dimension
 #' @import data.table
 #' @export
 
@@ -74,6 +75,7 @@ createRDS <- function(input_path, data_path, SSP_scenario, EDGE_scenario){
 
 #' Load EDGE-T input data (RDS format) from a given path.
 #'
+#' @param data_path path to RDS data files
 #' @return A list of data.tables
 #' @import data.table
 #' @export

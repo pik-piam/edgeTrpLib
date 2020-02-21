@@ -1,9 +1,11 @@
 #' Merge REMIND-derived fuel prices with non-fuel costs.
 #'
-#' @param gdx
-#' @param REMINDmapping
-#' @param intensity_data
-#' @param nonfuel_costs
+#' @param gdx path to REMIND binary output, gdx format
+#' @param REMINDmapping mapping of REMIND regions to ISO3 country codes
+#' @param REMINDyears range of REMIND timesteps
+#' @param intensity_data logit level intensity data
+#' @param nonfuel_costs logti level non-fuel costs
+#' @param module GDX input is based on old "complex" module or new "edge_esm" module
 #' @import data.table
 #' @importFrom rmndt disaggregate_dt magpie2dt
 #' @importFrom gdx readGDX

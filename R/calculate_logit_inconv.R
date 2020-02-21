@@ -1,11 +1,11 @@
-#' Merge REMIND-derived fuel prices with non-fuel costs.
+#' Calculate logit level shares based on inconvenience costs (instead of share weights)
 #'
-#' @param prices
-#' @param vot_data
-#' @param inco_data
-#' @param logit_parms
-#' @param intensity_data
-#' @param full_data
+#' @param prices logit prices
+#' @param vot_data value-of-time data
+#' @param inco_data inconvenience cost data
+#' @param logit_params contains logit exponents
+#' @param intensity_data logit level intensity data
+#' @param price_nonmot price of non-motorized modes in the logit tree
 #' @import data.table
 #' @export
 
@@ -14,8 +14,7 @@ calculate_logitinconv <- function(prices,
                             inco_data,
                             logit_params,
                             intensity_data,
-                            price_nonmot,
-                            full_data = F) {
+                            price_nonmot) {
 
   ## X2Xcalc is used to traverse the logit tree, calculating shares and intensities
   X2Xcalc <- function(prices, mj_km_data, level_base, level_next, group_value) {

@@ -1,11 +1,12 @@
-#' calculates vintages composition, costs and intensity
+#' Calculate vintages composition, costs and intensity
 #'
-#' @param shares
-#' @param totdem_regr
-#' @param costs
-#' @param mj_km_data
-#' @param years
+#' @param shares logit tree shares
+#' @param totdem_regr total demand as obtained from the regression
+#' @param prices costs of transport options in the logit tree
+#' @param mj_km_data energy intensity of transport options in the logit tree
+#' @param years range of years for the vintage calculation
 #' @import rmndt
+#' @export
 
 
 calcVint <- function(shares, totdem_regr, prices, mj_km_data, years){

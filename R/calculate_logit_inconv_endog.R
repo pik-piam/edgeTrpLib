@@ -1,10 +1,23 @@
+#' Evaluate logit tree shares from real prices and inconvenience costs.
+#' Inconvenience costs are updated based on shares from previous timesteps (endogenous formulation).
+#'
+#' @param prices logit prices
+#' @param vot_data value-of-time data
+#' @param inco_data inconvenience cost data
+#' @param logit_params contains logit exponents
+#' @param intensity_data logit level intensity data
+#' @param price_nonmot price of non-motorized modes in the logit tree
+#' @param selfmarket_policypush policy switch for initial increase of shares
+#' @param selfmarket_acceptancy policy switch for initial increase of shares
+#' @import data.table
+#' @export
+
 calculate_logit_inconv_endog = function(prices,
                                     vot_data,
                                     inco_data,
                                     logit_params,
                                     intensity_data,
                                     price_nonmot,
-                                    full_data = F,
                                     selfmarket_policypush,
                                     selfmarket_acceptancy) {
   ## X2Xcalc is used to traverse the logit tree, calculating shares and intensities

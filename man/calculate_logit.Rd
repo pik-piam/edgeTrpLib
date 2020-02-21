@@ -4,8 +4,27 @@
 \alias{calculate_logit}
 \title{Merge REMIND-derived fuel prices with non-fuel costs.}
 \usage{
-calculate_logit(prices, vot_data, sw_data, logit_params, intensity_data,
-  full_data = F)
+calculate_logit(
+  prices,
+  vot_data,
+  sw_data,
+  logit_params,
+  intensity_data,
+  price_nonmot
+)
+}
+\arguments{
+\item{prices}{logit prices}
+
+\item{vot_data}{value-of-time data}
+
+\item{sw_data}{share weights}
+
+\item{logit_params}{contains logit exponents}
+
+\item{intensity_data}{logit level intensity data}
+
+\item{price_nonmot}{logit level prices of non-motorized modes}
 }
 \description{
 Merge REMIND-derived fuel prices with non-fuel costs.

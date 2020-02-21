@@ -4,8 +4,30 @@
 \alias{shares_intensity_and_demand}
 \title{Derive shares, demand and intensities from the logit tree.}
 \usage{
-shares_intensity_and_demand(logit_shares, MJ_km_base, REMIND2ISO_MAPPING,
-  EDGE2CESmap, REMINDyears, scenario, demand_input = NULL)
+shares_intensity_and_demand(
+  logit_shares,
+  MJ_km_base,
+  EDGE2CESmap,
+  REMINDyears,
+  scenario,
+  demand_input = NULL,
+  REMIND2ISO_MAPPING = NULL
+)
+}
+\arguments{
+\item{logit_shares}{logit tree level shares}
+
+\item{MJ_km_base}{logit tree level intensities}
+
+\item{EDGE2CESmap}{map top level EDGE-T categories to CES tree nodes}
+
+\item{REMINDyears}{range of REMIND time steps}
+
+\item{scenario}{REMIND GDP scenario}
+
+\item{demand_input}{full REMIND CES level ES demand, optional. If not given, logit level demand output is normalized.}
+
+\item{REMIND2ISO_MAPPING}{map REMIND regions to ISO3 country codes, optional. If given, aggregate output to REMIND regions.}
 }
 \description{
 Derive shares, demand and intensities from the logit tree.

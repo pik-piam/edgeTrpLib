@@ -5,8 +5,14 @@
 \title{Load GDP data using `moinput` on ISO country resolution for a scenario as data.table object with given colnames.
 By default, the}
 \usage{
-getRMNDGDP(scenario = "gdp_SSP2", yearcol = "year", isocol = "iso",
-  valuecol = "weight", usecache = F, gdpfile = "GDPcache.rds")
+getRMNDGDP(
+  scenario = "gdp_SSP2",
+  yearcol = "year",
+  isocol = "iso",
+  valuecol = "weight",
+  usecache = F,
+  gdpfile = "GDPcache.rds"
+)
 }
 \arguments{
 \item{scenario, }{GDP scenario, default is gdp_SSP2.}

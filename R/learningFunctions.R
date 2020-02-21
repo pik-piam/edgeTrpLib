@@ -1,13 +1,13 @@
 #' Applies learning to BEV purchase cost
 #'
-#' @param gdx
-#' @param REMINDmapping
-#' @param EDGE2teESmap
-#' @param demand_BEVtmp
-#' @param ES_demandpr
+#' @param gdx input gdx file
+#' @param REMINDmapping mapping of REMIND regions to ISO3 country codes
+#' @param EDGE2teESmap mapping of EDGE-T/GCAM technologies to REMIND ES technologies
+#' @param demand_BEVtmp the demand for BEVs from the previous iteration
+#' @param ES_demandpr the ES demand
 #'
 #' @import data.table
-
+#' @export
 
 applylearning <- function(gdx,REMINDmapping,EDGE2teESmap, demand_BEVtmp, ES_demandpr){
   ## find the estimated number of cars
@@ -46,10 +46,11 @@ applylearning <- function(gdx,REMINDmapping,EDGE2teESmap, demand_BEVtmp, ES_dema
 
 #' Calculate number of vehicles scaling up the normalized demand with the aggregate total demand
 #'
-#' @param norm_dem_BEV
-#' @param ES_demand
+#' @param norm_dem_BEV normalized demand shares for BEVs
+#' @param ES_demand total demand for ESs
 #'
 #' @import data.table
+#' @export
 
 
 calc_num_vehicles <- function(norm_dem_BEV, ES_demand){

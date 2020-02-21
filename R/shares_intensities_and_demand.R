@@ -1,8 +1,12 @@
 #' Derive shares, demand and intensities from the logit tree.
 #'
-#' @param logit_shares
-#' @param path2intensities
-#' @param demand_input
+#' @param logit_shares logit tree level shares
+#' @param MJ_km_base logit tree level intensities
+#' @param EDGE2CESmap map top level EDGE-T categories to CES tree nodes
+#' @param REMINDyears range of REMIND time steps
+#' @param scenario REMIND GDP scenario
+#' @param demand_input full REMIND CES level ES demand, optional. If not given, logit level demand output is normalized.
+#' @param REMIND2ISO_MAPPING map REMIND regions to ISO3 country codes, optional. If given, aggregate output to REMIND regions.
 #' @import data.table
 #' @importFrom rmndt aggregate_dt approx_dt
 #' @export

@@ -4,7 +4,27 @@
 \alias{prepare4REMIND}
 \title{Prepare outputs for REMIND: Set correct tech names, CES node names and years.}
 \usage{
-prepare4REMIND(demByTech, intensity, capCost, EDGE2teESmap, REMINDtall)
+prepare4REMIND(
+  demByTech,
+  intensity,
+  capCost,
+  EDGE2teESmap,
+  REMINDtall,
+  REMIND2ISO_MAPPING = NULL
+)
+}
+\arguments{
+\item{demByTech}{the share of FEs for different REMIND CES nodes.}
+
+\item{intensity}{the energy intensity of the REMIND CES nodes wrt. the FE carriers}
+
+\item{capCost}{levelized capital costs of REMIND CES nodes}
+
+\item{EDGE2teESmap}{map EDGE-T technologies to REMIND ES techs}
+
+\item{REMINDtall}{the full REMIND timestep range as required for input data}
+
+\item{REMIND2ISO_MAPPING}{map REMIND regions to ISO3 country codes}
 }
 \description{
 Prepare outputs for REMIND: Set correct tech names, CES node names and years.

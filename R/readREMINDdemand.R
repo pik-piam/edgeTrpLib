@@ -1,12 +1,12 @@
 #' Loads the total demand of transport CES nodes from last iteration
 #'
-#' @param gdx
-#' @param REMINDmapping
-#' @param EDGE2teESmap
-#' @param years
+#' @param gdx REMIND binary output, gdx format
+#' @param REMINDmapping map REMIND regions to ISO3 country codes
+#' @param EDGE2teESmap map EDGE-T technologies to REMIND ES techs
+#' @param years REMIND timesteps
 #'
 #' @import data.table
-#' @importfrom edgeTrpLib getRMNDGDP
+#' @export
 
 
 readREMINDdemand= function(gdx,REMINDmapping,EDGE2teESmap, years){

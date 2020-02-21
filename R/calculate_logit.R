@@ -1,21 +1,21 @@
 #' Merge REMIND-derived fuel prices with non-fuel costs.
 #'
-#' @param prices
-#' @param vot_data
-#' @param sw_data
-#' @param logit_parms
-#' @param intensity_data
-#' @param full_data
+#' @param prices logit prices
+#' @param vot_data value-of-time data
+#' @param sw_data share weights
+#' @param logit_params contains logit exponents
+#' @param intensity_data logit level intensity data
+#' @param price_nonmot logit level prices of non-motorized modes
 #' @import data.table
 #' @export
+
 
 calculate_logit <- function(prices,
                             vot_data,
                             sw_data,
                             logit_params,
                             intensity_data,
-                            price_nonmot,
-                            full_data = F) {
+                            price_nonmot) {
     ## X2Xcalc is used to traverse the logit tree, calculating shares and intensities
     X2Xcalc <- function(prices, mj_km_data, level_base, level_next, group_value) {
         final_SW <- sw_data[[paste0(level_next, "_final_SW")]]

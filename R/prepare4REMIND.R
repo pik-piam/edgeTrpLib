@@ -1,10 +1,11 @@
 #' Prepare outputs for REMIND: Set correct tech names, CES node names and years.
 #'
-#' @param share
-#' @param intensity
-#' @param capCosts
-#' @param EDGE2teESmap
-#' @param REMINDtall
+#' @param demByTech the share of FEs for different REMIND CES nodes.
+#' @param intensity the energy intensity of the REMIND CES nodes wrt. the FE carriers
+#' @param capCost levelized capital costs of REMIND CES nodes
+#' @param EDGE2teESmap map EDGE-T technologies to REMIND ES techs
+#' @param REMINDtall the full REMIND timestep range as required for input data
+#' @param REMIND2ISO_MAPPING map REMIND regions to ISO3 country codes
 #' @import data.table
 #' @importFrom rmndt approx_dt
 #' @export

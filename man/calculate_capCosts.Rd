@@ -4,8 +4,30 @@
 \alias{calculate_capCosts}
 \title{Evaluate the costs of REMIND technology placeholders (e.g. te_eselt_pass_sm).}
 \usage{
-calculate_capCosts(base_price, Fdemand_ES, EDGE2CESmap, EDGE2teESmap,
-  REMIND2ISO_MAPPING, REMINDyears, scenario)
+calculate_capCosts(
+  base_price,
+  Fdemand_ES,
+  EDGE2CESmap,
+  EDGE2teESmap,
+  REMINDyears,
+  scenario,
+  REMIND2ISO_MAPPING = NULL
+)
+}
+\arguments{
+\item{base_price}{base prices from logit calculations}
+
+\item{Fdemand_ES}{normalized ES demand}
+
+\item{EDGE2CESmap}{map from top level EDGE-T/GCAM categories to REMIND CES nodes}
+
+\item{EDGE2teESmap}{mapping of EDGE-T/GCAM technologies to REMIND ES technologies}
+
+\item{REMINDyears}{range of REMIND timesteps}
+
+\item{scenario}{EDGE-T scenario name}
+
+\item{REMIND2ISO_MAPPING}{mapping of REMIND regions to ISO3 country codes}
 }
 \description{
 Evaluate the costs of REMIND technology placeholders (e.g. te_eselt_pass_sm).

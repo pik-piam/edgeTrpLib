@@ -1,11 +1,12 @@
 #' Evaluate the costs of REMIND technology placeholders (e.g. te_eselt_pass_sm).
 #'
-#' @param base_price
-#' @param Fdemand_ES
-#' @param EDGE2CESmap
-#' @param EDGE2teESmap
-#' @param REMIND2ISO_MAPPING
-#' @param REMINDyears
+#' @param base_price base prices from logit calculations
+#' @param Fdemand_ES normalized ES demand
+#' @param EDGE2CESmap map from top level EDGE-T/GCAM categories to REMIND CES nodes
+#' @param EDGE2teESmap mapping of EDGE-T/GCAM technologies to REMIND ES technologies
+#' @param REMINDyears range of REMIND timesteps
+#' @param scenario EDGE-T scenario name
+#' @param REMIND2ISO_MAPPING mapping of REMIND regions to ISO3 country codes
 #' @import data.table
 #' @importFrom rmndt aggregate_dt approx_dt
 #' @export
