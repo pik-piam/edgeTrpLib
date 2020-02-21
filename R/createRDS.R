@@ -69,12 +69,6 @@ createRDS <- function(input_path, data_path, SSP_scenario, EDGE_scenario){
           input_path = input_path,
           names_dt = c("year", "iso", "SSPscen", "EDGEscen", "sector", "subsector_L3", "subsector_L2", "subsector_L1", "vehicle_type", "technology", "entry", "non_fuel_price"))
 
-  ## save the values of the run settings for reporting purposes
-  settingsEDGE <- data.table(settings = c("selfmarket_taxes", "selfmarket_policypush", "selfmarket_acceptancy", "techswitch", "enhancedtech", "rebates_febates"),
-                             value = c(selfmarket_taxes, selfmarket_policypush, selfmarket_acceptancy, techswitch, enhancedtech, rebates_febates))
-
-  saveRDS(settingsEDGE, file.path(data_path, "settingsEDGE.RDS"))
-
 }
 
 
