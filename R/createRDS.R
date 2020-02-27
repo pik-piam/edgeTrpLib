@@ -39,8 +39,8 @@ createRDS <- function(input_path, data_path, SSP_scenario, EDGE_scenario){
           input_path = input_path,
           names_dt = c("year", "iso", "SSPscen", "EDGEscen", "sector", "subsector_L3", "subsector_L2", "subsector_L1", "vehicle_type", "technology", "entry", "sw"))
 
-  csv2RDS(pattern = "inconv",
-          filename = "inconv",
+  csv2RDS(pattern = "pref",
+          filename = "pref",
           input_path = input_path,
           names_dt = c("year", "iso", "SSPscen", "EDGEscen", "sector", "subsector_L3", "subsector_L2", "subsector_L1", "vehicle_type", "technology", "entry", "pinco"))
 
@@ -88,7 +88,7 @@ loadInputData <- function(data_path){
 
   vot_data <- readRDS(datapathForFile("VOT_iso.RDS"))
   sw_data <- readRDS(datapathForFile("SW.RDS"))
-  inco_data <- readRDS(datapathForFile("inconv.RDS"))
+  pref_data <- readRDS(datapathForFile("pref.RDS"))
   logit_params <- readRDS(datapathForFile("logit_exp.RDS"))
   int_dat <- readRDS(datapathForFile("harmonized_intensities.RDS"))
   nonfuel_costs <- readRDS(datapathForFile("UCD_NEC_iso.RDS"))
@@ -101,9 +101,15 @@ loadInputData <- function(data_path){
   vot_data$value_time_VS1$year = as.numeric(vot_data$value_time_VS1$year)
   vot_data$value_time_VS1$time_price = as.numeric(vot_data$value_time_VS1$time_price)
 
+  ## change structure of preferences
+  pref_data$VS1_pref_final = dcast(pref_data$VS1_pref_final, iso + year + vehicle_type + subsector_L1 + subsector_L2 + subsector_L3 + sector ~ logit_type, value.var = "value")
+  pref_data$S1S2_pref_final = dcast(pref_data$S1S2_pref_final, iso + year + subsector_L1 + subsector_L2 + subsector_L3 + sector ~ logit_type, value.var = "value")
+  pref_data$S2S3_pref_final = dcast(pref_data$S2S3_pref_final, iso + year + subsector_L2 + subsector_L3 + sector ~ logit_type, value.var = "value")
+  pref_data$S3S_pref_final = dcast(pref_data$S3S_pref_final, iso + year + subsector_L3 + sector ~ logit_type, value.var = "value")
+
   return(list(vot_data = vot_data,
               sw_data = sw_data,
-              inco_data = inco_data,
+              pref_data = pref_data,
               logit_params = logit_params,
               int_dat = int_dat,
               nonfuel_costs = nonfuel_costs,

@@ -3,7 +3,7 @@
 #'
 #' @param prices logit prices
 #' @param vot_data value-of-time data
-#' @param inco_data inconvenience cost data
+#' @param pref_data inconvenience cost data and SWs
 #' @param logit_params contains logit exponents
 #' @param intensity_data logit level intensity data
 #' @param price_nonmot price of non-motorized modes in the logit tree
@@ -14,15 +14,15 @@
 
 calculate_logit_inconv_endog = function(prices,
                                     vot_data,
-                                    inco_data,
+                                    pref_data,
                                     logit_params,
                                     intensity_data,
                                     price_nonmot,
                                     selfmarket_policypush,
                                     selfmarket_acceptancy) {
   ## X2Xcalc is used to traverse the logit tree, calculating shares and intensities
-  X2Xcalc <- function(prices, mj_km_data, level_base, level_next, group_value) {
-    final_inco <- inco_data[[paste0(level_next, "_final_inconv")]]
+  X2Xcalc <- function(prices, pref_data, logit_params, value_time, mj_km_data, level_base, level_next, group_value) {
+    final_pref <- pref_data[[paste0(level_next, "_final_pref")]]
     logit_exponent <- logit_params[[paste0("logit_exponent_", level_next)]]
 
     ## data contains all the prices in the beginning
@@ -35,7 +35,7 @@ calculate_logit_inconv_endog = function(prices,
                 by=intersect(names(prices), names(logit_exponent)), all.x = TRUE)
 
     ## joins the previous df with gathe df containing the inconvenience costs
-    df <- merge(df, final_inco, by=intersect( names(df),names(final_inco)), all.y=TRUE)
+    df <- merge(df, final_pref, by=intersect( names(df),names(final_pref)), all.y=TRUE)
     ## delete entries have tot_price NA (e.g. 1900 BEV)
     df <- df[ !(is.na(tot_price))]
     ## entries that are not present in the mix have non_fuel_price == 0, but also Walk and Cycle: delete all the not-present in the mix options
@@ -44,7 +44,7 @@ calculate_logit_inconv_endog = function(prices,
     df <- df[ is.na(logit.exponent), logit.exponent := -10]
 
     ## calculate the shares given prices, lambda and inco
-    df <- df[, share := (tot_price+pinco)^logit.exponent/(sum((tot_price+pinco)^logit.exponent)),
+    df <- df[, share := sw*tot_price^logit.exponent/(sum(sw*tot_price^logit.exponent)),
              by = c(group_value, "iso", "year")]
 
     ## merge value of time for the selected level and assign 0 to the entries that don't have it
@@ -96,11 +96,14 @@ calculate_logit_inconv_endog = function(prices,
 
 
 
-  F2Vcalc <- function(prices, mj_km_data, group_value) {
-    final_incoFV <- inco_data[["FV_final_inconv"]]
-    final_incoVS1 <- inco_data[["VS1_final_inconv"]]
+  F2Vcalc <- function(prices, pref_data, logit_params, value_time, mj_km_data, group_value) {
+
+    final_prefFV <- pref_data[["FV_final_pref"]]
+    final_prefVS1 <- pref_data[["VS1_final_pref"]]
     logit_exponentFV <- logit_params[["logit_exponent_FV"]]
     logit_exponentVS1 <- logit_params[["logit_exponent_VS1"]]
+    ## create single datatable for F->V with columns separated for inconvenience and sw
+    final_prefFV = dcast(final_prefFV, iso + year + technology + vehicle_type + subsector_L1 + subsector_L2 + subsector_L3 + sector ~ logit_type, value.var = "value")
 
     ## data contains all the prices in the beginning
     all_subsectors <- c("technology", "vehicle_type", "subsector_L1", "subsector_L2",
@@ -112,7 +115,7 @@ calculate_logit_inconv_endog = function(prices,
                 by=intersect(names(prices), names(logit_exponentFV)), all.x = TRUE)
 
     ## joins the previous df with gathe df containing the inconvenience costs
-    df <- merge(df, final_incoFV, by=intersect( names(df),names(final_incoFV)), all.y=TRUE)
+    df <- merge(df, final_prefFV, by=intersect( names(df),names(final_prefFV)), all.y=TRUE)
     ## delete entries have tot_price NA (e.g. 1900 BEV)
     df <- df[ !(is.na(tot_price))]
     ## entries that are not present in the mix have non_fuel_price == 0, but also Walk and Cycle: delete all the not-present in the mix options
@@ -121,9 +124,10 @@ calculate_logit_inconv_endog = function(prices,
     df <- df[ is.na(logit.exponent), logit.exponent := -10]
 
     ## define the years on which the inconvenience price will be calculated on the basis of the previous time steps sales
-    futyears_all = seq(2010, 2100, 1)
-    ## all modes other then 4W calculated with exogenous inconvenience costs
-    dfother = df[(subsector_L1 != "trn_pass_road_LDV_4W")|(subsector_L1 == "trn_pass_road_LDV_4W" & year < 2010), c("iso", "year", "subsector_L2", "subsector_L3", "sector", "subsector_L1", "vehicle_type", "technology", "tot_price", "logit.exponent", "pinco", "tot_VOT_price", "fuel_price_pkm", "non_fuel_price")]
+    futyears_all = seq(2010, 2101, 1)
+    ## all modes other then 4W calculated with exogenous sws
+    dfother = df[(subsector_L1 != "trn_pass_road_LDV_4W"), c("iso", "year", "subsector_L2", "subsector_L3", "sector", "subsector_L1", "vehicle_type", "technology", "tot_price", "logit.exponent", "sw", "tot_VOT_price", "fuel_price_pkm", "non_fuel_price")]
+    dfhistorical4W = df[(subsector_L1 == "trn_pass_road_LDV_4W" & year < 2010), c("iso", "year", "subsector_L2", "subsector_L3", "sector", "subsector_L1", "vehicle_type", "technology", "tot_price", "logit.exponent", "pinco", "tot_VOT_price", "fuel_price_pkm", "non_fuel_price")]
 
     ## 4W are calculated separately
     df4W = df[subsector_L1 == "trn_pass_road_LDV_4W", c("iso", "year", "subsector_L1", "vehicle_type", "technology", "tot_price", "logit.exponent")]
@@ -136,7 +140,7 @@ calculate_logit_inconv_endog = function(prices,
     setnames(df4W, old = "value", new = "tot_price")  ## rename back
 
     ## other price components for 4W are useful later but will not be carried on in the yearly calculation
-    dfprices4W = df[subsector_L1 == "trn_pass_road_LDV_4W" & year >= 2010,  c("iso", "year", "subsector_L1", "vehicle_type", "technology", "fuel_price_pkm", "non_fuel_price")]
+    dfprices4W = df[subsector_L1 == "trn_pass_road_LDV_4W",  c("iso", "year", "subsector_L1", "vehicle_type", "technology", "fuel_price_pkm", "non_fuel_price")]
 
     ## starting value for inconvenience cost of 2010 for 4W is needed as a starting point for the iterative calculations
     dfpinco2010 = df[subsector_L1 == "trn_pass_road_LDV_4W" & year == 2010, c("iso", "subsector_L1", "vehicle_type", "technology", "pinco")]
@@ -148,12 +152,12 @@ calculate_logit_inconv_endog = function(prices,
     df[, logit.exponent := ifelse(is.na(logit.exponent), mean(logit.exponent, na.rm = TRUE), logit.exponent), by = c("vehicle_type")]
 
     ## for 4W the value of V->S1 market shares is needed on a yearly basis
-    final_incoVS1cp = final_incoVS1[subsector_L1 == "trn_pass_road_LDV_4W"]
-    setnames(final_incoVS1cp, old = "pinco", new = "value") ## rename otherwise approx_dt complains
-    final_incoVS1cp = approx_dt(dt = final_incoVS1cp, xdata = futyears_all,
+    final_prefVS1cp = final_prefVS1[subsector_L1 == "trn_pass_road_LDV_4W"]
+    setnames(final_prefVS1cp, old = "sw", new = "value") ## rename otherwise approx_dt complains
+    final_prefVS1cp = approx_dt(dt = final_prefVS1cp, xdata = futyears_all,
                                 idxcols = c("iso", "vehicle_type", "subsector_L1", "subsector_L2", "subsector_L3", "sector"),
                                 extrapolate=T)
-    setnames(final_incoVS1cp, old = "value", new = "pinco")  ## rename back
+    setnames(final_prefVS1cp, old = "value", new = "sw")  ## rename back
 
     ## initialize values needed for the for loop
     tmp2past = NULL
@@ -169,6 +173,7 @@ calculate_logit_inconv_endog = function(prices,
 
     start <- Sys.time()
     for (t in futyears_all[futyears_all>2010]) {
+
       if (t > 2011) {
         tmp <- df[year == t,][, c("share") := NA]
         tmp <- merge(tmp, tmp1, all = TRUE, by = intersect(names(tmp), names(tmp1)))
@@ -182,14 +187,14 @@ calculate_logit_inconv_endog = function(prices,
                    by = c("iso","year","vehicle_type","subsector_L1")]
 
       ## calculate the average share FS1 (the vehicle type is not important)
-      tmp2 <- merge(tmp2, final_incoVS1cp, by=intersect( names(tmp2),names(final_incoVS1)), all.x=TRUE)
+      tmp2 <- merge(tmp2, final_prefVS1cp, by=intersect( names(tmp2),names(final_prefVS1cp)), all.x=TRUE)
       tmp2 <- merge(tmp2, logit_exponentVS1,
                     by=intersect(names(tmp2), names(logit_exponentVS1)), all.x = TRUE)
-      tmp2 <- tmp2[, shareVS1 := (tot_price+pinco)^logit.exponent/(sum((tot_price+pinco)^logit.exponent)),
+      tmp2 <- tmp2[, shareVS1 := sw*tot_price^logit.exponent/sum(sw*tot_price^logit.exponent),
                    by = c("subsector_L1", "year", "iso")]
       tmp2 <- tmp2[,.(subsector_L1, year, iso, vehicle_type, shareVS1)]
 
-      ## ??
+      ## market share is calculated on the basis of the values in t-1
       tmp2 <- merge(tmp2, tmp[year %in% (t-1),], by = c("iso", "year", "vehicle_type", "subsector_L1"))
 
       ## calculate the share from the cluster to S1 (CS1)
@@ -353,8 +358,8 @@ calculate_logit_inconv_endog = function(prices,
                            pinco), by = c("iso", "technology", "vehicle_type", "subsector_L1")]
 
       ## annual sales, needed for reporting purposes
-      if (t == 2100) {
-        annual_sales = tmp[, c("iso", "year", "technology", "shareFS1", "vehicle_type", "subsector_L1", "share")]
+      if (t == 2101) {
+        annual_sales = tmp[year<=2100, c("iso", "year", "technology", "shareFS1", "vehicle_type", "subsector_L1", "share")]
       }
 
       ## remove "temporary" columns
@@ -365,29 +370,37 @@ calculate_logit_inconv_endog = function(prices,
       }
 
     }
-
     print(paste("Iterative logit calculation finished in",
                 difftime(Sys.time(), start, units="mins"),
                 "Minutes"))
-
-    tmp1 <- tmp[, share := (tot_price+pinco)^logit.exponent/(sum((tot_price+pinco)^logit.exponent)),
-                 by = c("vehicle_type", "year", "iso")]
-
-    tmp1[, c("subsector_L2", "subsector_L3", "sector", "tot_VOT_price") := list("trn_pass_road_LDV", "trn_pass_road", "trn_pass", 0)]
+    tmp1[, c("subsector_L2", "subsector_L3", "sector") := list("trn_pass_road_LDV", "trn_pass_road", "trn_pass")]
+    tmp1[, share := NULL]
+    tmp1 = rbind(tmp1, dfhistorical4W[, c("year", "technology", "iso", "subsector_L1", "vehicle_type", "tot_price", "logit.exponent", "pinco", "subsector_L2", "subsector_L3", "sector")])
+    tmp1 <- tmp1[, share := (tot_price+pinco)^logit.exponent/(sum((tot_price+pinco)^logit.exponent)),
+                by = c("vehicle_type", "year", "iso")]
 
     tmp1 = merge(tmp1[year %in% unique(dfother$year)], dfprices4W, all = TRUE, by = intersect(names(tmp1), names(dfprices4W)))
-    df <- rbind(dfother[, share := NA], tmp1)
+    tmp1[, share := ifelse(is.na(share),(tot_price+pinco)^logit.exponent/(sum((tot_price+pinco)^logit.exponent)), share),
+       by = c(group_value, "year", "iso")]
+
+    inconv = copy(tmp1[,.(year, iso, sector, subsector_L3, subsector_L2, subsector_L1, vehicle_type, technology,pinco)])
+    inconv = rbind(inconv, inconv[year==2100][,year:=2110], inconv[year==2100][,year:=2130],inconv[year==2100][,year:=2150])
+    inconv = melt(inconv, id.vars = c("year", "iso", "sector", "subsector_L3", "subsector_L2", "subsector_L1", "vehicle_type", "technology"))
+    setnames(inconv, old = "variable", new = "logit_type")
+    final_prefFV = melt(final_prefFV, id.vars = c("year", "iso", "sector", "subsector_L3", "subsector_L2", "subsector_L1", "vehicle_type", "technology"))
+    setnames(final_prefFV, old = "variable", new = "logit_type")
+    final_prefFV = rbind(final_prefFV[subsector_L1 != "trn_pass_road_LDV_4W"], inconv)
+    pref_data[["FV_final_pref"]] = final_prefFV
+
+    dfother[, share := sw*tot_price^logit.exponent/(sum(sw*tot_price^logit.exponent)),
+            by = c(group_value, "year", "iso")]
+    df <- rbind(dfother[, .(iso, year, share, technology, vehicle_type, subsector_L1, subsector_L2, subsector_L3, sector, fuel_price_pkm, non_fuel_price, tot_price)],
+                tmp1[, .(iso, year, share, technology, vehicle_type, subsector_L1, subsector_L2, subsector_L3, sector, fuel_price_pkm, non_fuel_price, tot_price)])
 
     ## merge value of time for the selected level and assign 0 to the entries that don't have it
     df <- merge(df, value_time, by=intersect(names(df),names(value_time)), all.x=TRUE)
-    df[, share := ifelse(is.na(share),(tot_price+pinco)^logit.exponent/(sum((tot_price+pinco)^logit.exponent)), share),
-       by = c(group_value, "year", "iso")]
-
-    inconv=copy(df[,.(year,iso,sector,subsector_L3,subsector_L2,subsector_L1,vehicle_type,technology,pinco)])
-
-
     df <- df[is.na(time_price), time_price := 0]
-    df <- df[, tot_VOT_price := time_price + tot_VOT_price]
+    df <- df[, tot_VOT_price := time_price]
     df <- df[, tot_price := tot_price + time_price]
 
     MJ_km <- merge(df, mj_km_data, by=intersect(names(df),names(mj_km_data)),all = FALSE)
@@ -426,7 +439,7 @@ calculate_logit_inconv_endog = function(prices,
                    seq(match(group_value,all_subsectors),
                        length(all_subsectors),1)])]
 
-    return(list(df = df, MJ_km = MJ_km, df_shares = df_shares, inconv = inconv, annual_sales = annual_sales))
+    return(list(df = df, MJ_km = MJ_km, df_shares = df_shares, pref_data = pref_data, annual_sales = annual_sales))
 
   }
 
@@ -544,16 +557,24 @@ calculate_logit_inconv_endog = function(prices,
 
   ## FV
   FV_all <- F2Vcalc(prices = base,
-                    mj_km_data,
+                    pref_data = pref_data,
+                    logit_params = logit_params,
+                    value_time = value_time,
+                    mj_km_data = mj_km_data,
                     group_value = "vehicle_type")
+
   FV <- FV_all[["df"]]
   MJ_km_FV <- FV_all[["MJ_km"]]
   FV_shares <- FV_all[["df_shares"]]
-  inconv <- FV_all[["inconv"]]
+  pref_data <- FV_all[["pref_data"]]
   annual_sales <- FV_all[["annual_sales"]]
 
   # VS1
-  VS1_all <- X2Xcalc(FV, MJ_km_FV,
+  VS1_all <- X2Xcalc(prices = FV,
+                     pref_data = pref_data,
+                     logit_params = logit_params,
+                     value_time = value_time,
+                     mj_km_data = MJ_km_FV,
                      level_base = "FV",
                      level_next = "VS1",
                      group_value = "subsector_L1")
@@ -564,7 +585,11 @@ calculate_logit_inconv_endog = function(prices,
   VS1_shares=VS1_shares[,-c("sector","subsector_L2","subsector_L3")]
 
   # S1S2
-  S1S2_all <- X2Xcalc(VS1, MJ_km_VS1,
+  S1S2_all <- X2Xcalc(prices = VS1,
+                      pref_data = pref_data,
+                      logit_params = logit_params,
+                      value_time = value_time,
+                      mj_km_data = MJ_km_VS1,
                       level_base = "VS1",
                       level_next = "S1S2",
                       group_value = "subsector_L2")
@@ -574,7 +599,11 @@ calculate_logit_inconv_endog = function(prices,
 
 
   # S2S3
-  S2S3_all <- X2Xcalc(S1S2, MJ_km_S1S2,
+  S2S3_all <- X2Xcalc(prices = S1S2,
+                      pref_data = pref_data,
+                      logit_params = logit_params,
+                      value_time = value_time,
+                      mj_km_data = MJ_km_S1S2,
                       level_base = "S1S2",
                       level_next = "S2S3",
                       group_value = "subsector_L3")
@@ -584,10 +613,15 @@ calculate_logit_inconv_endog = function(prices,
   S2S3_shares <- S2S3_all[["df_shares"]]
 
   # S3S
-  S3S_all <- X2Xcalc(S2S3, MJ_km_S2S3,
+  S3S_all <- X2Xcalc(prices = S2S3,
+                     pref_data = pref_data,
+                     logit_params = logit_params,
+                     value_time = value_time,
+                     mj_km_data = MJ_km_S2S3,
                      level_base = "S2S3",
                      level_next = "S3S",
                      group_value = "sector")
+
   S3S <- S3S_all[["df"]]
   MJ_km_S3S <- S3S_all[["MJ_km"]]
   S3S_shares <- S3S_all[["df_shares"]]
@@ -605,10 +639,10 @@ calculate_logit_inconv_endog = function(prices,
                    FV=FV,
                    base=base)
 
-  result=list(mj_km_data=mj_km_data,
-              prices_list=prices_list,
-              share_list=share_list,
-              inconv_cost=inconv,
+  result=list(mj_km_data = mj_km_data,
+              prices_list = prices_list,
+              share_list = share_list,
+              pref_data = pref_data,
               EF_shares = EF_shares,
               annual_sales = annual_sales)
 
