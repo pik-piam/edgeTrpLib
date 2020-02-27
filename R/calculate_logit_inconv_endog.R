@@ -133,11 +133,10 @@ calculate_logit_inconv_endog = function(prices,
     df4W = df[subsector_L1 == "trn_pass_road_LDV_4W", c("iso", "year", "subsector_L1", "vehicle_type", "technology", "tot_price", "logit.exponent")]
 
     ## extrapolate for all years
-    setnames(df4W, old = "tot_price", new = "value") ## rename otherwise approx_dt complains
     df4W = approx_dt(dt = df4W, xdata = futyears_all,
+                     xcol = "year", ycol = "tot_price",
                      idxcols = c("iso",  "subsector_L1", "vehicle_type", "technology"),
                      extrapolate=T)
-    setnames(df4W, old = "value", new = "tot_price")  ## rename back
 
     ## other price components for 4W are useful later but will not be carried on in the yearly calculation
     dfprices4W = df[subsector_L1 == "trn_pass_road_LDV_4W",  c("iso", "year", "subsector_L1", "vehicle_type", "technology", "fuel_price_pkm", "non_fuel_price")]
@@ -153,11 +152,11 @@ calculate_logit_inconv_endog = function(prices,
 
     ## for 4W the value of V->S1 market shares is needed on a yearly basis
     final_prefVS1cp = final_prefVS1[subsector_L1 == "trn_pass_road_LDV_4W"]
-    setnames(final_prefVS1cp, old = "sw", new = "value") ## rename otherwise approx_dt complains
+
     final_prefVS1cp = approx_dt(dt = final_prefVS1cp, xdata = futyears_all,
+                                xcol = "year", ycol = "sw",
                                 idxcols = c("iso", "vehicle_type", "subsector_L1", "subsector_L2", "subsector_L3", "sector"),
                                 extrapolate=T)
-    setnames(final_prefVS1cp, old = "value", new = "sw")  ## rename back
 
     ## initialize values needed for the for loop
     tmp2past = NULL
@@ -648,4 +647,3 @@ calculate_logit_inconv_endog = function(prices,
 
   return(result)
 }
-

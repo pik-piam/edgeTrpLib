@@ -51,11 +51,11 @@ calcVint <- function(shares, totdem_regr, prices, mj_km_data, years){
   passdem = totdem_regr[sector == "trn_pass"]
   passdem = merge(passdem, shares_4W, by = c("iso", "year"))
   passdem[, totdem := demand*share][, c("demand", "share") :=NULL]
-  setnames(passdem, old = "totdem", new = "value")                      ## rename col value otherwise approx_dt complains
+
   passdem = approx_dt(dt = passdem, xdata = tall,                       ## extrapolate to the whole time frame
+                      xcol="year", ycol="totdem",
                       idxcols = c("iso", "sector", "subsector_L1"),
                       extrapolate=T)
-  setnames(passdem, old = "value", new = "totdem")                      ## rename back column
 
   paux = 15   ## approximate lifetime of a car
   Ddt = data.table(index_yearly = seq(1,length(tall)-1,1))
@@ -154,11 +154,12 @@ calcVint <- function(shares, totdem_regr, prices, mj_km_data, years){
   ## composition of the vintages is inherited from the logit (depending on the base year): find the share of each tech-veh with respect to the starting total demand of passenger transport
   shares_tech = merge(VS1[subsector_L1 =="trn_pass_road_LDV_4W"], FV[subsector_L1 =="trn_pass_road_LDV_4W"], by = c("iso", "year", "vehicle_type", "subsector_L1"), all.y =TRUE)
   shares_tech[, share := shareVS1*shareFV]
-  setnames(shares_tech, old = "share", new = "value") ## rename otherwise approx_dt complains
+
   shares_tech = approx_dt(dt = shares_tech, xdata = tall,
+                          xcol = "year", ycol = "share"
                           idxcols = c("iso",  "subsector_L1", "vehicle_type", "technology"),
                           extrapolate=T)
-  setnames(shares_tech, old = "value", new = "shareFVVS1")  ## rename back
+  setnames(shares_tech, old = "share", new = "shareFVVS1")
   shares_tech = shares_tech[, .(iso, year, subsector_L1, vehicle_type, technology, shareFVVS1)]
   shares_tech[, variable := paste0("C_", year)] ## attribute to the column variable the year in wich the logit based value starts
   shares_tech = shares_tech[, year := NULL] ## the composition is interesting only concerning the starting year

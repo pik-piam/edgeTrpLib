@@ -29,7 +29,7 @@ prepare4REMIND <- function(demByTech, intensity, capCost,
     intensity=intensity[, c("year", regcol, "teEs", "value"),with = F]
     setnames(intensity, old = c("year", "teEs"), new = c("tall", "all_teEs"))
     intensity=approx_dt(dt=intensity, xdata=REMINDtall,
-                        xcol="tall",
+                        xcol="tall", ycol="value",
                         idxcols=c(regcol, "all_teEs"),
                         extrapolate=T)
     intensity[,value:=value ## in [milliokm/EJ]
@@ -45,7 +45,7 @@ prepare4REMIND <- function(demByTech, intensity, capCost,
     setnames(budget, old = c("year", "teEs"), new = c("tall", "all_teEs"))
 
     budget=approx_dt(dt=budget, xdata=REMINDtall,
-                     xcol="tall",
+                     xcol="tall", ycol="value",
                      idxcols=c(regcol, "all_teEs"),
                      extrapolate=T)
 
@@ -59,7 +59,7 @@ prepare4REMIND <- function(demByTech, intensity, capCost,
     demByTech=demByTech[, c("year", regcol, "all_enty", "all_in", "teEs", "value"),with = F]
     setnames(demByTech, old = c("year", "teEs"), new = c("tall", "all_teEs"))
     demByTech <- approx_dt(dt=demByTech, xdata=REMINDtall,
-                        xcol="tall",
+                        xcol="tall", ycol="value",
                         idxcols=c(regcol,"all_in","all_enty","all_teEs"),
                         extrapolate=T)[, value := EJ_2_Twa * value] ## in TWa
     setcolorder(demByTech, c("tall", regcol,"all_enty","all_in","all_teEs","value"))

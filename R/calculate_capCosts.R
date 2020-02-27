@@ -39,8 +39,9 @@ calculate_capCosts <-function(base_price, Fdemand_ES,
   non_fuel_price=non_fuel_price[!is.nan(value),]
 
   non_fuel_price = approx_dt(non_fuel_price, REMINDyears,
-                                 idxcols = c("iso", "teEs", "variable"),
-                                 extrapolate=T)
+                     xcol = "year", ycol = "value",
+                     idxcols = c("iso", "teEs", "variable"),
+                     extrapolate=T)
 
   non_fuel_price=non_fuel_price[variable=="non_fuel_price",]
   non_fuel_price[,variable:=NULL]
@@ -57,4 +58,3 @@ calculate_capCosts <-function(base_price, Fdemand_ES,
 
   return(non_fuel_price)
 }
-

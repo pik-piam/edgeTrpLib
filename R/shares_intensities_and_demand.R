@@ -115,6 +115,7 @@ shares_intensity_and_demand <- function(logit_shares,
     ## calculate demand
     demand = demandF[variable == "Value_demand", .(iso, year, CES_node, value)]
     demand = approx_dt(demand, REMINDyears,
+                     xcol = "year", ycol = "value",
                      idxcols = c("iso", "CES_node"),
                      extrapolate=T)
 
@@ -133,6 +134,7 @@ shares_intensity_and_demand <- function(logit_shares,
     ## calculate intensity
     demandI = demandF[variable == "Value_intensity", .(iso, year, CES_node, value)]
     demandI = approx_dt(demandI, REMINDyears,
+                      xcol = "year", ycol = "value",
                       idxcols = c("iso", "CES_node"),
                       extrapolate=T)
 
