@@ -156,7 +156,7 @@ calcVint <- function(shares, totdem_regr, prices, mj_km_data, years){
   shares_tech[, share := shareVS1*shareFV]
 
   shares_tech = approx_dt(dt = shares_tech, xdata = tall,
-                          xcol = "year", ycol = "share"
+                          xcol = "year", ycol = "share",
                           idxcols = c("iso",  "subsector_L1", "vehicle_type", "technology"),
                           extrapolate=T)
   setnames(shares_tech, old = "share", new = "shareFVVS1")
