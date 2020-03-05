@@ -1,5 +1,5 @@
 #' Load GDP data using `moinput` on ISO country resolution for a scenario as data.table object with given colnames.
-#' By default, the 
+#' By default, the
 #'
 #' @param scenario, GDP scenario, default is gdp_SSP2.
 #' @param yearcol, name of the year column, default "year".
@@ -37,3 +37,20 @@ getRMNDGDP <- function(scenario="gdp_SSP2",
     return(gdp)
 }
 
+
+getRMNDGDPcap <- function(scenario="gdp_SSP2",
+                          yearcol="year",
+                          isocol="iso",
+                          valuecol="weight",
+                          usecache=F,
+                          gdpfile="GDPcache.rds"){
+  gdp <- getRMNDGDP(paste0("gdp_", REMIND_scenario), usecache=T)
+  POP_country=calcOutput("Population", aggregate = F)[,, "pop_SSP2"]
+  POP <- magpie2dt(POP_country, regioncol = "iso",
+                   yearcol = "year", datacols = "POP")
+  POP=POP[,.(iso,year,POP,POP_val=value)]
+  GDP_POP=merge(gdp,POP,all = TRUE,by=c("iso","year"))
+  GDP_POP[,GDP_cap:=weight/POP_val]
+
+  return(GDP_POP)
+}
