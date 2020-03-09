@@ -53,20 +53,35 @@ applylearning <- function(gdx,REMINDmapping,EDGE2teESmap, demand_BEVtmp, ES_dema
 #' @export
 
 
-calc_num_vehicles <- function(norm_dem_BEV, ES_demand){
-  BEVdem = merge(norm_dem_BEV, ES_demand, by = c("iso", "year", "sector"))
-  BEVdem[, demand_F := demand_F*demand] ## scale up the normalized demand
+calc_num_vehicles_stations <- function(norm_dem, ES_demand_all){
+  LDVdem = merge(norm_dem, ES_demand_all, by = c("iso", "year", "sector"))
+  LDVdem[, demand_F := demand_F*demand] ## scale up the normalized demand
 
-  BEVdem[, load_factor := 2]
+  LDVdem[, load_factor := 2]
 
-  BEVdem[, annual_mileage := 15000]
+  LDVdem[, annual_mileage := 15000]
 
-  BEVdem[,vehicles_number:=demand_F   ## in trillionpkm
+  LDVdem[,vehicles_number:=demand_F   ## in trillionpkm
          /load_factor                  ## in trillionvkm
          /annual_mileage]             ## in trillion veh
 
-  BEVdem = BEVdem[, .(iso, year, vehicles_number, vehicle_type)]
+  LDVdem = LDVdem[, .(iso, year, vehicles_number, technology, vehicle_type)]
+  BEVdem = LDVdem[technology == "BEV",][, .(iso, year, vehicles_number, vehicle_type)]
 
-  return(BEVdem)
+  stations = LDVdem[, .(vehicles_number = sum(vehicles_number)), by = c("iso", "year", "technology")]
+  stations = stations[year >= 2020 & technology %in% c("BEV", "NG", "FCEV")]
+  stations[, statnum := vehicles_number*  ## in trillion veh
+                        1e6/              ## in kveh
+                        1000]             ## in stations
+
+  stations[, fracst := statnum/sum(statnum), by = c("iso", "year")]
+
+  stations = approx_dt(stations, seq(2020, 2101, 1),
+                       xcol = "year", ycol = "fracst",
+                       idxcols = c("iso", "technology"),
+                       extrapolate=T)
+
+  stations = stations[,.(iso, technology, year, fracst)]
+
+  return(list(BEVdem = BEVdem, stations = stations))
 }
-

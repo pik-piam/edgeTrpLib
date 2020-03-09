@@ -15,7 +15,8 @@ calculate_logit_inconv_endog = function(prices,
                                         pref_data,
                                         logit_params,
                                         intensity_data,
-                                        price_nonmot) {
+                                        price_nonmot,
+                                        stations = NULL) {
   ## X2Xcalc is used to traverse the logit tree, calculating shares and intensities
   X2Xcalc <- function(prices, pref_data, logit_params, value_time, mj_km_data, level_base, level_next, group_value) {
     final_pref <- pref_data[[paste0(level_next, "_final_pref")]]
@@ -92,7 +93,7 @@ calculate_logit_inconv_endog = function(prices,
 
 
 
-  F2Vcalc <- function(prices, pref_data, logit_params, value_time, mj_km_data, group_value) {
+  F2Vcalc <- function(prices, pref_data, logit_params, value_time, mj_km_data, group_value, stations) {
 
     final_prefFV <- pref_data[["FV_final_pref"]]
     final_prefVS1 <- pref_data[["VS1_final_pref"]]
@@ -100,11 +101,14 @@ calculate_logit_inconv_endog = function(prices,
     logit_exponentVS1 <- logit_params[["logit_exponent_VS1"]]
     ## create single datatable for F->V with columns separated for inconvenience and sw
     final_prefFV = dcast(final_prefFV, iso + year + technology + vehicle_type + subsector_L1 + subsector_L2 + subsector_L3 + sector ~ logit_type, value.var = "value")
-    ## liquids don't have pinfr, pmod_av, prisk. Other techs don't have the generic pinco_tot
+    ## liquids don't have pref, prange, pchar, pmod_av, prisk. Other techs don't have the generic pinco_tot
     final_prefFV[, pinco_tot := ifelse(is.na(pinco_tot), 0, pinco_tot)]
-    final_prefFV[, pinfr := ifelse(is.na(pinfr), 0, pinfr)]
+    final_prefFV[, prange := ifelse(is.na(prange), 0, prange)]
+    final_prefFV[, pchar := ifelse(is.na(pchar), 0, pchar)]
+    final_prefFV[, pref := ifelse(is.na(pref), 0, pref)]
     final_prefFV[, pmod_av := ifelse(is.na(pmod_av), 0, pmod_av)]
     final_prefFV[, prisk := ifelse(is.na(prisk), 0, prisk)]
+
     ## data contains all the prices in the beginning
     all_subsectors <- c("technology", "vehicle_type", "subsector_L1", "subsector_L2",
                         "subsector_L3", "sector")
@@ -127,7 +131,7 @@ calculate_logit_inconv_endog = function(prices,
     futyears_all = seq(2020, 2101, 1)
     ## all modes other then 4W calculated with exogenous sws
     dfother = df[(subsector_L1 != "trn_pass_road_LDV_4W"), c("iso", "year", "subsector_L2", "subsector_L3", "sector", "subsector_L1", "vehicle_type", "technology", "tot_price", "logit.exponent", "sw", "tot_VOT_price", "fuel_price_pkm", "non_fuel_price")]
-    dfhistorical4W = df[(subsector_L1 == "trn_pass_road_LDV_4W" & year < 2020), c("iso", "year", "subsector_L2", "subsector_L3", "sector", "subsector_L1", "vehicle_type", "technology", "tot_price", "logit.exponent", "pinco_tot", "pinfr", "pmod_av", "prisk", "tot_VOT_price", "fuel_price_pkm", "non_fuel_price")]
+    dfhistorical4W = df[(subsector_L1 == "trn_pass_road_LDV_4W" & year < 2020), c("iso", "year", "subsector_L2", "subsector_L3", "sector", "subsector_L1", "vehicle_type", "technology", "tot_price", "logit.exponent", "pinco_tot", "prange", "pref", "pmod_av", "prisk", "pchar", "tot_VOT_price", "fuel_price_pkm", "non_fuel_price")]
 
     ## 4W are calculated separately
     df4W = df[subsector_L1 == "trn_pass_road_LDV_4W", c("iso", "year", "subsector_L1", "vehicle_type", "technology", "tot_price", "logit.exponent")]
@@ -142,7 +146,7 @@ calculate_logit_inconv_endog = function(prices,
     dfprices4W = prices[subsector_L1 == "trn_pass_road_LDV_4W",  c("iso", "year", "subsector_L1", "vehicle_type", "technology", "fuel_price_pkm", "non_fuel_price")]
 
     ## starting value for inconvenience cost of 2020 for 4W is needed as a starting point for the iterative calculations
-    dfpinco2020 = df[subsector_L1 == "trn_pass_road_LDV_4W" & year == 2020, c("iso", "subsector_L1", "vehicle_type", "technology", "pinco_tot", "pinfr", "pmod_av", "prisk")]
+    dfpinco2020 = df[subsector_L1 == "trn_pass_road_LDV_4W" & year == 2020, c("iso", "subsector_L1", "vehicle_type", "technology", "pinco_tot", "prange", "pref", "pmod_av", "prisk", "pchar")]
 
     ## merge the yearly values and the starting inconvenience cost
     df = merge(df4W, dfpinco2020, all = TRUE, by = c("iso", "subsector_L1", "vehicle_type", "technology"))
@@ -169,6 +173,13 @@ calculate_logit_inconv_endog = function(prices,
     Ddt[, D := 1-((index_yearly-0.5)/paux)^4]
     Ddt[, D := ifelse(D<0,0,D)]
 
+    if (is.null(stations)) {
+      stations = CJ(iso =unique(df[, iso]), year = unique(df[, year]), technology = c("BEV", "NG", "FCEV"))
+      stations[, fracst := 1]
+      stations[year == 2020, fracst := 0.01]
+      stations[year == 2100, fracst := 1]
+      stations[year <= 2100, fracst := (fracst[year == 2020]-fracst[year == 2100])/(2020-2100)*(year-2020)+fracst[year==2020], by = c("iso", "technology")]
+    }
 
     start <- Sys.time()
     for (t in futyears_all[futyears_all>2020]) {
@@ -179,7 +190,7 @@ calculate_logit_inconv_endog = function(prices,
       } else {
         tmp <- df[year %in% c(2020, 2021),]
       }
-      tmp <- tmp[year == (t-1), share := (tot_price + pinco_tot + pinfr + pmod_av + prisk)^logit.exponent/(sum((tot_price + pinco_tot + pinfr + pmod_av + prisk)^logit.exponent)),
+      tmp <- tmp[year == (t-1), share := (tot_price + pinco_tot + prange + pref + pmod_av + prisk  + pchar)^logit.exponent/(sum((tot_price + pinco_tot + prange + pref + pmod_av + prisk + pchar)^logit.exponent)),
                  by = c(group_value, "year", "iso")]
       tmp2 <- tmp[year == (t-1)]
       tmp2 <- tmp2[,.(tot_price=sum(share*tot_price)),
@@ -243,10 +254,18 @@ calculate_logit_inconv_endog = function(prices,
       bmodelav = -12   ## value based on Greene 2001
       coeffrisk = 4280 ## value based on Pettifor 2017
 
+      ## merge with fraction of stations offering fuel
+      tmp = merge(tmp, stations, by = c("iso", "year", "technology"), all.x = TRUE)
+      tmp[is.na(fracst), fracst := 0]
+
       ## Calculate trend of inconvenience costs components
-      tmp[, pinfr := ifelse(year == t,
-                            pinfr[year == 2020]*exp(1)^(weighted_sharessum[year == (t-1)]*bfuelav),
-                            pinfr), by = c("iso", "technology", "vehicle_type", "subsector_L1")]
+      tmp[, pref := ifelse(year == t,
+                            pref[year == 2020]*exp(1)^(fracst[year == (t-1)]*bfuelav),
+                            pref), by = c("iso", "technology", "vehicle_type", "subsector_L1")]
+
+      tmp[, prange := ifelse(year == t,
+                           prange[year == 2020]*exp(1)^(fracst[year == (t-1)]*bfuelav),
+                           prange), by = c("iso", "technology", "vehicle_type", "subsector_L1")]
 
       tmp[, pmod_av := ifelse(year == t,
                               pmod_av[year == 2020]*exp(1)^(weighted_sharessum[year == (t-1)]*bmodelav),
@@ -266,7 +285,7 @@ calculate_logit_inconv_endog = function(prices,
       }
 
       ## remove "temporary" columns
-      tmp[, c("shareFS1","D", "weighted_shares", "weighted_sharessum", "index_yearly") := NULL]
+      tmp[, c("shareFS1","D", "weighted_shares", "weighted_sharessum", "index_yearly", "fracst") := NULL]
 
       if (t<tail(futyears_all,1)) {
         tmp1 = copy(tmp)
@@ -281,15 +300,15 @@ calculate_logit_inconv_endog = function(prices,
     tmp1[, c("subsector_L2", "subsector_L3", "sector") := list("trn_pass_road_LDV", "trn_pass_road", "trn_pass")]
     tmp1[, share := NULL]
     ## merge tmp1 and historical 4W
-    tmp1 = rbind(tmp1, dfhistorical4W[, c("year", "technology", "iso", "subsector_L1", "vehicle_type", "tot_price", "logit.exponent", "pinco_tot", "pinfr", "pmod_av", "prisk", "subsector_L2", "subsector_L3", "sector")])
-    tmp1 <- tmp1[, share := (tot_price+pinco_tot+pinfr+pmod_av+prisk)^logit.exponent/(sum((tot_price+pinco_tot+pinfr+pmod_av+prisk)^logit.exponent)),
+    tmp1 = rbind(tmp1, dfhistorical4W[, c("year", "technology", "iso", "subsector_L1", "vehicle_type", "tot_price", "logit.exponent", "pinco_tot", "prange", "pref", "pmod_av", "prisk", "pchar", "subsector_L2", "subsector_L3", "sector")])
+    tmp1 <- tmp1[, share := (tot_price+pinco_tot+prange+pref+pmod_av+prisk+pchar)^logit.exponent/(sum((tot_price+pinco_tot+prange+pref+pmod_av+prisk+pchar)^logit.exponent)),
                  by = c("vehicle_type", "year", "iso")]
 
     ## merge with prices
     tmp1 = merge(tmp1[year %in% unique(dfother$year)], dfprices4W, all.x = TRUE, by = intersect(names(tmp1), names(dfprices4W)))
 
     ## copy of tmp1 is needed to create the updated version of preferences trend
-    inconv = copy(tmp1[,.(year, iso, sector, subsector_L3, subsector_L2, subsector_L1, vehicle_type, technology, pinco_tot, pinfr, pmod_av, prisk)])
+    inconv = copy(tmp1[,.(year, iso, sector, subsector_L3, subsector_L2, subsector_L1, vehicle_type, technology, pinco_tot, prange, pref, pmod_av, prisk, pchar)])
     ## values after 2100 are set to be equal to 2100
     inconv = rbind(inconv, inconv[year==2100][,year:=2110], inconv[year==2100][,year:=2130],inconv[year==2100][,year:=2150])
     ## inconv and final_prefFV need the same structure as pref_data[["FV_final_pref"]]
@@ -472,7 +491,8 @@ calculate_logit_inconv_endog = function(prices,
                     logit_params = logit_params,
                     value_time = value_time,
                     mj_km_data = mj_km_data,
-                    group_value = "vehicle_type")
+                    group_value = "vehicle_type",
+                    stations = stations)
 
   FV <- FV_all[["df"]]
   MJ_km_FV <- FV_all[["MJ_km"]]
