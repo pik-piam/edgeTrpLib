@@ -9,7 +9,7 @@
 #' @import data.table
 #' @export
 
-applylearning <- function(gdx,REMINDmapping,EDGE2teESmap, demand_BEVtmp, ES_demandpr){
+applylearning <- function(non_fuel_costs, gdx,REMINDmapping,EDGE2teESmap, demand_BEVtmp, ES_demandpr){
   ## find the estimated number of cars
   demand = merge(ES_demand, ES_demandpr)
   demand = demand[, ratio := demand/demandpr][,-c("demand", "demandpr")] ## ratio from previous iteration of total demand
@@ -37,7 +37,8 @@ applylearning <- function(gdx,REMINDmapping,EDGE2teESmap, demand_BEVtmp, ES_dema
   batterycomponent = 0.2*0.8 ## average number 80% for purchase cost
   nonfuel_costsBEV[year >= 2020, non_fuel_price := ifelse(!is.na(factor),factor*batterycomponent*non_fuel_price+(1-batterycomponent)*non_fuel_price, non_fuel_price)]
   nonfuel_costsBEV[,c("factor", "cumul", "vehicles_number"):= NULL]
-  nonfuel_costs = nonfuel_costs[!(technology=="BEV" & subsector_L1 =="trn_pass_road_LDV_4W"),]
+  nonfuel_costsBEV = nonfuel_costsBEV[year >= 2020,]
+  nonfuel_costs = nonfuel_costs[!(technology=="BEV" & subsector_L1 =="trn_pass_road_LDV_4W" & year >= 2020),]
   nonfuel_costs = rbind(nonfuel_costs, nonfuel_costsBEV)
 
   return(nonfuel_costs)
