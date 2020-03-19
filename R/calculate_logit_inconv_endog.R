@@ -252,7 +252,7 @@ calculate_logit_inconv_endog = function(prices,
       ## coefficients of the intangible costs trend
       bfuelav = -20    ## value based on Greene 2001
       bmodelav = -12   ## value based on Greene 2001
-      coeffrisk = 4280 ## value based on Pettifor 2017
+      coeffrisk = 3800 ## value based on Pettifor 2017
 
       ## merge with fraction of stations offering fuel
       tmp = merge(tmp, stations, by = c("iso", "year", "technology"), all.x = TRUE)
@@ -269,6 +269,14 @@ calculate_logit_inconv_endog = function(prices,
 
       tmp[, pmod_av := ifelse(year == t,
                               pmod_av[year == 2020]*exp(1)^(weighted_sharessum[year == (t-1)]*bmodelav),
+                              pmod_av), by = c("iso", "technology", "vehicle_type", "subsector_L1")]
+
+      tmp[, pmod_av := ifelse(year == t & technology == "Hybrid Liquids",
+                              pmod_av[year == 2020]*exp(1)^(weighted_sharessum[year == (t-1)]*(0.1*bmodelav)),
+                              pmod_av), by = c("iso", "technology", "vehicle_type", "subsector_L1")]
+
+      tmp[, pmod_av := ifelse(year == t & technology == "Hybrid Electric",
+                              pmod_av[year == 2020]*exp(1)^(weighted_sharessum[year == (t-1)]*(0.5*bmodelav)),
                               pmod_av), by = c("iso", "technology", "vehicle_type", "subsector_L1")]
 
       tmp[, prisk := ifelse(year == t,
@@ -316,7 +324,16 @@ calculate_logit_inconv_endog = function(prices,
     setnames(inconv, old = "variable", new = "logit_type")
     final_prefFV = melt(final_prefFV, id.vars = c("year", "iso", "sector", "subsector_L3", "subsector_L2", "subsector_L1", "vehicle_type", "technology"))
     setnames(final_prefFV, old = "variable", new = "logit_type")
-    final_prefFV = rbind(final_prefFV[subsector_L1 != "trn_pass_road_LDV_4W"], inconv)
+    final_prefFV = rbind(final_prefFV[subsector_L1 != "trn_pass_road_LDV_4W" & logit_type == "sw"],
+                         inconv[(technology == "Liquids" & logit_type == "pinco_tot")|
+                                  (technology == "BEV" & logit_type %in% c("prange", "prisk", "pchar", "pmod_av"))|
+                                  (technology == "FCEV" & logit_type %in% c("pref", "prisk", "pmod_av"))|
+                                  (technology == "NG" & logit_type %in% c("pref", "prisk", "pmod_av"))|
+                                  (technology == "Hybrid Electric" & logit_type %in% c("prisk", "pchar", "pmod_av"))|
+                                  (technology == "Hybrid Liquids" & logit_type %in% c("prisk", "pmod_av"))])
+    intensity_data = intensity_data[EJ_Mpkm_final>0]
+    final_prefFV = merge(final_prefFV, unique(intensity_data[, c("iso", "vehicle_type")]), by = c("iso", "vehicle_type"), all.y = TRUE)
+
     ## overwrite the preferences with the market based ones
     pref_data[["FV_final_pref"]] = final_prefFV
 
