@@ -70,13 +70,13 @@ calc_num_vehicles_stations <- function(norm_dem, ES_demand_all){
   BEVdem = LDVdem[technology == "BEV",][, .(iso, year, vehicles_number, vehicle_type)]
 
   stations = LDVdem[, .(vehicles_number = sum(vehicles_number)), by = c("iso", "year", "technology")]
-  stations = stations[year >= 2020 & technology %in% c("BEV", "NG", "FCEV")]
+  stations = stations[year >= 2020]
   stations[, statnum := vehicles_number*  ## in trillion veh
                         1e6/              ## in kveh
                         1000]             ## in stations
 
   stations[, fracst := statnum/sum(statnum), by = c("iso", "year")]
-
+  stations = stations[technology %in% c("BEV", "NG", "FCEV"),]
   stations = approx_dt(stations, seq(2020, 2101, 1),
                        xcol = "year", ycol = "fracst",
                        idxcols = c("iso", "technology"),
