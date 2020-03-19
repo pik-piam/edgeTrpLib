@@ -146,7 +146,7 @@ merge_prices <- function(gdx, REMINDmapping, REMINDyears,
     ## define rich countries
     richcountries = unique(unique(tmp[year == 2010 & GDP_cap > 25000, iso]))
     ## calculate average non fuel price (averaged on GDP) across rich countries and find total GDP and population
-    richave = tmp[iso %in% richcountries,]
+    richave = tmp[iso %in% richcountries & non_fuel_price > 0,]
     richave = richave[, .(non_fuel_price = sum(non_fuel_price*weight)/sum(weight)), by = c("subsector_L1", "vehicle_type", "technology", "year")]
     GDP_POP = GDP_POP[iso %in% richcountries,]
     GDP_POP = GDP_POP[, .(GDP = sum(weight), POP_val = sum(POP_val)), by = c("year")]
