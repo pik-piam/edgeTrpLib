@@ -16,6 +16,7 @@ calculate_logit_inconv_endog = function(prices,
                                         logit_params,
                                         intensity_data,
                                         price_nonmot,
+                                        techswitch,
                                         stations = NULL) {
   ## X2Xcalc is used to traverse the logit tree, calculating shares and intensities
   X2Xcalc <- function(prices, pref_data, logit_params, value_time, mj_km_data, level_base, level_next, group_value) {
@@ -93,8 +94,7 @@ calculate_logit_inconv_endog = function(prices,
 
 
 
-  F2Vcalc <- function(prices, pref_data, logit_params, value_time, mj_km_data, group_value, stations) {
-
+  F2Vcalc <- function(prices, pref_data, logit_params, value_time, mj_km_data, group_value, stations, techswitch) {
     final_prefFV <- pref_data[["FV_final_pref"]]
     final_prefVS1 <- pref_data[["VS1_final_pref"]]
     logit_exponentFV <- logit_params[["logit_exponent_FV"]]
@@ -177,9 +177,8 @@ calculate_logit_inconv_endog = function(prices,
       stations = CJ(iso =unique(df[, iso]), year = unique(df[, year]), technology = c("BEV", "NG", "FCEV"))
       stations[, fracst := 1]
       stations[year == 2020, fracst := 0.01]
-      stations[year == 2100, fracst := 1]
       stations[year <= 2100, fracst := (fracst[year == 2020]-fracst[year == 2100])/(2020-2100)*(year-2020)+fracst[year==2020], by = c("iso", "technology")]
-    }
+      }
 
     start <- Sys.time()
     for (t in futyears_all[futyears_all>2020]) {
@@ -252,6 +251,9 @@ calculate_logit_inconv_endog = function(prices,
       ## coefficients of the intangible costs trend
       bfuelav = -20    ## value based on Greene 2001
       bmodelav = -12   ## value based on Greene 2001
+      if (techswitch == "FCEV") {
+        bmodelav = -20
+      }
       coeffrisk = 3800 ## value based on Pettifor 2017
 
       ## merge with fraction of stations offering fuel
@@ -509,6 +511,7 @@ calculate_logit_inconv_endog = function(prices,
                     value_time = value_time,
                     mj_km_data = mj_km_data,
                     group_value = "vehicle_type",
+                    techswitch = techswitch,
                     stations = stations)
 
   FV <- FV_all[["df"]]
