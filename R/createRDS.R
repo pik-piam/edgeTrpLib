@@ -34,10 +34,6 @@ createRDS <- function(input_path, data_path, SSP_scenario, EDGE_scenario){
 
 
   ## create RDS files for lists
-  csv2RDS(pattern = "SW",
-          filename = "SW",
-          input_path = input_path,
-          names_dt = c("year", "iso", "SSPscen", "EDGEscen", "sector", "subsector_L3", "subsector_L2", "subsector_L1", "vehicle_type", "technology", "entry", "sw"))
 
   csv2RDS(pattern = "pref",
           filename = "pref",
@@ -87,7 +83,6 @@ loadInputData <- function(data_path){
   }
 
   vot_data <- readRDS(datapathForFile("VOT_iso.RDS"))
-  sw_data <- readRDS(datapathForFile("SW.RDS"))
   pref_data <- readRDS(datapathForFile("pref.RDS"))
   logit_params <- readRDS(datapathForFile("logit_exp.RDS"))
   int_dat <- readRDS(datapathForFile("harmonized_intensities.RDS"))
@@ -108,7 +103,6 @@ loadInputData <- function(data_path){
   pref_data$S3S_final_pref = dcast(pref_data$S3S_final_pref, iso + year + subsector_L3 + sector ~ logit_type, value.var = "value")
 
   return(list(vot_data = vot_data,
-              sw_data = sw_data,
               pref_data = pref_data,
               logit_params = logit_params,
               int_dat = int_dat,
