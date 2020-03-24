@@ -34,7 +34,7 @@ applylearning <- function(non_fuel_costs, gdx,REMINDmapping,EDGE2teESmap, demand
 
   if (rebates_febates) {
     ## after 2035, the "original" price of 2020 (before the rebates) is used
-    nonfuel_costsBEV[, non_fuel_price := ifelse(year > 2035, non_fuel_price[year == 2020]), by = c("iso", "vehicle_type")]
+    nonfuel_costsBEV[, non_fuel_price := ifelse(year > 2035, non_fuel_price[year == 2020], non_fuel_price), by = c("iso", "vehicle_type")]
   } else {
     ## in case of no rebates, the price of 2020 applies to all time steps
     nonfuel_costsBEV[year >= 2020, non_fuel_price := non_fuel_price[year == 2020], by = c("iso", "vehicle_type")]
