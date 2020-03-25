@@ -177,7 +177,14 @@ calculate_logit_inconv_endog = function(prices,
       stations = CJ(iso =unique(df[, iso]), year = unique(df[, year]), technology = c("BEV", "NG", "FCEV"))
       stations[, fracst := 1]
       stations[year == 2020, fracst := 0.01]
-      stations[year <= 2100, fracst := (fracst[year == 2020]-fracst[year == 2100])/(2020-2100)*(year-2020)+fracst[year==2020], by = c("iso", "technology")]
+
+      if (techswitch == "FCEV") {
+        yearconv = 2050
+        stations[year <= yearconv & technology == "FCEV", fracst := (fracst[year == 2020]-fracst[year == yearconv])/(2020-yearconv)*(year-2020)+fracst[year==2020], by = c("iso", "technology")]
+        stations[year <= 2100 & technology != "FCEV", fracst := (fracst[year == 2020]-fracst[year == 2100])/(2020-2100)*(year-2020)+fracst[year==2020], by = c("iso", "technology")]
+      } else {
+        stations[year <= 2100, fracst := (fracst[year == 2020]-fracst[year == 2100])/(2020-2100)*(year-2020)+fracst[year==2020], by = c("iso", "technology")]
+      }
       }
 
     start <- Sys.time()
@@ -252,7 +259,7 @@ calculate_logit_inconv_endog = function(prices,
       bfuelav = -20    ## value based on Greene 2001
       bmodelav = -12   ## value based on Greene 2001
       if (techswitch == "FCEV") {
-        bmodelav = -20
+        bmodelav = -20  ## faster decrease of model availability for FCEVs
       }
       coeffrisk = 3800 ## value based on Pettifor 2017
 
