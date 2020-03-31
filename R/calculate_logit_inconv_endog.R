@@ -341,8 +341,9 @@ calculate_logit_inconv_endog = function(prices,
                                   (technology == "Hybrid Electric" & logit_type %in% c("prisk", "pchar", "pmod_av"))|
                                   (technology == "Hybrid Liquids" & logit_type %in% c("prisk", "pmod_av"))])
     intensity_data = intensity_data[EJ_Mpkm_final>0]
+    final_prefNonMot = final_prefFV[vehicle_type %in% c("Cycle_tmp_vehicletype", "Walk_tmp_vehicletype"),]
     final_prefFV = merge(final_prefFV, unique(intensity_data[, c("iso", "vehicle_type")]), by = c("iso", "vehicle_type"), all.y = TRUE)
-
+    final_prefFV = rbind(final_prefNonMot, final_prefFV)
     ## overwrite the preferences with the market based ones
     pref_data[["FV_final_pref"]] = final_prefFV
 
