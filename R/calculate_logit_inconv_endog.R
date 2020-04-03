@@ -16,6 +16,7 @@ calculate_logit_inconv_endog = function(prices,
                                         logit_params,
                                         intensity_data,
                                         price_nonmot,
+                                        nfprices_advanced,
                                         techswitch,
                                         stations = NULL) {
   ## X2Xcalc is used to traverse the logit tree, calculating shares and intensities
@@ -478,18 +479,15 @@ calculate_logit_inconv_endog = function(prices,
                         mj_km_data[subsector_L1 == "trn_pass_road_LDV_4W" & year > 2020 & technology =="Liquids"][, c("type", "MJ_km") := list("middle", MJ_km*0.35)],
                         mj_km_data[subsector_L1 == "trn_pass_road_LDV_4W" & year > 2020 & technology =="Liquids"][, type := "normal"])
 
-  baseEF = merge(base[subsector_L1 == "trn_pass_road_LDV_4W" & year > 2020 & technology =="Liquids"],
+  ## non fuel prices of Liquids LDVs advanced and mid-advanced categories is merged to the other prices
+  nfprices_advanced = merge(nfprices_advanced[year>2020],
+                            base[subsector_L1 == "trn_pass_road_LDV_4W" & year > 2020 & technology =="Liquids", ][, non_fuel_price := NULL],
+                            by = names(nfprices_advanced)[!(names(nfprices_advanced) %in% c("non_fuel_price", "type"))])
+
+  baseEF = rbind(base[subsector_L1 == "trn_pass_road_LDV_4W" & year > 2020 & technology =="Liquids"][, type := "normal"], nfprices_advanced)
+  baseEF = merge(baseEF,
                  mj_km_dataEF[,c("iso", "year", "technology", "vehicle_type", "type", "MJ_km"), ],
-                 by = c("iso", "year", "technology", "vehicle_type"))
-
-  ## temporary shortcut to roughly represent the increase in non fuel price due to additional 3500 dollars purchase cost
-  tmp = data.table(vehicle_type = c("Mini Car", "Subcompact Car", "Compact Car", "Midsize Car", "Large Car", "Large Car and SUV", "Van", "Light Truck and SUV", "Multipurpose Vehicle"),
-                   dpp_nfp = c(0.27, 0.15, 0.1, 0.07, 0.05, 0.05, 0.05, 0.05, 0.05)) ## PP'=PP+3500$ -> PP~50%NFP, for small cars 3500$=55%PP, for big cars 3500$=10%PP ->small cars: 55%*50%~27%, big cars 10%*50%~5%
-
-  baseEF = merge(baseEF, tmp, by = c("vehicle_type"))
-  baseEF[type == "advanced", non_fuel_price := (1+dpp_nfp)*non_fuel_price]
-  baseEF[type == "middle", non_fuel_price := (1+0.5*dpp_nfp)*non_fuel_price]
-  baseEF[, dpp_nfp := NULL]
+                 by = c("iso", "year", "technology", "vehicle_type", "type"))
 
   ## fuel price needs to be recalculated as the energy intensity changed
   baseEF[, c("fuel_price_pkm", "MJ_km") := list(fuel_price    ## in $/EJ

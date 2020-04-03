@@ -64,7 +64,7 @@ createRDS <- function(input_path, data_path, SSP_scenario, EDGE_scenario){
   csv2RDS(pattern = "UCD_NEC_iso",
           filename = "UCD_NEC_iso",
           input_path = input_path,
-          names_dt = c("year", "iso", "SSPscen", "EDGEscen", "sector", "subsector_L3", "subsector_L2", "subsector_L1", "vehicle_type", "technology", "entry", "non_fuel_price"))
+          names_dt = c("year", "iso", "SSPscen", "EDGEscen", "sector", "subsector_L3", "subsector_L2", "subsector_L1", "vehicle_type", "technology", "type", "entry", "non_fuel_price"))
 
 }
 
