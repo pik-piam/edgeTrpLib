@@ -259,9 +259,6 @@ calculate_logit_inconv_endog = function(prices,
       ## coefficients of the intangible costs trend
       bfuelav = -20    ## value based on Greene 2001
       bmodelav = -12   ## value based on Greene 2001
-      if (techswitch == "FCEV") {
-        bmodelav = -20  ## faster decrease of model availability for FCEVs
-      }
       coeffrisk = 3800 ## value based on Pettifor 2017
 
       ## merge with fraction of stations offering fuel
@@ -281,13 +278,11 @@ calculate_logit_inconv_endog = function(prices,
                               pmod_av[year == 2020]*exp(1)^(weighted_sharessum[year == (t-1)]*bmodelav),
                               pmod_av), by = c("iso", "technology", "vehicle_type", "subsector_L1")]
 
-      tmp[, pmod_av := ifelse(year == t & technology == "Hybrid Liquids",
-                              pmod_av[year == 2020]*exp(1)^(weighted_sharessum[year == (t-1)]*(0.1*bmodelav)),
-                              pmod_av), by = c("iso", "technology", "vehicle_type", "subsector_L1")]
-
-      tmp[, pmod_av := ifelse(year == t & technology == "Hybrid Electric",
-                              pmod_av[year == 2020]*exp(1)^(weighted_sharessum[year == (t-1)]*(0.5*bmodelav)),
-                              pmod_av), by = c("iso", "technology", "vehicle_type", "subsector_L1")]
+      if (techswitch == "FCEV") {
+        tmp[technology == "FCEV", pmod_av := ifelse(year == t,
+                                                    pmod_av[year == 2020]*exp(1)^(weighted_sharessum[year == (t-1)]*(1.5*bmodelav)),
+                                                    pmod_av), by = c("iso", "technology", "vehicle_type", "subsector_L1")]
+      }
 
       tmp[, prisk := ifelse(year == t,
                             pmax(prisk[year == 2020]-coeffrisk*weighted_sharessum[year == (t-1)], 0),
