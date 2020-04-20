@@ -18,6 +18,13 @@ shares_intensity_and_demand <- function(logit_shares,
                                         scenario,
                                         demand_input=NULL,
                                         REMIND2ISO_MAPPING=NULL){
+
+    ## variable masks for code checking facility
+    `.` <- share <- iso <- sector <- subsector_L3 <- subsector_L2 <- subsector_L1 <- NULL
+    demand_L2 <- demand_L1 <- demand_L3 <- vehicle_type <- demand_V <- demand_EJ <- demand_F <- NULL
+    technology <- MJ_km <- demand_EJel <- demand_EJliq <- MJ_kmel <- MJ_kmliq <- NULL
+    variable <- sector_fuel <- CES_node <- Value_demand <- value <- CES_parent <- NULL
+
     ## load the shares at each level
     S3S_shares <- logit_shares[["S3S_shares"]]
     S2S3_shares <- logit_shares[["S2S3_shares"]]

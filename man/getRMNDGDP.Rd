@@ -2,8 +2,8 @@
 % Please edit documentation in R/helpers.R
 \name{getRMNDGDP}
 \alias{getRMNDGDP}
-\title{Load GDP data using `moinput` on ISO country resolution for a scenario as data.table object with given colnames.
-By default, the}
+\title{Load GDP data using `moinput` on ISO country resolution for a scenario as
+data.table object with given colnames.}
 \usage{
 getRMNDGDP(
   scenario = "gdp_SSP2",
@@ -28,7 +28,7 @@ getRMNDGDP(
 \item{gdpfile, }{if caching is required, specify the filename here, default is "GDPcache.rds"}
 }
 \description{
-Load GDP data using `moinput` on ISO country resolution for a scenario as data.table object with given colnames.
-By default, the
+If GDP values are required frequently, a cache file can be used to retrieve the
+data fast.
 }
 \keyword{gdp}

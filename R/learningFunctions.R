@@ -10,6 +10,8 @@
 #' @export
 
 applylearning <- function(gdx,REMINDmapping,EDGE2teESmap, demand_BEVtmp, ES_demandpr){
+  `.` <- ES_demand <- ratio <- demandpr <- vehicles_number <- cumul <- technology <- subsector_L1 <- non_fuel_price <- NULL
+  
   ## find the estimated number of cars
   demand = merge(ES_demand, ES_demandpr)
   demand = demand[, ratio := demand/demandpr][,-c("demand", "demandpr")] ## ratio from previous iteration of total demand
@@ -54,6 +56,7 @@ applylearning <- function(gdx,REMINDmapping,EDGE2teESmap, demand_BEVtmp, ES_dema
 
 
 calc_num_vehicles <- function(norm_dem_BEV, ES_demand){
+  demand_F <- demand <- load_factor <- annual_mileage <- iso <- `.` <- vehicles_number <- vehicle_type <- demand_F
   BEVdem = merge(norm_dem_BEV, ES_demand, by = c("iso", "year", "sector"))
   BEVdem[, demand_F := demand_F*demand] ## scale up the normalized demand
 

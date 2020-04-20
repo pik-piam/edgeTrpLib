@@ -10,6 +10,8 @@
 
 
 readREMINDdemand= function(gdx,REMINDmapping,EDGE2teESmap, years){
+  scenario <- `.` <- iso <- EDGE_top <- value <- demand <- NULL
+
   dem <- readGDX(gdx, c("vm_cesIO"),field = "l")
   dem <- dem[, , c("entrp_pass_sm","entrp_pass_lo","entrp_frgt_sm","entrp_frgt_lo")]
 
