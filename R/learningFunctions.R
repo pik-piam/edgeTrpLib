@@ -3,16 +3,19 @@
 #' @param gdx input gdx file
 #' @param REMINDmapping mapping of REMIND regions to ISO3 country codes
 #' @param EDGE2teESmap mapping of EDGE-T/GCAM technologies to REMIND ES technologies
-#' @param demand_BEVtmp the demand for BEVs from the previous iteration
 #' @param ES_demandpr the ES demand
+#' @param non_fuel_costs non fuel costs on which learning is applied
+#' @param demand_learntmp the demand for vehicles from the previous iteration
+#' @param rebates_febatesBEV option rebates for BEVs
+#' @param rebates_febatesFCEV option rebates for FCEVs
 #'
 #' @import data.table
 #' @export
 
 applylearning <- function(non_fuel_costs, gdx,REMINDmapping,EDGE2teESmap, demand_learntmp, ES_demandpr, rebates_febatesBEV, rebates_febatesFCEV){
 
-  `.` <- ES_demand <- ratio <- demandpr <- vehicles_number <- cumul <- technology <- subsector_L1 <- non_fuel_price <- NULL
-  
+  `.` <- ES_demand <- ratio <- demandpr <- vehicles_number <- cumul <- technology <- subsector_L1 <- non_fuel_price <- b <- initialyear <- NULL
+
   ## find the estimated number of cars
   demand = merge(ES_demand, ES_demandpr)
   demand = demand[, ratio := demand/demandpr][,-c("demand", "demandpr")] ## ratio from previous iteration of total demand
@@ -78,17 +81,17 @@ applylearning <- function(non_fuel_costs, gdx,REMINDmapping,EDGE2teESmap, demand
 
 #' Calculate number of vehicles scaling up the normalized demand with the aggregate total demand
 #'
-#' @param norm_dem_BEV normalized demand shares for BEVs
-#' @param ES_demand total demand for ESs
-#'
+#' @param norm_dem normalized demand shares
+#' @param ES_demand_all total demand for ESs
+#' @param techswitch technology that the policymaker wants to promote
 #' @import data.table
 #' @export
 
 
 
 calc_num_vehicles_stations <- function(norm_dem, ES_demand_all, techswitch){
-  demand_F <- demand <- load_factor <- annual_mileage <- iso <- `.` <- vehicles_number <- vehicle_type <- demand_F
-  
+  demand_F <- demand <- load_factor <- annual_mileage <- iso <- `.` <- vehicles_number <- vehicle_type <- demand_F <- technology <- statnum <- fracst <- NULL
+
   LDVdem = merge(norm_dem, ES_demand_all, by = c("iso", "year", "sector"))
   LDVdem[, demand_F := demand_F*demand] ## scale up the normalized demand
 
