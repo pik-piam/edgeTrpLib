@@ -16,6 +16,11 @@ calculate_logitinconv <- function(prices,
                             intensity_data,
                             price_nonmot) {
 
+  tot_price <- non_fuel_price <- subsector_L3 <- logit.exponent <- share <- pinco <- NULL
+  time_price <- `.` <- fuel_price_pkm <- tot_VOT_price <- MJ_km <- EJ_Mpkm_final <- NULL
+  iso <- technology <- vehicle_type <- subsector_L1 <- NULL
+  
+  
   ## X2Xcalc is used to traverse the logit tree, calculating shares and intensities
   X2Xcalc <- function(prices, mj_km_data, level_base, level_next, group_value) {
     final_inco <- inco_data[[paste0(level_next, "_final_inconv")]]

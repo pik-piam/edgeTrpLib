@@ -19,6 +19,14 @@ calculate_logit_inconv_endog = function(prices,
                                         nfprices_advanced,
                                         techswitch,
                                         stations = NULL) {
+
+  tot_price <- non_fuel_price <- subsector_L3 <- logit.exponent <- share <- sw <- time_price <- NULL
+  tot_VOT_price <- `.` <- fuel_price_pkm <- subsector_L1 <- D <- index_yearly <- pinco <- NULL
+  shareVS1 <- sw <- iso <- vehicle_type <- shareFS1 <- weighted_shares <- weighted_sharessum <- NULL
+  technology <- cluster <- combined_shareEL <- combined_shareLiq <- techswitch <- tail <- NULL
+  sector <- subsector_L2 <- MJ_km <- EJ_Mpkm_final <- type <- dpp_nfp <- fuel_price <- value_time <- NULL
+
+
   ## X2Xcalc is used to traverse the logit tree, calculating shares and intensities
   X2Xcalc <- function(prices, pref_data, logit_params, value_time, mj_km_data, level_base, level_next, group_value) {
     final_pref <- pref_data[[paste0(level_next, "_final_pref")]]

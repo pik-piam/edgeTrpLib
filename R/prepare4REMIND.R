@@ -14,6 +14,7 @@ prepare4REMIND <- function(demByTech, intensity, capCost,
                            EDGE2teESmap,
                            REMINDtall,
                            REMIND2ISO_MAPPING=NULL){
+    value <- NULL
 
     ## define regional aggregation
     if (!is.null(REMIND2ISO_MAPPING)) {
