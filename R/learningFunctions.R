@@ -58,20 +58,17 @@ applylearning <- function(non_fuel_costs, gdx,REMINDmapping,EDGE2teESmap, demand
   ## powertrain represents ~20% of the total purchase price, which represents the ~80% of the non-fuel price
   batterycomponent = 0.2*0.8 ## average number 80% for purchase cost
   ## powertrain represents ??% of the average purchase price
-  fuelcellcomponent = 0.3 ## average
+  fuelcellcomponent = 0.4 ## average https://www.energy.gov/sites/prod/files/2014/03/f9/fcev_status_prospects_july2013.pdf
   nonfuel_costslearn[year >= 2020 & technology == "BEV", non_fuel_price := ifelse(!is.na(factor),factor*batterycomponent*non_fuel_price+(1-batterycomponent)*non_fuel_price, non_fuel_price)]
   nonfuel_costslearn[year >= 2020 & technology == "FCEV", non_fuel_price := ifelse(!is.na(factor),factor*fuelcellcomponent*non_fuel_price+(1-fuelcellcomponent)*non_fuel_price, non_fuel_price)]
   nonfuel_costslearn = nonfuel_costslearn[year >= 2020]
   nonfuel_costslearn[,c("factor", "cumul", "vehicles_number", "initialcap", "initialyear"):= NULL]
-    ## BEV are too cheap, the models wants them in case of moving to FCEVs: learning has to be switched off for BEVs in Hydrogen push scenarios
-  if (techswitch != "FCEV") {
-    techlearn = c("BEV", "FCEV")
-  } else {
-    techlearn = "FCEV"
-  }
+  
+  ## technologies subjected to learning
+  techlearn = c("BEV", "FCEV")
+  ## integrate non fuel costs from the input data  with the updated values from learning
   nonfuel_costs = nonfuel_costs[!(technology %in% techlearn & subsector_L1 =="trn_pass_road_LDV_4W" & year >=2020),]
   nonfuel_costs = rbind(nonfuel_costs, nonfuel_costslearn[technology %in% techlearn])
-
 
   return(nonfuel_costs)
 }
@@ -85,7 +82,7 @@ applylearning <- function(non_fuel_costs, gdx,REMINDmapping,EDGE2teESmap, demand
 #' @export
 
 
-calc_num_vehicles_stations <- function(norm_dem, ES_demand_all){
+calc_num_vehicles_stations <- function(norm_dem, ES_demand_all, techswitch){
   LDVdem = merge(norm_dem, ES_demand_all, by = c("iso", "year", "sector"))
   LDVdem[, demand_F := demand_F*demand] ## scale up the normalized demand
 
@@ -102,9 +99,21 @@ calc_num_vehicles_stations <- function(norm_dem, ES_demand_all){
 
   stations = LDVdem[, .(vehicles_number = sum(vehicles_number)), by = c("iso", "year", "technology")]
   stations = stations[year >= 2020]
-  stations[, statnum := vehicles_number*  ## in trillion veh
+  
+ if (techswitch =="FCEV"){
+   stations[technology == "FCEV",  statnum := 10*               ## policy over-reacts to FCEVs number and incentivize the construction of stations
+                                              vehicles_number*  ## in trillion veh
+                                              1e6/              ## in kveh
+                                              1000]             ## in stations
+
+   stations[technology != "FCEV",  statnum := vehicles_number*  ## in trillion veh
+                                              1e6/              ## in kveh
+                                              1000]             ## in stations
+ } else {
+    stations[,  statnum := vehicles_number*  ## in trillion veh
                         1e6/              ## in kveh
                         1000]             ## in stations
+ }
 
   stations[, fracst := statnum/sum(statnum), by = c("iso", "year")]
   stations = stations[technology %in% c("BEV", "NG", "FCEV"),]

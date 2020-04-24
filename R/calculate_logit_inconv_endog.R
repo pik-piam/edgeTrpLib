@@ -177,13 +177,22 @@ calculate_logit_inconv_endog = function(prices,
     if (is.null(stations)) {
       stations = CJ(iso =unique(df[, iso]), year = unique(df[, year]), technology = c("BEV", "NG", "FCEV"))
       stations[, fracst := 1]
+      ## attribute a very low value to current available refuelling stations with alternative fuels
       stations[year == 2020, fracst := 0.01]
 
       if (techswitch == "FCEV") {
-        yearconv = 2050
-        stations[year <= yearconv & technology == "FCEV", fracst := (fracst[year == 2020]-fracst[year == yearconv])/(2020-yearconv)*(year-2020)+fracst[year==2020], by = c("iso", "technology")]
-        stations[year <= 2100 & technology != "FCEV", fracst := (fracst[year == 2020]-fracst[year == 2100])/(2020-2100)*(year-2020)+fracst[year==2020], by = c("iso", "technology")]
-      } else {
+       ## policymaker plans many hydrogen refuelling points: all stations have H2 available by 2050
+       yearconv = 2050
+       stations[year <= yearconv & technology == "FCEV", fracst := (fracst[year == 2020]-fracst[year == yearconv])/(2020-yearconv)*(year-2020)+fracst[year==2020], by = c("iso", "technology")]
+       ## policymaker plans to install few electricity rechargers: in 2100 only 10% of stations have them
+       stations[year <= 2100 & technology == "BEV", fracst := (fracst[year == 2020]-0.1)/(2020-2100)*(year-2020)+fracst[year==2020], by = c("iso", "technology")]
+       stations[year >= 2100 & technology == "BEV", fracst := 0.1]
+       
+       ## NG stations are converging to 1 in 2100
+       stations[year <= 2100 & technology == "NG", fracst := (fracst[year == 2020]-fracst[year == 2100])/(2020-2100)*(year-2020)+fracst[year==2020], by = c("iso", "technology")]
+
+       } else {
+        ## stations converge to 1 in 2100
         stations[year <= 2100, fracst := (fracst[year == 2020]-fracst[year == 2100])/(2020-2100)*(year-2020)+fracst[year==2020], by = c("iso", "technology")]
       }
       }
@@ -274,15 +283,21 @@ calculate_logit_inconv_endog = function(prices,
                            prange[year == 2020]*exp(1)^(fracst[year == (t-1)]*bfuelav),
                            prange), by = c("iso", "technology", "vehicle_type", "subsector_L1")]
 
-      tmp[, pmod_av := ifelse(year == t,
-                              pmod_av[year == 2020]*exp(1)^(weighted_sharessum[year == (t-1)]*bmodelav),
-                              pmod_av), by = c("iso", "technology", "vehicle_type", "subsector_L1")]
-
       if (techswitch == "FCEV") {
+        ## the policymaker pushes carmakers and car retailers to provide FCEVs models, resulting in a decrease in model availability cost for H2 vehicles
         tmp[technology == "FCEV", pmod_av := ifelse(year == t,
-                                                    pmod_av[year == 2020]*exp(1)^(weighted_sharessum[year == (t-1)]*(1.5*bmodelav)),
-                                                    pmod_av), by = c("iso", "technology", "vehicle_type", "subsector_L1")]
-      }
+                                0.5*pmod_av[year == 2020]*exp(1)^(weighted_sharessum[year == (t-1)]*bmodelav),
+                                pmod_av), by = c("iso", "technology", "vehicle_type", "subsector_L1")]
+        ## for all other vehicles, the model availability cost is the same as in the input
+        tmp[technology != "FCEV", pmod_av := ifelse(year == t,
+                                pmod_av[year == 2020]*exp(1)^(weighted_sharessum[year == (t-1)]*bmodelav),
+                                pmod_av), by = c("iso", "technology", "vehicle_type", "subsector_L1")]
+       
+     } else {
+        tmp[, pmod_av := ifelse(year == t,
+                                pmod_av[year == 2020]*exp(1)^(weighted_sharessum[year == (t-1)]*bmodelav),
+                                pmod_av), by = c("iso", "technology", "vehicle_type", "subsector_L1")]
+     }
 
       tmp[, prisk := ifelse(year == t,
                             pmax(prisk[year == 2020]-coeffrisk*weighted_sharessum[year == (t-1)], 0),
