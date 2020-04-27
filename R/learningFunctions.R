@@ -3,18 +3,19 @@
 #' @param gdx input gdx file
 #' @param REMINDmapping mapping of REMIND regions to ISO3 country codes
 #' @param EDGE2teESmap mapping of EDGE-T/GCAM technologies to REMIND ES technologies
-#' @param ES_demandpr the ES demand
+#' @param ES_demandpr the ES demand of the previous iteration
 #' @param non_fuel_costs non fuel costs on which learning is applied
 #' @param demand_learntmp the demand for vehicles from the previous iteration
 #' @param rebates_febatesBEV option rebates for BEVs
 #' @param rebates_febatesFCEV option rebates for FCEVs
+#' @param ES_demand the ES demand of the current iteration
 #'
 #' @import data.table
 #' @export
 
-applylearning <- function(non_fuel_costs, gdx,REMINDmapping,EDGE2teESmap, demand_learntmp, ES_demandpr, rebates_febatesBEV, rebates_febatesFCEV){
+applylearning <- function(non_fuel_costs, gdx,REMINDmapping,EDGE2teESmap, demand_learntmp, ES_demandpr, ES_demand, rebates_febatesBEV, rebates_febatesFCEV){
 
-  `.` <- ES_demand <- ratio <- demandpr <- vehicles_number <- cumul <- technology <- subsector_L1 <- non_fuel_price <- b <- initialyear <- NULL
+  `.` <- ratio <- demandpr <- vehicles_number <- cumul <- technology <- subsector_L1 <- non_fuel_price <- b <- initialyear <- NULL
 
   ## find the estimated number of cars
   demand = merge(ES_demand, ES_demandpr)
@@ -69,7 +70,7 @@ applylearning <- function(non_fuel_costs, gdx,REMINDmapping,EDGE2teESmap, demand
   nonfuel_costslearn[year >= 2020 & technology == "FCEV", non_fuel_price := ifelse(!is.na(factor),factor*fuelcellcomponent*non_fuel_price+(1-fuelcellcomponent)*non_fuel_price, non_fuel_price)]
   nonfuel_costslearn = nonfuel_costslearn[year >= 2020]
   nonfuel_costslearn[,c("factor", "cumul", "vehicles_number", "initialcap", "initialyear"):= NULL]
-  
+
   ## technologies subjected to learning
   techlearn = c("BEV", "FCEV")
   ## integrate non fuel costs from the input data  with the updated values from learning
@@ -108,7 +109,7 @@ calc_num_vehicles_stations <- function(norm_dem, ES_demand_all, techswitch){
 
   stations = LDVdem[, .(vehicles_number = sum(vehicles_number)), by = c("iso", "year", "technology")]
   stations = stations[year >= 2020]
-  
+
  if (techswitch =="FCEV"){
    stations[technology == "FCEV",  statnum := 10*               ## policy over-reacts to FCEVs number and incentivize the construction of stations
                                               vehicles_number*  ## in trillion veh

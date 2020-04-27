@@ -4,13 +4,13 @@
 #' @param REMINDmapping map REMIND regions to ISO3 country codes
 #' @param EDGE2teESmap map EDGE-T technologies to REMIND ES techs
 #' @param years REMIND timesteps
-#'
+#' @param scenario REMIND SSP scenario
 #' @import data.table
 #' @export
 
 
-readREMINDdemand= function(gdx,REMINDmapping,EDGE2teESmap, years){
-  scenario <- `.` <- iso <- EDGE_top <- value <- demand <- NULL
+readREMINDdemand= function(gdx,REMINDmapping,EDGE2teESmap, years, scenario){
+  `.` <- iso <- EDGE_top <- value <- demand <- NULL
 
   dem <- readGDX(gdx, c("vm_cesIO"),field = "l")
   dem <- dem[, , c("entrp_pass_sm","entrp_pass_lo","entrp_frgt_sm","entrp_frgt_lo")]

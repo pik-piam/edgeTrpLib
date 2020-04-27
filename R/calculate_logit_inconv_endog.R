@@ -28,7 +28,7 @@ calculate_logit_inconv_endog = function(prices,
   shareVS1 <- sw <- iso <- vehicle_type <- shareFS1 <- weighted_shares <- weighted_sharessum <- NULL
   technology <- cluster <- combined_shareEL <- combined_shareLiq <- tail <- NULL
   sector <- subsector_L2 <- MJ_km <- EJ_Mpkm_final <- type <- dpp_nfp <- fuel_price <- value_time <- NULL
-  logit_type <- pchar <- pinco_tot <- pmod_av <- prange <- pref <- prisk <- NULL
+  logit_type <- pchar <- pinco_tot <- pmod_av <- prange <- pref <- prisk <- fracst <- NULL
 
   ## X2Xcalc is used to traverse the logit tree, calculating shares and intensities
   X2Xcalc <- function(prices, pref_data, logit_params, value_time, mj_km_data, level_base, level_next, group_value) {
@@ -198,7 +198,7 @@ calculate_logit_inconv_endog = function(prices,
        ## policymaker plans to install few electricity rechargers: in 2100 only 10% of stations have them
        stations[year <= 2100 & technology == "BEV", fracst := (fracst[year == 2020]-0.1)/(2020-2100)*(year-2020)+fracst[year==2020], by = c("iso", "technology")]
        stations[year >= 2100 & technology == "BEV", fracst := 0.1]
-       
+
        ## NG stations are converging to 1 in 2100
        stations[year <= 2100 & technology == "NG", fracst := (fracst[year == 2020]-fracst[year == 2100])/(2020-2100)*(year-2020)+fracst[year==2020], by = c("iso", "technology")]
 
@@ -303,7 +303,7 @@ calculate_logit_inconv_endog = function(prices,
         tmp[technology != "FCEV", pmod_av := ifelse(year == t,
                                 pmod_av[year == 2020]*exp(1)^(weighted_sharessum[year == (t-1)]*bmodelav),
                                 pmod_av), by = c("iso", "technology", "vehicle_type", "subsector_L1")]
-       
+
      } else {
         tmp[, pmod_av := ifelse(year == t,
                                 pmod_av[year == 2020]*exp(1)^(weighted_sharessum[year == (t-1)]*bmodelav),
