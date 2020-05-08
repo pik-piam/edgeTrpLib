@@ -314,9 +314,9 @@ calculate_logit_inconv_endog = function(prices,
                             pmax(prisk[year == 2020]-coeffrisk*weighted_sharessum[year == (t-1)], 0),
                             prisk), by = c("iso", "technology", "vehicle_type", "subsector_L1")]
 
-      tmp[, pinco_tot := ifelse(year == t,
-                                pinco_tot[year == 2020]*exp(1)^(weighted_sharessum[year == (t-1)]*bmodelav),
-                                pinco_tot), by = c("iso", "technology", "vehicle_type", "subsector_L1")]
+      tmp[technology == "Liquids", pinco_tot := ifelse(year == t,
+                                   2*exp(1)^(weighted_sharessum[year == (t-1)]*bmodelav),
+                                   pinco_tot), by = c("iso", "technology", "vehicle_type", "subsector_L1")]
 
       ## annual sales, needed for reporting purposes
       if (t == 2101) {
