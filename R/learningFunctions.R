@@ -69,8 +69,8 @@ applylearning <- function(non_fuel_costs, capcost4W, gdx, REMINDmapping, EDGE2te
   batterycomponent = 0.2 ##
   ## powertrain represents ??% of the average purchase price
   fuelcellcomponent = 0.4 ## average https://www.energy.gov/sites/prod/files/2014/03/f9/fcev_status_prospects_july2013.pdf
-  capcost4W[year >= 2020 & technology == "BEV", non_fuel_price := ifelse(!is.na(factor),factor*batterycomponent*non_fuel_price, non_fuel_price)]
-  capcost4W[year >= 2020 & technology == "FCEV", non_fuel_price := ifelse(!is.na(factor),factor*fuelcellcomponent*non_fuel_price, non_fuel_price)]
+  capcost4W[year >= 2020 & technology == "BEV", non_fuel_price := ifelse(!is.na(factor), factor*batterycomponent*non_fuel_price + (1-batterycomponent)*non_fuel_price, non_fuel_price)]
+  capcost4W[year >= 2020 & technology == "FCEV", non_fuel_price := ifelse(!is.na(factor), factor*fuelcellcomponent*non_fuel_price + (1-fuelcellcomponent)*non_fuel_price, non_fuel_price)]
   capcost4W = capcost4W[year >= 2020]
   capcost4W[,c("factor", "cumul", "vehicles_number", "initialcap", "initialyear"):= NULL]
   ## merge with other components of non fuel price and calculate total non fuel price
