@@ -118,7 +118,7 @@ calc_num_vehicles_stations <- function(norm_dem, ES_demand_all, techswitch){
   stations = stations[year >= 2020]
 
  if (techswitch =="FCEV"){
-   stations[technology == "FCEV",  statnum := 10*               ## policy over-reacts to FCEVs number and incentivize the construction of stations
+   stations[technology == "FCEV",  statnum := 2*               ## policy over-reacts to FCEVs number and incentivize the construction of stations
                                               vehicles_number*  ## in trillion veh
                                               1e6/              ## in kveh
                                               1000]             ## in stations
@@ -126,7 +126,21 @@ calc_num_vehicles_stations <- function(norm_dem, ES_demand_all, techswitch){
    stations[technology != "FCEV",  statnum := vehicles_number*  ## in trillion veh
                                               1e6/              ## in kveh
                                               1000]             ## in stations
- } else {
+ } 
+ 
+ else if (techswitch == "Liquids") {
+    ## industry and policymakers don't push BEVs in case the scenario is ConvCase
+    stations[technology == "BEV",  statnum := 0.5*               ## policy over-reacts to FCEVs number and incentivize the construction of stations
+                                              vehicles_number*  ## in trillion veh
+                                              1e6/              ## in kveh
+                                              1000]             ## in stations
+
+   stations[technology != "BEV",  statnum := vehicles_number*  ## in trillion veh
+                                              1e6/              ## in kveh
+                                              1000]             ## in stations
+ }
+ 
+ else {
     stations[,  statnum := vehicles_number*  ## in trillion veh
                         1e6/              ## in kveh
                         1000]             ## in stations

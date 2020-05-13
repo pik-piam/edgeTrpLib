@@ -313,11 +313,19 @@ calculate_logit_inconv_endog = function(prices,
       tmp[, prisk := ifelse(year == t,
                             pmax(prisk[year == 2020]-coeffrisk*weighted_sharessum[year == (t-1)], 0),
                             prisk), by = c("iso", "technology", "vehicle_type", "subsector_L1")]
-
-      tmp[technology == "Liquids", pinco_tot := ifelse(year == t,
-                                   2*exp(1)^(weighted_sharessum[year == (t-1)]*bmodelav),
+      
+      if (techswitch %in% c("BEV", "FCEV")) {
+     ## inconvenience cost for liquids is allowed to increase in case they are not the favoured technology 
+        tmp[technology == "Liquids", pinco_tot := ifelse(year == t,
+                                   0.5*exp(1)^(weighted_sharessum[year == (t-1)]*bmodelav),
                                    pinco_tot), by = c("iso", "technology", "vehicle_type", "subsector_L1")]
+      }
 
+      ## hybrid liquids inconvenience cost cannot decrease below a threshold
+      tmp[technology == "Hybrid Liquids", pmod_av := ifelse(year == t,
+                               pmax(pmod_av, 0.1),
+                               pmod_av), by = c("iso", "technology", "vehicle_type", "subsector_L1")]
+      
       ## annual sales, needed for reporting purposes
       if (t == 2101) {
         annual_sales = tmp[year<=2100, c("iso", "year", "technology", "shareFS1", "vehicle_type", "subsector_L1", "share")]
