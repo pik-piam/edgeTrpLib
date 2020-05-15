@@ -68,6 +68,11 @@ createRDS <- function(input_path, data_path, SSP_scenario, EDGE_scenario){
           input_path = input_path,
           names_dt = c("year", "iso", "SSPscen", "EDGEscen", "vehicle_type", "technology", "type", "price_component", "entry", "non_fuel_price"))
 
+  csv2RDS(pattern = "loadFactor",
+          filename = "loadFactor",
+          input_path = input_path,
+          names_dt = c("year", "iso","SSPscen", "EDGEscen", "vehicle_type", "entry", "loadFactor"))
+
 }
 
 
@@ -90,6 +95,7 @@ loadInputData <- function(data_path){
   int_dat <- readRDS(datapathForFile("harmonized_intensities.RDS"))
   UCD_costs <- readRDS(datapathForFile("UCD_NEC_iso.RDS"))
   price_nonmot <- readRDS(datapathForFile("price_nonmot.RDS"))
+  loadFactor <- readRDS(datapathForFile("loadFactor.RDS"))
 
   ## FIXME: hotfix to make the (empty) vot_data$value_time_VS1 with the right column types. Probably there is another way to do that, did not look for it.
   vot_data$value_time_VS1$iso = as.character(vot_data$value_time_VS1$iso)
@@ -115,5 +121,6 @@ loadInputData <- function(data_path){
               int_dat = int_dat,
               nonfuel_costs = nonfuel_costs,
               capcost4W = capcost4W,
-              price_nonmot = price_nonmot))
+              price_nonmot = price_nonmot,
+              loadFactor = loadFactor))
 }

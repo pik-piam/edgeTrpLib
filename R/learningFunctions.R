@@ -92,23 +92,23 @@ applylearning <- function(non_fuel_costs, capcost4W, gdx, REMINDmapping, EDGE2te
 #' @param norm_dem normalized demand shares
 #' @param ES_demand_all total demand for ESs
 #' @param techswitch technology that the policymaker wants to promote
+#' @param loadFactor load factor of vehicles
 #' @import data.table
 #' @export
 
 
 
-calc_num_vehicles_stations <- function(norm_dem, ES_demand_all, techswitch){
-  demand_F <- demand <- load_factor <- annual_mileage <- iso <- `.` <- vehicles_number <- vehicle_type <- demand_F <- technology <- statnum <- fracst <- NULL
+calc_num_vehicles_stations <- function(norm_dem, ES_demand_all, techswitch, loadFactor){
+  demand_F <- demand <- annual_mileage <- iso <- `.` <- vehicles_number <- vehicle_type <- demand_F <- technology <- statnum <- fracst <- NULL
 
   LDVdem = merge(norm_dem, ES_demand_all, by = c("iso", "year", "sector"))
   LDVdem[, demand_F := demand_F*demand] ## scale up the normalized demand
-
-  LDVdem[, load_factor := 2]
+  LDVdem = merge(LDVdem, loadFactor, all.x = TRUE, by = c("iso", "year", "vehicle_type"))
 
   LDVdem[, annual_mileage := 15000]
 
   LDVdem[,vehicles_number:=demand_F   ## in trillionpkm
-         /load_factor                  ## in trillionvkm
+         /loadFactor                  ## in trillionvkm
          /annual_mileage]             ## in trillion veh
 
   LDVdem = LDVdem[, .(iso, year, vehicles_number, technology, vehicle_type)]
