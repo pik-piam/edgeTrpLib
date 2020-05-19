@@ -290,6 +290,11 @@ calculate_logit_inconv_endog = function(prices,
                             pref[year == 2020]*exp(1)^(fracst[year == (t-1)]*bfuelav),
                             pref), by = c("iso", "technology", "vehicle_type", "subsector_L1")]
 
+      ## Hotfix: CHN has very low costs for NG, which leads to unstable NG behavior. Temporarily constrained to 2020 values
+      tmp[iso=="CHN" & technology == "NG", pref := ifelse(year == t,
+							  pmax(pref[year == 2020], pref[year == 2020]*exp(1)^(fracst[year == (t-1)]*bfuelav)),
+							  pref), by = c("iso", "technology", "vehicle_type", "subsector_L1")]
+
       tmp[, prange := ifelse(year == t,
                            prange[year == 2020]*exp(1)^(fracst[year == (t-1)]*bfuelav),
                            prange), by = c("iso", "technology", "vehicle_type", "subsector_L1")]
