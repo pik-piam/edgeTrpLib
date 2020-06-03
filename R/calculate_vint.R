@@ -97,7 +97,7 @@ calcVint <- function(shares, totdem_regr, prices, mj_km_data, years){
   ##NB this is NOT goingto work when there are trucks! they belong to a different sector!
   tmp = CJ(year = tall, iso = unique(Cap_2010$iso), subsector_L1 = unique(Cap_2010$subsector_L1), sector = unique(Cap_2010$sector))
 
-  for (i in seq(1,length(tall)-2,1)) {
+  for (i in seq(1,length(tall)-1,1)) {
     ## time step that is considered in the current iteration
     y = tall[tall>baseyear][i]
     ## starting value of capacity built up in the current year
@@ -108,7 +108,7 @@ calcVint <- function(shares, totdem_regr, prices, mj_km_data, years){
     Cval_t[check =="standardVintaging", C_t := totdem-vint]         ## for the standard vintaging, the new additions are total-vintages
     ## early vintages assumes 10% new additions as first step (90%vintages)
     perc=0.1
-    Cval_t[check =="earlyRet", C_t := totdem - (1-perc)*totdem, by = c("iso", "subsector_L1", "sector")]            ## for the early retirement cases, half of the demand goes to new additions
+    Cval_t[check =="earlyRet", C_t := perc*totdem, by = c("iso", "subsector_L1", "sector")]            ## for the early retirement cases, half of the demand goes to new additions
     Cval_t[check =="earlyRet", decrease := (1-perc)*totdem/vint]         ## this is how much we need the vintages to contract
     ## extract only early retired entries
     earlyret = Cval_t[check == "earlyRet"][,c("iso", "subsector_L1", "sector", "check", "decrease")]
