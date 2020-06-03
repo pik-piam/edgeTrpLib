@@ -291,19 +291,51 @@ calculate_logit_inconv_endog = function(prices,
                             pref), by = c("iso", "technology", "vehicle_type", "subsector_L1")]
 
       ## Hotfix: CHN has very low costs for NG, which leads to unstable NG behavior. Temporarily constrained to 2020 values
-      tmp[iso=="CHN" & technology == "NG", pref := ifelse(year == t,
-							  pmax(pref[year == 2020], pref[year == 2020]*exp(1)^(fracst[year == (t-1)]*bfuelav)),
+      tmp[technology == "NG", pref := ifelse(year == t,
+							  pmax(0.8*pref[year == 2020], pref[year == 2020]*exp(1)^(fracst[year == (t-1)]*bfuelav)),
 							  pref), by = c("iso", "technology", "vehicle_type", "subsector_L1")]
 
       tmp[, prange := ifelse(year == t,
                            prange[year == 2020]*exp(1)^(fracst[year == (t-1)]*bfuelav),
                            prange), by = c("iso", "technology", "vehicle_type", "subsector_L1")]
 
+      tmp[technology == "BEV", prange :=ifelse(year <= 2025 & year == t,
+                                              pmax(0.8*prange[year == 2020], prange),
+                                              prange), by = c("iso", "technology", "vehicle_type", "subsector_L1")]
+
+
+      tmp[technology == "BEV", prange :=ifelse(year < 2028 & year > 2025 & year == t,
+                                              pmax(0.6*prange[year == 2020], prange),
+                                              prange), by = c("iso", "technology", "vehicle_type", "subsector_L1")]
+
+      tmp[technology == "BEV", prange :=ifelse(year < 2030 & year >= 2028 & year == t,
+                                              pmax(0.4*prange[year == 2020], prange),
+                                              prange), by = c("iso", "technology", "vehicle_type", "subsector_L1")]
+      
+      tmp[technology == "BEV", prange :=ifelse(year < 2033 & year >= 2030 & year == t,
+                                              pmax(0.2*prange[year == 2020], prange),
+                                              prange), by = c("iso", "technology", "vehicle_type", "subsector_L1")]
+
       if (techswitch == "FCEV") {
         ## the policymaker pushes carmakers and car retailers to provide FCEVs models, resulting in a decrease in model availability cost for H2 vehicles
+        if (t >= 2025 & t<=2026) {
+        mult = 0.9
+        } else if (t > 2026 & t <=2027) {
+        mult = 0.7
+        } else if (t > 2027 & t <=2030) {
+        mult = 0.6
+        } else if (t >2030 & t <= 2035) {
+        mult = 0.5
+        } else if (t > 2035 & t <= 2040){
+        mult = 0.7
+        } else {
+        mult = 1
+        }
         tmp[technology == "FCEV", pmod_av := ifelse(year == t,
-                                0.5*pmod_av[year == 2020]*exp(1)^(weighted_sharessum[year == (t-1)]*bmodelav),
+                                mult*pmod_av[year == 2020]*exp(1)^(weighted_sharessum[year == (t-1)]*bmodelav),
                                 pmod_av), by = c("iso", "technology", "vehicle_type", "subsector_L1")]
+
+
         ## for all other vehicles, the model availability cost is the same as in the input
         tmp[technology != "FCEV", pmod_av := ifelse(year == t,
                                 pmod_av[year == 2020]*exp(1)^(weighted_sharessum[year == (t-1)]*bmodelav),
@@ -324,13 +356,35 @@ calculate_logit_inconv_endog = function(prices,
         tmp[technology == "Liquids", pinco_tot := ifelse(year == t,
                                    0.5*exp(1)^(weighted_sharessum[year == (t-1)]*bmodelav),
                                    pinco_tot), by = c("iso", "technology", "vehicle_type", "subsector_L1")]
+        tmp[technology == "Liquids", pinco_tot := ifelse(year == t & t >= 2023 & t < 2025,
+                                   pmax(pinco_tot, 0.05),
+                                   pinco_tot), by = c("iso", "technology", "vehicle_type", "subsector_L1")]
+
+        tmp[technology == "Liquids", pinco_tot := ifelse(year == t & t >= 2025 & t < 2027,
+                                   pmax(pinco_tot, 0.1),
+                                   pinco_tot), by = c("iso", "technology", "vehicle_type", "subsector_L1")]
+       
+        tmp[technology == "Liquids", pinco_tot := ifelse(year == t & t >= 2027 & t < 2030,
+                                   pmax(pinco_tot, 0.15),
+                                   pinco_tot), by = c("iso", "technology", "vehicle_type", "subsector_L1")]
+
+
+        tmp[technology == "Liquids", pinco_tot := ifelse(year == t & year >= 2030,
+                                   pmax(pinco_tot, 0.2),
+                                   pinco_tot), by = c("iso", "technology", "vehicle_type", "subsector_L1")]
+        
       }
 
-      ## hybrid liquids inconvenience cost cannot decrease below a threshold
-      tmp[technology == "Hybrid Liquids", pmod_av := ifelse(year == t,
-                               pmax(pmod_av, 0.1),
+      ## hybrid liquids and hybrid electric inconvenience cost cannot decrease below 50% of 2020 value
+      tmp[technology %in% c("Hybrid Electric"), pmod_av := ifelse(year == t,
+                               pmax(pmod_av, 0.5*pmod_av[year == 2020]),
                                pmod_av), by = c("iso", "technology", "vehicle_type", "subsector_L1")]
-      
+     
+
+      tmp[technology %in% c("Hybrid Liquids"), pmod_av := ifelse(year == t,
+                               pmax(pmod_av, 0.8*pmod_av[year == 2020]),
+                               pmod_av), by = c("iso", "technology", "vehicle_type", "subsector_L1")]
+ 
       ## annual sales, needed for reporting purposes
       if (t == 2101) {
         annual_sales = tmp[year<=2100, c("iso", "year", "technology", "shareFS1", "vehicle_type", "subsector_L1", "share")]
