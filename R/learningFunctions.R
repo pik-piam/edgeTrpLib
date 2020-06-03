@@ -118,19 +118,47 @@ calc_num_vehicles_stations <- function(norm_dem, ES_demand_all, techswitch, load
   stations = stations[year >= 2020]
 
  if (techswitch =="FCEV"){
-   stations[technology == "FCEV",  statnum := 2*               ## policy over-reacts to FCEVs number and incentivize the construction of stations
+   stations[technology == "FCEV" & year > 2025 &  year <= 2027,  statnum := 1.1*               ## policy over-reacts to FCEVs number and incentivize the construction of stations
+                                              vehicles_number*  ## in trillion veh
+                                              1e6/              ## in kveh
+                                              1000]             ## in stations
+   stations[technology == "FCEV" & year > 2027 &  year <= 2028,  statnum := 1.4*               ## policy over-reacts to FCEVs number and incentivize the construction of stations
                                               vehicles_number*  ## in trillion veh
                                               1e6/              ## in kveh
                                               1000]             ## in stations
 
+   stations[technology == "FCEV" & year > 2028 &  year <= 2030,  statnum := 1.5*               ## policy over-reacts to FCEVs number and incentivize the construction of stations
+                                              vehicles_number*  ## in trillion veh
+                                              1e6/              ## in kveh
+                                              1000]             ## in stations
+
+   
+   stations[technology == "FCEV" & year > 2030 &  year <= 2035,  statnum := 1.6*               ## policy over-reacts to FCEVs number and incentivize the construction of stations
+                                              vehicles_number*  ## in trillion veh
+                                              1e6/              ## in kveh
+                                              1000]             ## in stations
+
+   stations[technology == "FCEV" & year > 2035 &  year <= 2040,  statnum := 1.4*               ## policy over-reacts to FCEVs number and incentivize the construction of stations
+                                              vehicles_number*  ## in trillion veh
+                                              1e6/              ## in kveh
+                                              1000]             ## in stations
+   stations[technology == "FCEV" & year <= 2025, statnum := 1*vehicles_number*1e6/1000]
+  
+   stations[technology == "FCEV" & year > 2040,  statnum := 1*               ## policy over-reacts to FCEVs number and incentivize the construction of stations
+                                              vehicles_number*  ## in trillion veh
+                                              1e6/              ## in kveh
+                                              1000]             ## in stations
    stations[technology != "FCEV",  statnum := vehicles_number*  ## in trillion veh
                                               1e6/              ## in kveh
                                               1000]             ## in stations
+
+
+   stations[technology == "BEV", statnum := vehicles_number*0.01*1e6/1000]
  } 
  
- else if (techswitch == "Liquids") {
+ else if (techswitch ==  "Liquids") {
     ## industry and policymakers don't push BEVs in case the scenario is ConvCase
-    stations[technology == "BEV",  statnum := 0.5*               ## policy over-reacts to FCEVs number and incentivize the construction of stations
+    stations[technology == "BEV",  statnum := 0.2*               ## BEV do not take over due to the dispreference
                                               vehicles_number*  ## in trillion veh
                                               1e6/              ## in kveh
                                               1000]             ## in stations
