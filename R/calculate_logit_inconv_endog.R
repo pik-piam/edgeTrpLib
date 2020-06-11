@@ -290,15 +290,53 @@ calculate_logit_inconv_endog = function(prices,
                             pref[year == 2020]*exp(1)^(fracst[year == (t-1)]*bfuelav),
                             pref), by = c("iso", "technology", "vehicle_type", "subsector_L1")]
 
+      ## Hotfix: CHN has very low costs for NG, which leads to unstable NG behavior. Temporarily constrained to 2020 values
+      tmp[technology == "NG", pref := ifelse(year == t,
+							  pmax(0.8*pref[year == 2020], pref[year == 2020]*exp(1)^(fracst[year == (t-1)]*bfuelav)),
+							  pref), by = c("iso", "technology", "vehicle_type", "subsector_L1")]
+
       tmp[, prange := ifelse(year == t,
                            prange[year == 2020]*exp(1)^(fracst[year == (t-1)]*bfuelav),
                            prange), by = c("iso", "technology", "vehicle_type", "subsector_L1")]
 
+      ## the phase-in of BEVs should not be too abrupt
+      if (t <= 2025) {
+        mult = 0.8
+      } else if (t > 2025 & t < 2028) {
+        mult = 0.6
+      } else if (t >= 2028 & t <=2030) {
+        mult = 0.4
+      } else if (t >2030 & t <= 2033) {
+        mult = 0.2
+      } else {
+        mult = 1
+      }
+
+      tmp[technology == "BEV", prange :=ifelse(year == t,
+                                              pmax(mult*prange[year == 2020], prange),
+                                              prange), by = c("iso", "technology", "vehicle_type", "subsector_L1")]
+
       if (techswitch == "FCEV") {
         ## the policymaker pushes carmakers and car retailers to provide FCEVs models, resulting in a decrease in model availability cost for H2 vehicles
+        if (t >= 2025 & t<=2026) {
+        mult = 0.9
+        } else if (t > 2026 & t <=2027) {
+        mult = 0.7
+        } else if (t > 2027 & t <=2030) {
+        mult = 0.6
+        } else if (t >2030 & t <= 2035) {
+        mult = 0.5
+        } else if (t > 2035 & t <= 2040){
+        mult = 0.7
+        } else {
+        mult = 1
+        }
+
         tmp[technology == "FCEV", pmod_av := ifelse(year == t,
-                                0.5*pmod_av[year == 2020]*exp(1)^(weighted_sharessum[year == (t-1)]*bmodelav),
+                                mult*pmod_av[year == 2020]*exp(1)^(weighted_sharessum[year == (t-1)]*bmodelav),
                                 pmod_av), by = c("iso", "technology", "vehicle_type", "subsector_L1")]
+
+
         ## for all other vehicles, the model availability cost is the same as in the input
         tmp[technology != "FCEV", pmod_av := ifelse(year == t,
                                 pmod_av[year == 2020]*exp(1)^(weighted_sharessum[year == (t-1)]*bmodelav),
@@ -314,9 +352,42 @@ calculate_logit_inconv_endog = function(prices,
                             pmax(prisk[year == 2020]-coeffrisk*weighted_sharessum[year == (t-1)], 0),
                             prisk), by = c("iso", "technology", "vehicle_type", "subsector_L1")]
 
-      tmp[, pinco_tot := ifelse(year == t,
-                                pinco_tot[year == 2020]*exp(1)^(weighted_sharessum[year == (t-1)]*bmodelav),
-                                pinco_tot), by = c("iso", "technology", "vehicle_type", "subsector_L1")]
+      if (techswitch %in% c("BEV", "FCEV")) {
+
+        ## the policymaker bans ICEs increasingly more strictly
+        if (t >= 2023 & t < 2025) {
+          floor = 0.05
+        } else if (t >= 2025 & t < 2027) {
+          mult = 0.1
+        } else if (t >= 2027 & t <=2030) {
+          mult = 0.15
+        } else if (t > 2030) {
+          mult = 0.2
+        } else {
+          mult = 0
+        }
+
+     ## inconvenience cost for liquids is allowed to increase in case they are not the favoured technology
+        tmp[technology == "Liquids", pinco_tot := ifelse(year == t,
+                                   0.5*exp(1)^(weighted_sharessum[year == (t-1)]*bmodelav),
+                                   pinco_tot), by = c("iso", "technology", "vehicle_type", "subsector_L1")]
+
+
+        tmp[technology == "Liquids", pinco_tot := ifelse(year == t,
+                                   pmax(pinco_tot, floor),
+                                   pinco_tot), by = c("iso", "technology", "vehicle_type", "subsector_L1")]
+
+      }
+
+      ## hybrid liquids and hybrid electric inconvenience cost cannot decrease below 50% of 2020 value
+      tmp[technology %in% c("Hybrid Electric"), pmod_av := ifelse(year == t,
+                               pmax(pmod_av, 0.5*pmod_av[year == 2020]),
+                               pmod_av), by = c("iso", "technology", "vehicle_type", "subsector_L1")]
+
+
+      tmp[technology %in% c("Hybrid Liquids"), pmod_av := ifelse(year == t,
+                               pmax(pmod_av, 0.8*pmod_av[year == 2020]),
+                               pmod_av), by = c("iso", "technology", "vehicle_type", "subsector_L1")]
 
       ## annual sales, needed for reporting purposes
       if (t == 2101) {
@@ -495,7 +566,7 @@ calculate_logit_inconv_endog = function(prices,
 
   ## Conventional Liquids energy intensity
 
-  ## create choice of  more expensive, more efficient alternatives (for now only Liquids)
+  ## create choice of  more expensive, more efficient alternatives (only Liquids)
   mj_km_dataEF <- rbind(mj_km_data[subsector_L1 == "trn_pass_road_LDV_4W" & year > 2020 & technology =="Liquids"][, c("type", "MJ_km") := list("advanced", MJ_km*0.6)],
                         mj_km_data[subsector_L1 == "trn_pass_road_LDV_4W" & year > 2020 & technology =="Liquids"][, c("type", "MJ_km") := list("middle", MJ_km*0.8)],
                         mj_km_data[subsector_L1 == "trn_pass_road_LDV_4W" & year > 2020 & technology =="Liquids"][, type := "normal"])

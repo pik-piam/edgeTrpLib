@@ -66,7 +66,12 @@ createRDS <- function(input_path, data_path, SSP_scenario, EDGE_scenario){
   csv2RDS(pattern = "UCD_NEC_iso",
           filename = "UCD_NEC_iso",
           input_path = input_path,
-          names_dt = c("year", "iso", "SSPscen", "EDGEscen", "sector", "subsector_L3", "subsector_L2", "subsector_L1", "vehicle_type", "technology", "type", "entry", "non_fuel_price"))
+          names_dt = c("year", "iso", "SSPscen", "EDGEscen", "vehicle_type", "technology", "type", "price_component", "entry", "non_fuel_price"))
+
+  csv2RDS(pattern = "loadFactor",
+          filename = "loadFactor",
+          input_path = input_path,
+          names_dt = c("year", "iso","SSPscen", "EDGEscen", "vehicle_type", "entry", "loadFactor"))
 
 }
 
@@ -79,7 +84,7 @@ createRDS <- function(input_path, data_path, SSP_scenario, EDGE_scenario){
 #' @export
 
 loadInputData <- function(data_path){
-
+  price_component <- NULL
   datapathForFile <- function(fname){
     file.path(data_path, fname)
   }
@@ -88,8 +93,9 @@ loadInputData <- function(data_path){
   pref_data <- readRDS(datapathForFile("pref.RDS"))
   logit_params <- readRDS(datapathForFile("logit_exp.RDS"))
   int_dat <- readRDS(datapathForFile("harmonized_intensities.RDS"))
-  nonfuel_costs <- readRDS(datapathForFile("UCD_NEC_iso.RDS"))
+  UCD_costs <- readRDS(datapathForFile("UCD_NEC_iso.RDS"))
   price_nonmot <- readRDS(datapathForFile("price_nonmot.RDS"))
+  loadFactor <- readRDS(datapathForFile("loadFactor.RDS"))
 
   ## FIXME: hotfix to make the (empty) vot_data$value_time_VS1 with the right column types. Probably there is another way to do that, did not look for it.
   vot_data$value_time_VS1$iso = as.character(vot_data$value_time_VS1$iso)
@@ -104,10 +110,17 @@ loadInputData <- function(data_path){
   pref_data$S2S3_final_pref = dcast(pref_data$S2S3_final_pref, iso + year + subsector_L2 + subsector_L3 + sector ~ logit_type, value.var = "value")
   pref_data$S3S_final_pref = dcast(pref_data$S3S_final_pref, iso + year + subsector_L3 + sector ~ logit_type, value.var = "value")
 
+  ## refill structure of non fuel prices and split between purchase and total costs
+  UCD_costs = merge(UCD_costs, unique(pref_data$FV_final_pref[, c("iso", "year", "vehicle_type", "subsector_L1", "subsector_L2", "subsector_L3", "sector")]), by = c("iso", "year", "vehicle_type"))
+  nonfuel_costs = UCD_costs[price_component == "totalNE_cost"][, price_component := NULL]
+  capcost4W = UCD_costs[price_component == "Capital_costs_purchase"]
+
   return(list(vot_data = vot_data,
               pref_data = pref_data,
               logit_params = logit_params,
               int_dat = int_dat,
               nonfuel_costs = nonfuel_costs,
-              price_nonmot = price_nonmot))
+              capcost4W = capcost4W,
+              price_nonmot = price_nonmot,
+              loadFactor = loadFactor))
 }
