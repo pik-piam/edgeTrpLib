@@ -358,13 +358,13 @@ calculate_logit_inconv_endog = function(prices,
         if (t >= 2023 & t < 2025) {
           floor = 0.05
         } else if (t >= 2025 & t < 2027) {
-          mult = 0.1
+          floor = 0.1
         } else if (t >= 2027 & t <=2030) {
-          mult = 0.15
+          floor = 0.15
         } else if (t > 2030) {
-          mult = 0.2
+          floor = 0.2
         } else {
-          mult = 0
+          floor = 0
         }
 
      ## inconvenience cost for liquids is allowed to increase in case they are not the favoured technology
