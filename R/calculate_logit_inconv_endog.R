@@ -300,21 +300,23 @@ calculate_logit_inconv_endog = function(prices,
                            prange), by = c("iso", "technology", "vehicle_type", "subsector_L1")]
 
       ## the phase-in of BEVs should not be too abrupt
-      if (t <= 2025) {
-        mult = 0.8
-      } else if (t > 2025 & t < 2028) {
-        mult = 0.6
-      } else if (t >= 2028 & t <=2030) {
-        mult = 0.4
-      } else if (t >2030 & t <= 2033) {
-        mult = 0.2
-      } else {
-        mult = 1
-      }
+      if (t <= 2033) {
 
-      tmp[technology == "BEV", prange :=ifelse(year == t,
-                                              pmax(mult*prange[year == 2020], prange),
-                                              prange), by = c("iso", "technology", "vehicle_type", "subsector_L1")]
+        if (t <= 2025) {
+          mult = 0.8
+        } else if (t > 2025 & t < 2028) {
+          mult = 0.6
+        } else if (t >= 2028 & t <=2030) {
+          mult = 0.4
+        } else if (t >2030 & t <= 2033) {
+          mult = 0.2
+        }
+
+        tmp[technology == "BEV", prange :=ifelse(year == t,
+                                                 pmax(mult*prange[year == 2020], prange),
+                                                 prange), by = c("iso", "technology", "vehicle_type", "subsector_L1")]
+
+      }
 
       if (techswitch == "FCEV") {
         ## the policymaker pushes carmakers and car retailers to provide FCEVs models, resulting in a decrease in model availability cost for H2 vehicles
