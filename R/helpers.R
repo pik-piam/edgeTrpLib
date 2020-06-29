@@ -60,17 +60,17 @@ getRMNDGDP <- function(scenario="gdp_SSP2",
 #' @importFrom madrat calcOutput
 #' @export
 
-getRMNDGDPcap <- function(scenario="gdp_SSP2",
+getRMNDGDPcap <- function(scenario="SSP2",
                           yearcol="year",
                           isocol="iso",
                           valuecol="weight",
                           usecache=F,
                           gdpfile="GDPcache.rds"){
 
-  REMIND_scenario <- `.` <- iso <- value <- GDP_cap <- weight <- POP_val <- NULL
+  `.` <- iso <- value <- GDP_cap <- weight <- POP_val <- NULL
 
-  gdp <- getRMNDGDP(paste0("gdp_", REMIND_scenario), usecache=T)
-  POP_country=calcOutput("Population", aggregate = F)[,, "pop_SSP2"]
+  gdp <- getRMNDGDP(paste0("gdp_", scenario), usecache=T)
+  POP_country=calcOutput("Population", aggregate = F)[,, paste0("pop_", scenario)]
   POP <- magpie2dt(POP_country, regioncol = "iso",
                    yearcol = "year", datacols = "POP")
   POP=POP[,.(iso,year,POP,POP_val=value)]
