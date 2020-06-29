@@ -1,11 +1,11 @@
 Package: edgeTrpLib
 Title: Helper functions for EDGE transport calculations
-Version: 0.1.9
+Version: 0.1.10
 Authors@R: c(
     person("Alois", "Dirnaichner", email = "dirnaichner@pik-potsdam.de", role = c("aut", "cre")),
     person("Marianna", "Rottoli", email = "rottoli@pik-potsdam.de", role = "aut"))		    
 Description: This package is highly specialized and created solely to not duplicate helper functions.
-Depends: R (>= 3.3.2)
+Depends: R (>= 3.3.1)
 Imports:
 	magclass,
 	madrat,
@@ -18,4 +18,4 @@ Encoding: UTF-8
 LazyData: true
 RoxygenNote: 7.1.0
 Date: 2020-06-29
-ValidationKey: 350398
+ValidationKey: 2028620
