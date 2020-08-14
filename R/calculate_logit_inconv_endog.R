@@ -7,7 +7,6 @@
 #' @param logit_params contains logit exponents
 #' @param intensity_data logit level intensity data
 #' @param price_nonmot price of non-motorized modes in the logit tree
-#' @param nfprices_advanced price of advanced and mid-advanced ICEs
 #' @param techswitch technology that the policymaker wants to promote
 #' @param stations share of stations offering the different fuels
 #' @import data.table
@@ -19,7 +18,6 @@ calculate_logit_inconv_endog = function(prices,
                                         logit_params,
                                         intensity_data,
                                         price_nonmot,
-                                        nfprices_advanced,
                                         techswitch,
                                         stations = NULL) {
 
