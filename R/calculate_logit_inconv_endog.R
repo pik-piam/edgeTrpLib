@@ -9,6 +9,7 @@
 #' @param price_nonmot price of non-motorized modes in the logit tree
 #' @param techswitch technology that the policymaker wants to promote
 #' @param stations share of stations offering the different fuels
+#' @param totveh total demand for LDVs by tecnology
 #' @import data.table
 #' @export
 
@@ -19,11 +20,12 @@ calculate_logit_inconv_endog = function(prices,
                                         intensity_data,
                                         price_nonmot,
                                         techswitch,
-                                        stations = NULL) {
+                                        stations = NULL,
+                                        totveh = NULL) {
 
   tot_price <- non_fuel_price <- subsector_L3 <- logit.exponent <- share <- sw <- time_price <- NULL
   tot_VOT_price <- `.` <- fuel_price_pkm <- subsector_L1 <- D <- index_yearly <- pinco <- NULL
-  shareVS1 <- sw <- iso <- vehicle_type <- shareFS1 <- weighted_shares <- weighted_sharessum <- NULL
+  shareVS1 <- sw <- iso <- vehicle_type <- shareFS1 <- weighted_sharessum <- NULL
   technology <- cluster <- combined_shareEL <- combined_shareLiq <- tail <- NULL
   sector <- subsector_L2 <- MJ_km <- EJ_Mpkm_final <- type <- dpp_nfp <- fuel_price <- value_time <- NULL
   logit_type <- pchar <- pinco_tot <- pmod_av <- prange <- pref <- prisk <- fracst <- NULL
@@ -104,7 +106,8 @@ calculate_logit_inconv_endog = function(prices,
 
 
 
-  F2Vcalc <- function(prices, pref_data, logit_params, value_time, mj_km_data, group_value, stations, techswitch) {
+  F2Vcalc <- function(prices, pref_data, logit_params, value_time, mj_km_data, group_value, stations, totveh, techswitch) {
+    vehicles_number <- NULL
     final_prefFV <- pref_data[["FV_final_pref"]]
     final_prefVS1 <- pref_data[["VS1_final_pref"]]
     logit_exponentFV <- logit_params[["logit_exponent_FV"]]
@@ -183,6 +186,7 @@ calculate_logit_inconv_endog = function(prices,
     Ddt[, D := 1-((index_yearly-0.5)/paux)^4]
     Ddt[, D := ifelse(D<0,0,D)]
 
+
     if (is.null(stations)) {
       stations = CJ(iso =unique(df[, iso]), year = unique(df[, year]), technology = c("BEV", "NG", "FCEV"))
       stations[, fracst := 1]
@@ -204,7 +208,20 @@ calculate_logit_inconv_endog = function(prices,
         ## stations converge to 1 in 2100
         stations[year <= 2100, fracst := (fracst[year == 2020]-fracst[year == 2100])/(2020-2100)*(year-2020)+fracst[year==2020], by = c("iso", "technology")]
       }
-      }
+    }
+
+    ## in case the total vehicle number is not provided, 1 is attributed
+    if (is.null(totveh)) {
+      totveh = CJ(iso =unique(tmp[, iso]), year = seq(2020, 2100, 1))
+      totveh[, vehicles_number := 1]
+    } else {
+      ## in case the total vehicle number is provided, the values have to be interpolated to get yearly values
+      totveh = approx_dt(totveh,
+                         seq(2020, 2100, 1),
+                         xcol = "year", ycol = "vehicles_number",
+                         idxcols = c("iso"),
+                         extrapolate=T)
+    }
 
     start <- Sys.time()
     for (t in futyears_all[futyears_all>2020]) {
@@ -260,15 +277,13 @@ calculate_logit_inconv_endog = function(prices,
       tmp[is.na(D), D := 0]
       tmp[is.na(shareFS1), shareFS1 := 0]
 
-      ## weighted shares are the weighted average of each time step's FS1 share and how much it depreciated in time
-      tmp[, weighted_shares := mean(shareFS1*D), by = c("iso", "technology", "vehicle_type", "subsector_L1", "year")]
+      tmp = merge(tmp, totveh, by = c("iso", "year"))
 
       ## weighted share depends on the composition of the fleet, which is a weighted average of the previous years' composition
-      tmp[, weighted_sharessum := ifelse(year == (t-1), sum(weighted_shares[year<t])/sum(D[year<t]), 0), by = c("iso", "technology", "vehicle_type", "subsector_L1")]
-
+      tmp[, weighted_sharessum := ifelse(year == (t-1), sum(shareFS1[year<t]*D[year<t]*vehicles_number[year<t])/sum(D[year<t]*vehicles_number[year<t]), 0), by = c("iso", "technology", "vehicle_type", "subsector_L1")]
+      tmp[, vehicles_number := NULL]
       ## for 2020, we assume the value was constant for all the previous years (hence the value for 2020 coincides with the share)
       if (t == 2021) {
-        tmp[, weighted_sharessum := ifelse(year == 2020, weighted_shares, NA)]
         tmp_2020 = tmp[year == 2020,]
       }
 
@@ -395,7 +410,7 @@ calculate_logit_inconv_endog = function(prices,
       }
 
       ## remove "temporary" columns
-      tmp[, c("shareFS1","D", "weighted_shares", "weighted_sharessum", "index_yearly", "fracst") := NULL]
+      tmp[, c("shareFS1","D",  "weighted_sharessum", "index_yearly", "fracst") := NULL]
 
       if (t<tail(futyears_all,1)) {
         tmp1 = copy(tmp)
@@ -574,7 +589,8 @@ calculate_logit_inconv_endog = function(prices,
                     mj_km_data = mj_km_data,
                     group_value = "vehicle_type",
                     techswitch = techswitch,
-                    stations = stations)
+                    stations = stations,
+                    totveh = totveh)
 
   FV <- FV_all[["df"]]
   MJ_km_FV <- FV_all[["MJ_km"]]

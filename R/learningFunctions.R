@@ -112,6 +112,10 @@ calc_num_vehicles_stations <- function(norm_dem, ES_demand_all, techswitch, load
          /annual_mileage]             ## in trillion veh
 
   LDVdem = LDVdem[, .(iso, year, vehicles_number, technology, vehicle_type)]
+
+  alltechdem = LDVdem[technology %in% c("BEV", "FCEV", "Liquids", "Hybrid Liquids", "Hybrid Electric"),]
+  alltechdem = alltechdem[,.(vehicles_number = sum(vehicles_number)), by = c("iso", "year")]
+
   learntechdem = LDVdem[technology %in% c("BEV", "FCEV"),][, .(iso, year, vehicles_number, vehicle_type, technology)]
 
   stations = LDVdem[, .(vehicles_number = sum(vehicles_number)), by = c("iso", "year", "technology")]
@@ -184,5 +188,5 @@ calc_num_vehicles_stations <- function(norm_dem, ES_demand_all, techswitch, load
 
   stations = stations[,.(iso, technology, year, fracst)]
 
-  return(list(learntechdem = learntechdem, stations = stations))
+  return(list(learntechdem = learntechdem, stations = stations, alltechdem = alltechdem))
 }
