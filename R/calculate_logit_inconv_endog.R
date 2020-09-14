@@ -212,7 +212,7 @@ calculate_logit_inconv_endog = function(prices,
 
     ## in case the total vehicle number is not provided, 1 is attributed
     if (is.null(totveh)) {
-      totveh = CJ(iso =unique(tmp[, iso]), year = seq(2020, 2100, 1))
+      totveh = CJ(iso =unique(df[, iso]), year = seq(2020, 2100, 1))
       totveh[, vehicles_number := 1]
     } else {
       ## in case the total vehicle number is provided, the values have to be interpolated to get yearly values
