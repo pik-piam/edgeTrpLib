@@ -112,6 +112,10 @@ calc_num_vehicles_stations <- function(norm_dem, ES_demand_all, techswitch, load
          /annual_mileage]             ## in trillion veh
 
   LDVdem = LDVdem[, .(iso, year, vehicles_number, technology, vehicle_type)]
+
+  alltechdem = LDVdem[technology %in% c("BEV", "FCEV", "Liquids", "Hybrid Liquids", "Hybrid Electric"),]
+  alltechdem = alltechdem[,.(vehicles_number = sum(vehicles_number)), by = c("iso", "year")]
+
   learntechdem = LDVdem[technology %in% c("BEV", "FCEV"),][, .(iso, year, vehicles_number, vehicle_type, technology)]
 
   stations = LDVdem[, .(vehicles_number = sum(vehicles_number)), by = c("iso", "year", "technology")]
@@ -158,7 +162,7 @@ calc_num_vehicles_stations <- function(norm_dem, ES_demand_all, techswitch, load
  
  else if (techswitch ==  "Liquids") {
     ## industry and policymakers don't push BEVs in case the scenario is ConvCase
-    stations[technology == "BEV",  statnum := 0.2*               ## BEV do not take over due to the dispreference
+    stations[technology == "BEV",  statnum := 0.5*               ## BEV do not take over due to the dispreference
                                               vehicles_number*  ## in trillion veh
                                               1e6/              ## in kveh
                                               1000]             ## in stations
@@ -184,5 +188,5 @@ calc_num_vehicles_stations <- function(norm_dem, ES_demand_all, techswitch, load
 
   stations = stations[,.(iso, technology, year, fracst)]
 
-  return(list(learntechdem = learntechdem, stations = stations))
+  return(list(learntechdem = learntechdem, stations = stations, alltechdem = alltechdem))
 }

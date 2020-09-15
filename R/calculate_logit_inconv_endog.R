@@ -7,9 +7,9 @@
 #' @param logit_params contains logit exponents
 #' @param intensity_data logit level intensity data
 #' @param price_nonmot price of non-motorized modes in the logit tree
-#' @param nfprices_advanced price of advanced and mid-advanced ICEs
 #' @param techswitch technology that the policymaker wants to promote
 #' @param stations share of stations offering the different fuels
+#' @param totveh total demand for LDVs by tecnology
 #' @import data.table
 #' @export
 
@@ -19,13 +19,13 @@ calculate_logit_inconv_endog = function(prices,
                                         logit_params,
                                         intensity_data,
                                         price_nonmot,
-                                        nfprices_advanced,
                                         techswitch,
-                                        stations = NULL) {
+                                        stations = NULL,
+                                        totveh = NULL) {
 
   tot_price <- non_fuel_price <- subsector_L3 <- logit.exponent <- share <- sw <- time_price <- NULL
   tot_VOT_price <- `.` <- fuel_price_pkm <- subsector_L1 <- D <- index_yearly <- pinco <- NULL
-  shareVS1 <- sw <- iso <- vehicle_type <- shareFS1 <- weighted_shares <- weighted_sharessum <- NULL
+  shareVS1 <- sw <- iso <- vehicle_type <- shareFS1 <- weighted_sharessum <- NULL
   technology <- cluster <- combined_shareEL <- combined_shareLiq <- tail <- NULL
   sector <- subsector_L2 <- MJ_km <- EJ_Mpkm_final <- type <- dpp_nfp <- fuel_price <- value_time <- NULL
   logit_type <- pchar <- pinco_tot <- pmod_av <- prange <- pref <- prisk <- fracst <- NULL
@@ -106,7 +106,8 @@ calculate_logit_inconv_endog = function(prices,
 
 
 
-  F2Vcalc <- function(prices, pref_data, logit_params, value_time, mj_km_data, group_value, stations, techswitch) {
+  F2Vcalc <- function(prices, pref_data, logit_params, value_time, mj_km_data, group_value, stations, totveh, techswitch) {
+    vehicles_number <- NULL
     final_prefFV <- pref_data[["FV_final_pref"]]
     final_prefVS1 <- pref_data[["VS1_final_pref"]]
     logit_exponentFV <- logit_params[["logit_exponent_FV"]]
@@ -185,6 +186,7 @@ calculate_logit_inconv_endog = function(prices,
     Ddt[, D := 1-((index_yearly-0.5)/paux)^4]
     Ddt[, D := ifelse(D<0,0,D)]
 
+
     if (is.null(stations)) {
       stations = CJ(iso =unique(df[, iso]), year = unique(df[, year]), technology = c("BEV", "NG", "FCEV"))
       stations[, fracst := 1]
@@ -206,7 +208,20 @@ calculate_logit_inconv_endog = function(prices,
         ## stations converge to 1 in 2100
         stations[year <= 2100, fracst := (fracst[year == 2020]-fracst[year == 2100])/(2020-2100)*(year-2020)+fracst[year==2020], by = c("iso", "technology")]
       }
-      }
+    }
+
+    ## in case the total vehicle number is not provided, 1 is attributed
+    if (is.null(totveh)) {
+      totveh = CJ(iso =unique(df[, iso]), year = seq(2020, 2100, 1))
+      totveh[, vehicles_number := 1]
+    } else {
+      ## in case the total vehicle number is provided, the values have to be interpolated to get yearly values
+      totveh = approx_dt(totveh,
+                         seq(2020, 2100, 1),
+                         xcol = "year", ycol = "vehicles_number",
+                         idxcols = c("iso"),
+                         extrapolate=T)
+    }
 
     start <- Sys.time()
     for (t in futyears_all[futyears_all>2020]) {
@@ -262,15 +277,13 @@ calculate_logit_inconv_endog = function(prices,
       tmp[is.na(D), D := 0]
       tmp[is.na(shareFS1), shareFS1 := 0]
 
-      ## weighted shares are the weighted average of each time step's FS1 share and how much it depreciated in time
-      tmp[, weighted_shares := mean(shareFS1*D), by = c("iso", "technology", "vehicle_type", "subsector_L1", "year")]
+      tmp = merge(tmp, totveh, by = c("iso", "year"))
 
       ## weighted share depends on the composition of the fleet, which is a weighted average of the previous years' composition
-      tmp[, weighted_sharessum := ifelse(year == (t-1), sum(weighted_shares[year<t])/sum(D[year<t]), 0), by = c("iso", "technology", "vehicle_type", "subsector_L1")]
-
+      tmp[, weighted_sharessum := ifelse(year == (t-1), sum(shareFS1[year<t]*D[year<t]*vehicles_number[year<t])/sum(D[year<t]*vehicles_number[year<t]), 0), by = c("iso", "technology", "vehicle_type", "subsector_L1")]
+      tmp[, vehicles_number := NULL]
       ## for 2020, we assume the value was constant for all the previous years (hence the value for 2020 coincides with the share)
       if (t == 2021) {
-        tmp[, weighted_sharessum := ifelse(year == 2020, weighted_shares, NA)]
         tmp_2020 = tmp[year == 2020,]
       }
 
@@ -397,7 +410,7 @@ calculate_logit_inconv_endog = function(prices,
       }
 
       ## remove "temporary" columns
-      tmp[, c("shareFS1","D", "weighted_shares", "weighted_sharessum", "index_yearly", "fracst") := NULL]
+      tmp[, c("shareFS1","D",  "weighted_sharessum", "index_yearly", "fracst") := NULL]
 
       if (t<tail(futyears_all,1)) {
         tmp1 = copy(tmp)
@@ -495,54 +508,51 @@ calculate_logit_inconv_endog = function(prices,
 
   }
 
-  E2Fcalc <- function(pricesLDV, mj_km_data){
-    logit_exponent <- -4
-    ## joins the df containing the prices with the df containing the logit exponents
-    df <- pricesLDV[, logit.exponent := logit_exponent]
-    ## delete entries have tot_price NA (e.g. 1900 BEV)
-    df <- df[ !(is.na(tot_price))]
-    ## entries that are not present in the mix have non_fuel_price == 0, but also Walk and Cycle: delete all the not-present in the mix options
-    df <- df[non_fuel_price>0]
-    ## calculate the shares given prices, lambda and inco
-    df <- df[, share := (tot_price)^logit.exponent/(sum((tot_price)^logit.exponent)),
-             by = c("technology", "vehicle_type", "iso", "year")]
-    df[, tot_VOT_price := 0]
+  E2Fcalc <- function(base, mj_km_data){
+    ## data based on CarCulator from PSI
+    ## filter out only 4wheelers running on Liquids
+    mj = mj_km_data[technology == "Liquids" & subsector_L1 == "trn_pass_road_LDV_4W"]
+    price = base[subsector_L1 == "trn_pass_road_LDV_4W" & technology == "Liquids"]
+    ## cost of ICE is constant in time
+    price[, non_fuel_price := ifelse(year %in% c(2020), non_fuel_price, NA)]
+    ## energy intensity per km is expressed as a function of the base value in 2010
+    mj[, MJ_km := ifelse(year == 2010, MJ_km, NA)]
+    mj[, MJ_km := ifelse(year == 1990, 1.2*MJ_km[year == 2010], MJ_km), by = c("iso", "vehicle_type", "technology")]
+    mj[, MJ_km := ifelse(year == 2010, 1*MJ_km[year == 2010], MJ_km), by = c("iso", "vehicle_type", "technology")]
+    mj[, MJ_km := ifelse(year == 2020, 0.8*MJ_km[year == 2010], MJ_km), by = c("iso", "vehicle_type", "technology")]
+    mj[, MJ_km := ifelse(year == 2030, 0.7*MJ_km[year == 2010], MJ_km), by = c("iso", "vehicle_type", "technology")]
+    mj[, MJ_km := ifelse(year == 2040, 0.54*MJ_km[year == 2010], MJ_km), by = c("iso", "vehicle_type", "technology")]
+    mj[, MJ_km := ifelse(year == 2050, 0.45*MJ_km[year == 2010], MJ_km), by = c("iso", "vehicle_type", "technology")]
+    mj[, MJ_km := ifelse(year == 2100, 0.40*MJ_km[year == 2010], MJ_km), by = c("iso", "vehicle_type", "technology")]
+    ## approximate the trends based on the given time steps
+    price = approx_dt(price, unique(price$year),
+                      xcol = "year", ycol = c("non_fuel_price"),
+                      idxcols = c("iso", "technology", "vehicle_type"),
+                      extrapolate=T)
+    mj = approx_dt(mj, unique(mj$year),
+                   xcol = "year", ycol = c("MJ_km"),
+                   idxcols = c("iso", "technology", "vehicle_type"),
+                   extrapolate=T)
 
-    MJ_km <- merge(df, mj_km_data, by=intersect(names(df), names(mj_km_data)), all = FALSE)
+    ## merge prices and intensity
+    price = merge(price, mj, by = c("iso", "year", "technology", "vehicle_type", "subsector_L1", "subsector_L2", "subsector_L3", "sector", "sector_fuel"))
 
-    MJ_km <- MJ_km[, .(MJ_km = sum(share * MJ_km)),
-                   by = c("iso", "year", "technology", "vehicle_type", "subsector_L1", "subsector_L2", "subsector_L3", "sector", "sector_fuel")]
+    ## fuel price needs to be recalculated as the energy intensity changed
+    price[, c("fuel_price_pkm", "MJ_km") := list(fuel_price    ## in $/EJ
+                                                 *MJ_km        ## in MJ/km
+                                                 *1e-12,       ## in $/km
+                                                 NULL)]
+    ## total price changes as a consequence
+    price[, tot_price := fuel_price_pkm + non_fuel_price]
 
-    ## get rid of the ( misleading afterwards) columns
-    df_shares <- copy(df)
+    ## merge with original databases
+    base <- rbind(base[!(subsector_L1 == "trn_pass_road_LDV_4W" & technology =="Liquids"),  c("iso","year","technology","vehicle_type","subsector_L1","subsector_L2","subsector_L3","sector", "tot_price","fuel_price_pkm", "non_fuel_price", "tot_VOT_price", "sector_fuel")],
+                  price[,c("iso","year","technology","vehicle_type","subsector_L1","subsector_L2","subsector_L3","sector", "tot_price","fuel_price_pkm", "non_fuel_price", "tot_VOT_price", "sector_fuel")])
 
-    df_shares <- df_shares[
-      , c("share", "iso", "year",
-          "technology", "vehicle_type",
-          "subsector_L1", "subsector_L2", "subsector_L3", "sector",
-          "tot_VOT_price",
-          "fuel_price_pkm",
-          "non_fuel_price",
-          "tot_price",
-          "type"), with = FALSE]
+    mj_km_data <- rbind(mj_km_data[!(subsector_L1 == "trn_pass_road_LDV_4W"  & technology =="Liquids"), c("iso", "year", "technology", "vehicle_type", "subsector_L1", "subsector_L2", "subsector_L3", "sector", "MJ_km", "sector_fuel")],
+                        mj)
 
-    ## calculate 'one level up' database with the useful columns only
-    df <- df[
-      , c("share", "tot_price",
-          "fuel_price_pkm", "non_fuel_price", "tot_VOT_price", "iso", "year",
-          "subsector_L1", "subsector_L2", "subsector_L3", "sector",
-          "technology", "vehicle_type", "sector_fuel"), with = FALSE]
-
-    ## calculate prices of one level up
-    df=df[,.(tot_price=sum(share*tot_price),
-             fuel_price_pkm=sum(share*fuel_price_pkm),
-             tot_VOT_price=sum(share*tot_VOT_price),
-             non_fuel_price=sum(share*non_fuel_price)),
-          by = c("iso", "year", "technology", "vehicle_type",
-                 "subsector_L1", "subsector_L2", "subsector_L3", "sector", "sector_fuel")]
-
-
-    return(list(df = df, MJ_km = MJ_km, df_shares = df_shares))
+    return(list(mj_km_data =  mj_km_data, base = base))
 
   }
 
@@ -566,43 +576,10 @@ calculate_logit_inconv_endog = function(prices,
                                ]
   mj_km_data <- mj_km_data[,-"EJ_Mpkm_final"]
 
-  ## Conventional Liquids energy intensity
-
-  ## create choice of  more expensive, more efficient alternatives (only Liquids)
-  mj_km_dataEF <- rbind(mj_km_data[subsector_L1 == "trn_pass_road_LDV_4W" & year > 2020 & technology =="Liquids"][, c("type", "MJ_km") := list("advanced", MJ_km*0.6)],
-                        mj_km_data[subsector_L1 == "trn_pass_road_LDV_4W" & year > 2020 & technology =="Liquids"][, c("type", "MJ_km") := list("middle", MJ_km*0.8)],
-                        mj_km_data[subsector_L1 == "trn_pass_road_LDV_4W" & year > 2020 & technology =="Liquids"][, type := "normal"])
-
-  ## non fuel prices of Liquids LDVs advanced and mid-advanced categories is merged to the other prices
-  nfprices_advanced = merge(nfprices_advanced[year>2020],
-                            base[subsector_L1 == "trn_pass_road_LDV_4W" & year > 2020 & technology =="Liquids", ][, non_fuel_price := NULL],
-                            by = names(nfprices_advanced)[!(names(nfprices_advanced) %in% c("non_fuel_price", "type"))])
-
-  baseEF = rbind(base[subsector_L1 == "trn_pass_road_LDV_4W" & year > 2020 & technology =="Liquids"][, type := "normal"], nfprices_advanced)
-  baseEF = merge(baseEF,
-                 mj_km_dataEF[,c("iso", "year", "technology", "vehicle_type", "type", "MJ_km"), ],
-                 by = c("iso", "year", "technology", "vehicle_type", "type"))
-
-  ## fuel price needs to be recalculated as the energy intensity changed
-  baseEF[, c("fuel_price_pkm", "MJ_km") := list(fuel_price    ## in $/EJ
-                                                *MJ_km        ## in MJ/km
-                                                *1e-12,       ## in $/km
-                                                NULL)]
-
-  baseEF[, tot_price := fuel_price_pkm + non_fuel_price]
-
-
-  E2F_all <- E2Fcalc(baseEF,
-                     mj_km_dataEF)
-  EF <- E2F_all[["df"]]
-  mj_km_dataEF <- E2F_all[["MJ_km"]]
-  EF_shares <- E2F_all[["df_shares"]]
-
-  base <- rbind(base[!(subsector_L1 == "trn_pass_road_LDV_4W" & year > 2020 & technology =="Liquids"),  c("iso","year","technology","vehicle_type","subsector_L1","subsector_L2","subsector_L3","sector", "tot_price","fuel_price_pkm", "non_fuel_price", "tot_VOT_price", "sector_fuel")],
-                EF)
-
-  mj_km_data <- rbind(mj_km_data[!(subsector_L1 == "trn_pass_road_LDV_4W" & year > 2020 & technology =="Liquids"), c("iso", "year", "technology", "vehicle_type", "subsector_L1", "subsector_L2", "subsector_L3", "sector", "MJ_km", "sector_fuel")],
-                      mj_km_dataEF)
+  ## Conventional Liquids energy intensity based on hybridization rate
+  EF_all = E2Fcalc(base, mj_km_data)
+  base = EF_all[["base"]]
+  mj_km_data = EF_all[["mj_km_data"]]
 
   ## FV
   FV_all <- F2Vcalc(prices = base,
@@ -612,7 +589,8 @@ calculate_logit_inconv_endog = function(prices,
                     mj_km_data = mj_km_data,
                     group_value = "vehicle_type",
                     techswitch = techswitch,
-                    stations = stations)
+                    stations = stations,
+                    totveh = totveh)
 
   FV <- FV_all[["df"]]
   MJ_km_FV <- FV_all[["MJ_km"]]
@@ -694,7 +672,6 @@ calculate_logit_inconv_endog = function(prices,
               prices_list = prices_list,
               share_list = share_list,
               pref_data = pref_data,
-              EF_shares = EF_shares,
               annual_sales = annual_sales)
 
   return(result)
