@@ -42,21 +42,20 @@ calcVint <- function(shares, totdem_regr, prices, mj_km_data, years){
   S1S2 = shares$S1S2_shares[,.(shareS1S2 = share, iso, year, subsector_L1, subsector_L2)]
   VS1 = shares$VS1_shares[,.(shareVS1 = share, iso, year, vehicle_type, subsector_L1)]
   FV = shares$FV_shares[,.(shareFV = share, iso, year, technology, vehicle_type, subsector_L1)]
-
   ## calculate the share of 4W on the total passenger demand
   shares_4W = merge(S3S, S2S3, by = c("iso", "year", "subsector_L3"))
   shares_4W[, share := shareS3S*shareS2S3]
   shares_4W = merge(shares_4W, S1S2, by = c("iso", "year", "subsector_L2"))
   shares_4W[, share := share*shareS1S2]
-  shares_4W = shares_4W[subsector_L1 == "trn_pass_road_LDV_4W", c("iso", "year", "subsector_L1", "share")]
+  shares_4W = shares_4W[subsector_L1 %in% c("trn_pass_road_LDV_4W", "trn_freight_road_tmp_subsector_L1"), c("iso", "year", "subsector_L1", "share", "sector")]
   ## find total demand LDV
-  passdem = totdem_regr[sector == "trn_pass"]
-  passdem = merge(passdem, shares_4W, by = c("iso", "year"))
-  passdem[, totdem := demand*share][, c("demand", "share") :=NULL]
+  passdem = totdem_regr[sector %in% c("trn_pass", "trn_freight")]
+  passdem = merge(passdem, shares_4W, by = c("iso", "year", "sector"))
+  passdem[, totdem := demand*share][, c("demand", "share") := NULL]
 
   passdem = approx_dt(dt = passdem, xdata = tall,                       ## extrapolate to the whole time frame
                       xcol="year", ycol="totdem",
-                      idxcols = c("iso", "sector", "subsector_L1"),
+                      idxcols = c("iso", "subsector_L1", "sector"),
                       extrapolate=T)
 
   paux = 15   ## approximate lifetime of a car
@@ -81,7 +80,7 @@ calcVint <- function(shares, totdem_regr, prices, mj_km_data, years){
   Cap_2010 = setkey(Cap_2010[, c(k=1, .SD)], k)[years_origin[, c(k=1,.SD)], allow.cartesian=TRUE][, k := NULL]
   ## what survives in every year depends on when the sales were done and the years the car is old
   Cap_2010[, year := years_origin + index_yearly]
-  Cap_2010 = Cap_2010[year>=2010, .(C_2010=sum(totdem)), by = c("iso","year","sector","subsector_L1")]
+  Cap_2010 = Cap_2010[year>=2010, .(C_2010=sum(totdem)), by = c("iso","year","subsector_L1", "sector")]
   ## after the last year when 2010 sales disappear from the fleet, all values should be 0
   tmp = CJ(year = seq(2026,2100,1), iso = unique(Cap_2010$iso), subsector_L1 = unique(Cap_2010$subsector_L1), sector = unique(Cap_2010$sector), C_2010 = 0)
   Cap_2010 = rbind(Cap_2010, tmp)
@@ -94,7 +93,6 @@ calcVint <- function(shares, totdem_regr, prices, mj_km_data, years){
   setnames(Ddt, old = "index_yearly", new = "index")
 
   ## create tmp structure that is used in the for loop
-  ##NB this is NOT goingto work when there are trucks! they belong to a different sector!
   tmp = CJ(year = tall, iso = unique(Cap_2010$iso), subsector_L1 = unique(Cap_2010$subsector_L1), sector = unique(Cap_2010$sector))
 
   for (i in seq(1,length(tall)-1,1)) {
@@ -144,7 +142,8 @@ calcVint <- function(shares, totdem_regr, prices, mj_km_data, years){
     ## sum up all depreciating capacity for the current time step
     Vint = Vint[year == tall[tall>baseyear][i+1], vint := Reduce(`+`, .SD), .SDcols=c(listCol), by = c("iso", "subsector_L1", "sector")]
 
-    }
+  }
+
   ## melt according to the columns of the "starting" year
   listCol <- colnames(Vint)[grep("C_", colnames(Vint))]
   Vint = melt(Vint, id.vars = c("year", "vint", "iso", "subsector_L1", "sector"), measure.vars = listCol)
@@ -154,7 +153,7 @@ calcVint <- function(shares, totdem_regr, prices, mj_km_data, years){
 
 
   ## composition of the vintages is inherited from the logit (depending on the base year): find the share of each tech-veh with respect to the starting total demand of passenger transport
-  shares_tech = merge(VS1[subsector_L1 =="trn_pass_road_LDV_4W"], FV[subsector_L1 =="trn_pass_road_LDV_4W"], by = c("iso", "year", "vehicle_type", "subsector_L1"), all.y =TRUE)
+  shares_tech = merge(VS1[subsector_L1 %in% c("trn_pass_road_LDV_4W", "trn_freight_road_tmp_subsector_L1")], FV[subsector_L1 %in% c("trn_pass_road_LDV_4W", "trn_freight_road_tmp_subsector_L1")], by = c("iso", "year", "vehicle_type", "subsector_L1"), all.y =TRUE)
   shares_tech[, share := shareVS1*shareFV]
 
   shares_tech = approx_dt(dt = shares_tech, xdata = tall,
@@ -195,12 +194,12 @@ calcVint <- function(shares, totdem_regr, prices, mj_km_data, years){
 
 
   ## updated values of FV_shares
-  shares$FV_shares = merge(FV[(subsector_L1 != "trn_pass_road_LDV_4W")| (subsector_L1 == "trn_pass_road_LDV_4W" & year %in% c(1990, 2005,2010))],
+  shares$FV_shares = merge(FV[(!subsector_L1 %in% c("trn_pass_road_LDV_4W", "trn_freight_road_tmp_subsector_L1"))| (subsector_L1 %in% c("trn_pass_road_LDV_4W", "trn_freight_road_tmp_subsector_L1") & year %in% c(1990, 2005,2010))],
                            FV_4W[year %in% years[years>baseyear]], by = names(FV_4W), all = TRUE)
   setnames(shares$FV_shares, old = "shareFV", new = "share")
 
   ## calculate the non fuel price
-  price4W = prices$base[ subsector_L1 == "trn_pass_road_LDV_4W",]
+  price4W = prices$base[ subsector_L1 %in% c("trn_pass_road_LDV_4W", "trn_freight_road_tmp_subsector_L1"),]
   price4W[, variable := paste0("C_", year)] ## attribute to the column variable the year in wich the logit based value starts
   price4W_techtmp = copy(price4W) ## create a temporary copy, it is used not to delete the year column in the original dt
   price4W_techtmp = price4W_techtmp[, c("year", "tot_VOT_price", "tot_price") := NULL]
@@ -230,11 +229,11 @@ calcVint <- function(shares, totdem_regr, prices, mj_km_data, years){
   ## extend to 2110 2130 2150 using 2100 value
   totcost = rbind(totcost, totcost[year == 2100][, year := 2110], totcost[year == 2100][, year := 2130], totcost[year == 2100][, year := 2150])
   ## updated values of FV_shares
-  prices$base = merge(prices$base[(subsector_L1 != "trn_pass_road_LDV_4W")| (subsector_L1 == "trn_pass_road_LDV_4W" & year %in% c(1990, 2005,2010))],
+  prices$base = merge(prices$base[(!subsector_L1 %in% c("trn_pass_road_LDV_4W", "trn_freight_road_tmp_subsector_L1"))| (subsector_L1 %in% c("trn_pass_road_LDV_4W", "trn_freight_road_tmp_subsector_L1") & year %in% c(1990, 2005,2010))],
                 totcost[year %in% years[years>baseyear], c("iso", "technology", "year", "vehicle_type", "subsector_L1", "subsector_L2", "subsector_L3", "sector", "non_fuel_price", "tot_price", "fuel_price_pkm",  "tot_VOT_price", "sector_fuel")], by = names(prices$base), all = TRUE)
 
   ## calculate the average intensity of the fleet
-  mj_km_data4W = mj_km_data[ subsector_L1 == "trn_pass_road_LDV_4W",]
+  mj_km_data4W = mj_km_data[ subsector_L1 %in% c("trn_pass_road_LDV_4W", "trn_freight_road_tmp_subsector_L1"),]
   mj_km_data4W[, variable := paste0("C_", year)] ## attribute to the column variable the year in wich the logit based value starts
   mj_km_data4W_techtmp = copy(mj_km_data4W) ## create a temporary copy, it is used not to delete the year column in the original dt
   mj_km_data4W_techtmp = mj_km_data4W_techtmp[, c("year") := NULL]
@@ -264,13 +263,14 @@ calcVint <- function(shares, totdem_regr, prices, mj_km_data, years){
   ## extend to 2110 2130 2150 using 2100 value
   totint = rbind(totint, totint[year == 2100][, year := 2110], totint[year == 2100][, year := 2130], totint[year == 2100][, year := 2150])
   ## updated values of FV_shares
-  mj_km_data = merge(mj_km_data[(subsector_L1 != "trn_pass_road_LDV_4W")| (subsector_L1 == "trn_pass_road_LDV_4W" & year %in% c(1990, 2005,2010))],
+  mj_km_data = merge(mj_km_data[(!subsector_L1 %in% c("trn_pass_road_LDV_4W", "trn_freight_road_tmp_subsector_L1"))| (subsector_L1 %in% c("trn_pass_road_LDV_4W", "trn_freight_road_tmp_subsector_L1") & year %in% c(1990, 2005,2010))],
                       totint[year %in% years[years>baseyear], c("iso", "technology", "year", "vehicle_type", "subsector_L1", "subsector_L2", "subsector_L3", "sector", "sector_fuel", "MJ_km")], by = names(mj_km_data), all = TRUE)
 
   return(list(prices = prices,
               shares = shares,
               mj_km_data = mj_km_data,
               vintcomp = vintcomp[year %in% years],
-              newcomp = newcomp[year %in% years]))
+              newcomp = newcomp[year %in% years],
+              vintcomp_startyear = vintcomp_startyear))
 
 }

@@ -193,9 +193,9 @@ merge_prices <- function(gdx, REMINDmapping, REMINDyears,
 
     ## value of yearconv represents the convergence value
     tmp2[, non_fuel_price_conv := non_fuel_price_new[time==yearconv], by = c("iso","technology", "vehicle_type")]
-
     ## convergence is linear until the value corresponding to 2010 is reached
-    tmp2[year <= year_at_yearconv & year >= 2010, non_fuel_price := non_fuel_price[year == 2010]*(year[time == yearconv]-year)/(year[time == yearconv]-2010) + non_fuel_price_conv*(year-2010)/(year[time == yearconv]-2010), by =c("technology", "vehicle_type", "iso")]
+    tmp2[year <= year_at_yearconv & year >= 2010, non_fuel_price := non_fuel_price[year == 2010]+(year-2010)/(year_at_yearconv-2010)*(non_fuel_price_conv-non_fuel_price[year == 2010]), by =c("technology", "vehicle_type", "iso")]
+    tmp2[year >= year_at_yearconv, non_fuel_price := non_fuel_price[year == year_at_yearconv], by =c("technology", "vehicle_type", "iso")]
     ## select only useful columns
     tmp2 = tmp2[,.(iso, year, non_fuel_price, technology, vehicle_type, fuel_price, subsector_L1, subsector_L2, subsector_L3, sector, sector_fuel, EJ_Mpkm_final , fuel_price_pkm)]
 
