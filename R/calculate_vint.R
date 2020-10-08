@@ -270,6 +270,7 @@ calcVint <- function(shares, totdem_regr, prices, mj_km_data, years){
               shares = shares,
               mj_km_data = mj_km_data,
               vintcomp = vintcomp[year %in% years],
-              newcomp = newcomp[year %in% years]))
+              newcomp = newcomp[year %in% years],
+              vintcomp_startyear = vintcomp_startyear))
 
 }
