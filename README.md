@@ -1,13 +1,56 @@
-# edgeTrpLib 
+# Helper functions for EDGE transport calculations
 
-is a R package with core functions for the EDGE Transport model. It was created
-to avoid code duplication for functions used both in the generation of data for
-the calibration of REMIND (demand pathways) and in the iterative GAMS solving
-procedure of REMIND (i.e., the `EDGE_transport.R` script).
+R package **edgeTrpLib**, version **0.1.15**
+
+  
+
+## Purpose and Functionality
+
+This package is highly specialized and created solely to not duplicate helper functions.
+
 
 ## Installation
 
-The package can be installed from github via
+For installation of the most recent package version an additional repository has to be added in R:
+
+```r
+options(repos = c(CRAN = "@CRAN@", pik = "https://rse.pik-potsdam.de/r/packages"))
 ```
-devtools::install_github("https://github.com/pik-piam/edgeTrpLib.git", "master")
+The additional repository can be made available permanently by adding the line above to a file called `.Rprofile` stored in the home folder of your system (`Sys.glob("~")` in R returns the home directory).
+
+After that the most recent version of the package can be installed using `install.packages`:
+
+```r 
+install.packages("edgeTrpLib")
 ```
+
+Package updates can be installed using `update.packages` (make sure that the additional repository has been added before running that command):
+
+```r 
+update.packages()
+```
+
+## Questions / Problems
+
+In case of questions / problems please contact Alois Dirnaichner <dirnaichner@pik-potsdam.de>.
+
+## Citation
+
+To cite package **edgeTrpLib** in publications use:
+
+Dirnaichner A, Rottoli M (2020).
+_edgeTrpLib: Helper functions for EDGE
+transport calculations_. R package version
+0.1.14.
+
+A BibTeX entry for LaTeX users is
+
+ ```latex
+@Manual{,
+  title = {edgeTrpLib: Helper functions for EDGE transport calculations},
+  author = {Alois Dirnaichner and Marianna Rottoli},
+  year = {2020},
+  note = {R package version 0.1.14},
+}
+```
+
