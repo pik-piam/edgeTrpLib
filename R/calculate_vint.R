@@ -49,7 +49,7 @@ calcVint <- function(shares, totdem_regr, prices, mj_km_data, years){
   shares_4W[, share := share*shareS1S2]
   shares_4W = shares_4W[subsector_L1 %in% c("trn_pass_road_LDV_4W"), c("iso", "year", "subsector_L1", "share", "sector")]
   ## find total demand LDV
-  passdem = totdem_regr[sector %in% c("trn_pass", "trn_freight")]
+  passdem = totdem_regr[sector %in% c("trn_pass")]
   passdem = merge(passdem, shares_4W, by = c("iso", "year", "sector"))
   passdem[, totdem := demand*share][, c("demand", "share") := NULL]
 
