@@ -532,8 +532,6 @@ calculate_logit_inconv_endog = function(prices,
     ## filter out only 4wheelers running on Liquids
     mj = mj_km_data[technology == "Liquids" & subsector_L1 == "trn_pass_road_LDV_4W"]
     price = base[subsector_L1 == "trn_pass_road_LDV_4W" & technology == "Liquids"]
-    ## cost of ICE is constant in time
-    price[, non_fuel_price := ifelse(year %in% c(2020), non_fuel_price, NA)]
     ## energy intensity per km is expressed as a function of the base value in 2010
     mj[, MJ_km := ifelse(year == 2010, MJ_km, NA)]
     mj[, MJ_km := ifelse(year == 1990, 1.2*MJ_km[year == 2010], MJ_km), by = c("iso", "vehicle_type", "technology")]
@@ -543,11 +541,7 @@ calculate_logit_inconv_endog = function(prices,
     mj[, MJ_km := ifelse(year == 2040, 0.54*MJ_km[year == 2010], MJ_km), by = c("iso", "vehicle_type", "technology")]
     mj[, MJ_km := ifelse(year == 2050, 0.45*MJ_km[year == 2010], MJ_km), by = c("iso", "vehicle_type", "technology")]
     mj[, MJ_km := ifelse(year == 2100, 0.40*MJ_km[year == 2010], MJ_km), by = c("iso", "vehicle_type", "technology")]
-    ## approximate the trends based on the given time steps
-    price = approx_dt(price, unique(price$year),
-                      xcol = "year", ycol = c("non_fuel_price"),
-                      idxcols = c("iso", "technology", "vehicle_type"),
-                      extrapolate=T)
+    ## approximate the trend of energy intensity to fill in the missing time steps
     mj = approx_dt(mj, unique(mj$year),
                    xcol = "year", ycol = c("MJ_km"),
                    idxcols = c("iso", "technology", "vehicle_type"),
