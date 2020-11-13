@@ -19,7 +19,7 @@ merge_prices <- function(gdx, REMINDmapping, REMINDyears,
 
     sector_fuel <- pih <- value <- fuel_price <- fuel_price_pkm <- EJ_Mpkm_final <- NULL
     non_fuel_price <- technology <- GDP_cap <- iso <- `.` <- weight <- POP_val <- NULL
-    GDP <- yearconv <- time <- year_at_yearconv <- non_fuel_price_new <- non_fuel_price_conv <- NULL
+    GDP <- yearconv <- time <- year_at_yearconv <- non_fuel_price_conv <- non_fuel_price_trend <- NULL
     vehicle_type <- subsector_L3 <- subsector_L2 <- subsector_L1 <- sector <- tot_price <- NULL
 
     ## report prices from REMIND gdx in 2005$/MJ
@@ -165,14 +165,13 @@ merge_prices <- function(gdx, REMINDmapping, REMINDyears,
     ## dt contaning the gdp towards which to converge
     tmp2 = richave[, c("year", "GDP_cap")]
     ## dt containing the non fuel price for rich countries
-    tmp3 = richave[, c("year", "non_fuel_price", "technology", "vehicle_type")]
+    tmp3 = richave[, c("year", "technology", "vehicle_type")]
     ## names has to be different across dts for roll join
     setnames(tmp2, old = c("year"), new = c("time"))
-    setnames(tmp3, old = c("year", "non_fuel_price"), new = c("time", "non_fuel_price_new"))
+    setnames(tmp3, old = c("year"), new = c("time"))
 
     setkey(tmp1,GDP_cap)
     setkey(tmp2,GDP_cap)
-
     ## find the time step at which the GDPcap matches the GDPcap of the rich countries
     tmp2 <- tmp2[tmp1, roll = "nearest", on = .(GDP_cap)]
 
@@ -182,20 +181,25 @@ merge_prices <- function(gdx, REMINDmapping, REMINDyears,
     ## find year closest to 2010 for each ISO, this is the year at which is going to converge
     tmp2[, yearconv := time[which.min(abs(time - 2010))], by = c("iso")]
 
-
     ## in case one time step has multiple matches in more than one time step, the value is attributed only in the last time step
     tmp2[time == yearconv & yearconv > 1990, time := ifelse(year == min(year), time, 1980), by = c("iso", "time")]
     tmp2[time == yearconv & yearconv == 1990, time := ifelse(year == max(year), time, 1980), by = c("iso", "time")]
+
     ## year at which the convergence happens
     tmp2[, year_at_yearconv := year[time == yearconv], by = c("iso","technology", "vehicle_type")]
-    ## values of GDPcap equal to GDPcap_rich have the same values as non_fuel_prices of rich countries
-    tmp2[year >= year_at_yearconv & year > 2010, non_fuel_price := non_fuel_price_new, by = c("iso","technology", "vehicle_type")]
+
+    ## value of the non-fuel price after the convergence
+    tmp3 = richave[, c("year", "non_fuel_price", "technology", "vehicle_type")]
+    setnames(tmp3, old = c("non_fuel_price"), new = c("non_fuel_price_trend"))
+    tmp2 = merge(tmp2,tmp3,by=c("year", "technology", "vehicle_type"))
+
+    ## after the year of convergence, the values are the "average" developed countries values
+    tmp2[year >= year_at_yearconv & year > 2010, non_fuel_price := non_fuel_price_trend, by = c("iso","technology", "vehicle_type")]
 
     ## value of yearconv represents the convergence value
-    tmp2[, non_fuel_price_conv := non_fuel_price_new[time==yearconv], by = c("iso","technology", "vehicle_type")]
+    tmp2[, non_fuel_price_conv := non_fuel_price_trend[time==yearconv], by = c("iso","technology", "vehicle_type")]
     ## convergence is linear until the value corresponding to 2010 is reached
     tmp2[year <= year_at_yearconv & year >= 2010, non_fuel_price := non_fuel_price[year == 2010]+(year-2010)/(year_at_yearconv-2010)*(non_fuel_price_conv-non_fuel_price[year == 2010]), by =c("technology", "vehicle_type", "iso")]
-    tmp2[year >= year_at_yearconv, non_fuel_price := non_fuel_price[year == year_at_yearconv], by =c("technology", "vehicle_type", "iso")]
     ## select only useful columns
     tmp2 = tmp2[,.(iso, year, non_fuel_price, technology, vehicle_type, fuel_price, subsector_L1, subsector_L2, subsector_L3, sector, sector_fuel, EJ_Mpkm_final , fuel_price_pkm)]
 

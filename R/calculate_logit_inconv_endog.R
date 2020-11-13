@@ -140,6 +140,11 @@ calculate_logit_inconv_endog = function(prices,
     ## needs random lambdas for the sectors that are not explicitly calculated
     df <- df[ is.na(logit.exponent), logit.exponent := -10]
 
+    ## logit exponent gets higher in time for LDVs and road freight, doubling by 2035
+    df[subsector_L1 %in% c("trn_freight_road_tmp_subsector_L1", "trn_pass_road_LDV_4W") & year >=2020, logit.exponent := ifelse(year <= 2035 & year >= 2020, logit.exponent[year==2020] + (2*logit.exponent[year==2020]-logit.exponent[year==2020]) * (year-2020)/(2035-2020), 2*logit.exponent[year==2020]),
+       by=c("iso", "vehicle_type", "technology")]
+
+
     ## define the years on which the inconvenience price will be calculated on the basis of the previous time steps sales
     futyears_all = seq(2020, 2101, 1)
     ## all modes other then 4W calculated with exogenous sws
@@ -392,17 +397,31 @@ calculate_logit_inconv_endog = function(prices,
                                    pmax(pinco_tot, floor),
                                    pinco_tot), by = c("iso", "technology", "vehicle_type", "subsector_L1")]
 
+      ## the policymaker bans hybrid liquids increasingly more strictly
+      if (t >= 2033 & t < 2035) {
+        floor = 0.05
+      } else if (t >= 2035 & t < 2037) {
+        floor = 0.1
+      } else if (t >= 2037 & t <=2040) {
+        floor = 0.15
+      } else if (t > 2040) {
+        floor = 0.2
+      } else {
+        floor = 0
       }
 
-      ## hybrid liquids and hybrid electric inconvenience cost cannot decrease below 50% of 2020 value
+        tmp[technology %in% c("Hybrid Liquids"), pmod_av := ifelse(year == t,
+                                                 pmax(pmod_av, floor),
+                                                 pmod_av), by = c("iso", "technology", "vehicle_type", "subsector_L1")]
+
+      }
+
+      ## hybrid electric inconvenience cost cannot decrease below 50% of 2020 value
       tmp[technology %in% c("Hybrid Electric"), pmod_av := ifelse(year == t,
                                pmax(pmod_av, 0.5*pmod_av[year == 2020]),
                                pmod_av), by = c("iso", "technology", "vehicle_type", "subsector_L1")]
 
 
-      tmp[technology %in% c("Hybrid Liquids"), pmod_av := ifelse(year == t,
-                               pmax(pmod_av, 0.8*pmod_av[year == 2020]),
-                               pmod_av), by = c("iso", "technology", "vehicle_type", "subsector_L1")]
 
       ## annual sales, needed for reporting purposes
       if (t == 2101) {
@@ -513,8 +532,6 @@ calculate_logit_inconv_endog = function(prices,
     ## filter out only 4wheelers running on Liquids
     mj = mj_km_data[technology == "Liquids" & subsector_L1 == "trn_pass_road_LDV_4W"]
     price = base[subsector_L1 == "trn_pass_road_LDV_4W" & technology == "Liquids"]
-    ## cost of ICE is constant in time
-    price[, non_fuel_price := ifelse(year %in% c(2020), non_fuel_price, NA)]
     ## energy intensity per km is expressed as a function of the base value in 2010
     mj[, MJ_km := ifelse(year == 2010, MJ_km, NA)]
     mj[, MJ_km := ifelse(year == 1990, 1.2*MJ_km[year == 2010], MJ_km), by = c("iso", "vehicle_type", "technology")]
@@ -524,11 +541,7 @@ calculate_logit_inconv_endog = function(prices,
     mj[, MJ_km := ifelse(year == 2040, 0.54*MJ_km[year == 2010], MJ_km), by = c("iso", "vehicle_type", "technology")]
     mj[, MJ_km := ifelse(year == 2050, 0.45*MJ_km[year == 2010], MJ_km), by = c("iso", "vehicle_type", "technology")]
     mj[, MJ_km := ifelse(year == 2100, 0.40*MJ_km[year == 2010], MJ_km), by = c("iso", "vehicle_type", "technology")]
-    ## approximate the trends based on the given time steps
-    price = approx_dt(price, unique(price$year),
-                      xcol = "year", ycol = c("non_fuel_price"),
-                      idxcols = c("iso", "technology", "vehicle_type"),
-                      extrapolate=T)
+    ## approximate the trend of energy intensity to fill in the missing time steps
     mj = approx_dt(mj, unique(mj$year),
                    xcol = "year", ycol = c("MJ_km"),
                    idxcols = c("iso", "technology", "vehicle_type"),
