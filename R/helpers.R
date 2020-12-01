@@ -29,11 +29,11 @@ getRMNDGDP <- function(scenario="gdp_SSP2",
         return(readRDS(gdpfile))
     }
 
-    GDPppp_country <- calcOutput("GDPppp", aggregate = F)[,, scenario]
+    GDPppp_country <- calcOutput("GDPppp", aggregate = T)[,, scenario]
 
     gdp <- as.data.table(GDPppp_country)[variable == scenario]
     gdp[, (yearcol) := as.numeric(gsub("y", "", Year))][, Year := NULL]
-    setnames(gdp, c("ISO3", "value"), c(isocol, valuecol))
+    setnames(gdp, c("value"), c(valuecol))
 
     if(usecache){
         saveRDS(gdp, gdpfile)
@@ -69,13 +69,64 @@ getRMNDGDPcap <- function(scenario="gdp_SSP2",
 
   `.` <- iso <- value <- GDP_cap <- weight <- POP_val <- NULL
   scenario <- gsub("gdp_", "", scenario)
-  gdp <- getRMNDGDP(paste0("gdp_", scenario), usecache=usecache)
-  POP_country=calcOutput("Population", aggregate = F)[,, paste0("pop_", scenario)]
-  POP <- magpie2dt(POP_country, regioncol = "iso",
+  gdp <- getRMNDGDP(paste0("gdp_", scenario), usecache=F)
+  setnames(gdp, old="ISO3", new = "region", skip_absent = TRUE)
+  POP_country=calcOutput("Population", aggregate = T)[,, paste0("pop_", scenario)]
+  POP <- magpie2dt(POP_country, regioncol = "region",
                    yearcol = "year", datacols = "POP")
-  POP=POP[,.(iso,year,POP,POP_val=value)]
-  GDP_POP=merge(gdp,POP,all = TRUE,by=c("iso","year"))
+  POP=POP[,.(region,year,POP,POP_val=value)]
+  GDP_POP=merge(gdp,POP,all = TRUE,by=c("region","year"))
   GDP_POP[,GDP_cap:=weight/POP_val]
 
   return(GDP_POP)
 }
+
+
+getRMNDGDPISO <- function(scenario="gdp_SSP2",
+                       yearcol="year",
+                       isocol="iso",
+                       valuecol="weight",
+                       usecache=F,
+                       gdpfile="GDPcache.rds"){
+
+  variable <- Year <- NULL
+
+  if(usecache && file.exists(gdpfile)){
+    cat("getGDP_dt: Using cached GDP data in", gdpfile, "\n")
+    return(readRDS(gdpfile))
+  }
+
+  GDPppp_country <- calcOutput("GDPppp", aggregate = F)[,, scenario]
+
+  gdp <- as.data.table(GDPppp_country)[variable == scenario]
+  gdp[, (yearcol) := as.numeric(gsub("y", "", Year))][, Year := NULL]
+  setnames(gdp, c("ISO3", "value"), c(isocol, valuecol))
+
+  if(usecache){
+    saveRDS(gdp, gdpfile)
+  }
+
+  return(gdp)
+}
+
+
+getRMNDGDPcapISO <- function(scenario="gdp_SSP2",
+                          yearcol="year",
+                          isocol="iso",
+                          valuecol="weight",
+                          usecache=F,
+                          gdpfile="GDPcache.rds"){
+
+  `.` <- iso <- value <- GDP_cap <- weight <- POP_val <- NULL
+  scenario <- gsub("gdp_", "", scenario)
+  gdp <- getRMNDGDP(paste0("gdp_", scenario), usecache=usecache)
+  POP_country=calcOutput("Population", aggregate = F)[,, paste0("pop_", scenario)]
+  POP <- magpie2dt(POP_country, regioncol = "region",
+                   yearcol = "year", datacols = "POP")
+  POP=POP[,.(region,year,POP,POP_val=value)]
+  GDP_POP=merge(gdp,POP,all = TRUE,by=c("region","year"))
+  GDP_POP[,GDP_cap:=weight/POP_val]
+
+  return(GDP_POP)
+}
+

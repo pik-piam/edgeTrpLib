@@ -16,12 +16,10 @@ merge_prices <- function(gdx, REMINDmapping, REMINDyears,
                          intensity_data,
                          nonfuel_costs,
                          module="edge_esm") {
-
     sector_fuel <- pih <- value <- fuel_price <- fuel_price_pkm <- EJ_Mpkm_final <- NULL
-    non_fuel_price <- technology <- GDP_cap <- iso <- `.` <- weight <- POP_val <- NULL
+    non_fuel_price <- technology <- GDP_cap <- region <- `.` <- weight <- POP_val <- NULL
     GDP <- yearconv <- time <- year_at_yearconv <- non_fuel_price_conv <- non_fuel_price_trend <- NULL
     vehicle_type <- subsector_L3 <- subsector_L2 <- subsector_L1 <- sector <- tot_price <- NULL
-
     ## report prices from REMIND gdx in 2005$/MJ
 
     tdptwyr2dpgj <- 31.71  #TerraDollar per TWyear to Dollar per GJ
@@ -104,14 +102,14 @@ merge_prices <- function(gdx, REMINDmapping, REMINDyears,
     tmp_PIH <- tmp_PIH[sector_fuel == "elect_td_trn"][, c("sector_fuel", "value") := list("Liquids-Electricity", NULL)]
     setnames(tmp_PIH, old = "pih", new = "value")
 
-    tmp <- rbind(tmp, tmp_PIH)
+    fuel_price_REMIND <- rbind(tmp, tmp_PIH)
 
     test <- tmp[year > 2005 & value <= 0]
     if(nrow(test)){
         print(paste("Zero Fuel Prices found. Regions:", unique(test$region)))
     }
 
-    fuel_price_REMIND <- disaggregate_dt(tmp, mapping = REMINDmapping)
+    # fuel_price_REMIND <- disaggregate_dt(tmp, mapping = REMINDmapping)
 
     ## rename the fuel price
     setnames(fuel_price_REMIND, old = c("value"), new = c("fuel_price"))
@@ -123,7 +121,7 @@ merge_prices <- function(gdx, REMINDmapping, REMINDyears,
     ## join with vehicle intensity and load factor to get the 1990USD/pkm
 
     km_intensity <- intensity_data[year %in% REMINDyears]
-    fuel_price_REMIND <- merge(fuel_price_REMIND, km_intensity, by = c("iso",
+    fuel_price_REMIND <- merge(fuel_price_REMIND, km_intensity, by = c("region",
         "year", "sector_fuel"), all.y = TRUE)
 
     ## fuel_price [$/EJ * EJ/Mpkm * Mpkm/pkm],
@@ -131,7 +129,7 @@ merge_prices <- function(gdx, REMINDmapping, REMINDyears,
 
     ## merge the non energy prices, they are $/pkm
     tech_cost <- merge(tech_cost, nonfuel_costs,
-                        by = c("iso", "year", "technology",
+                        by = c("region", "year", "technology",
                                "vehicle_type", "subsector_L1",
                                "subsector_L2", "subsector_L3","sector"),
                         all.x = TRUE)
@@ -139,29 +137,29 @@ merge_prices <- function(gdx, REMINDmapping, REMINDyears,
     ## missing non energy price for coal, Adv-Electric and Adv-Liquids freight rail
     ## (is not in the original database). Attribute the same non energy price as in
     ## El. Freight Rail
-    tech_cost[, non_fuel_price := ifelse(technology=="Adv-Electric", .SD[technology == "Electric"]$non_fuel_price, non_fuel_price), by=c("year", "iso")]
-    tech_cost[, non_fuel_price := ifelse(technology=="Adv-Liquid", .SD[technology == "Liquids"]$non_fuel_price, non_fuel_price), by=c("year", "iso")]
+    tech_cost[, non_fuel_price := ifelse(technology=="Adv-Electric", .SD[technology == "Electric"]$non_fuel_price, non_fuel_price), by=c("year", "region")]
+    tech_cost[, non_fuel_price := ifelse(technology=="Adv-Liquid", .SD[technology == "Liquids"]$non_fuel_price, non_fuel_price), by=c("year", "region")]
 
     ## convergence of non_fuel_price according to GDPcap
     ## working principle: non_fuel_price follows linear convergence between 2010 and the year it reaches GDPcap@(2010,richcountry). Values from richcountry for the following time steps (i.e. when GDPcap@(t,developing)>GDPcap@(2010,richcountry))
     ## load gdp per capita
     GDP_POP = getRMNDGDPcap(usecache = TRUE)
 
-    tmp = merge(tech_cost, GDP_POP, by = c("iso", "year"))
+    tmp = merge(tech_cost, GDP_POP, by = c("region", "year"))
 
-    ## define rich countries
-    richcountries = unique(unique(tmp[year == 2010 & GDP_cap > 25000, iso]))
+    ## define rich regions
+    richregions = unique(unique(tmp[year == 2010 & GDP_cap > 25000, region]))
     ## calculate average non fuel price (averaged on GDP) across rich countries and find total GDP and population
-    richave = tmp[iso %in% richcountries & non_fuel_price > 0,]
+    richave = tmp[region %in% richregions & non_fuel_price > 0,]
     richave = richave[, .(non_fuel_price = sum(non_fuel_price*weight)/sum(weight)), by = c("subsector_L1", "vehicle_type", "technology", "year")]
-    GDP_POP = GDP_POP[iso %in% richcountries,]
+    GDP_POP = GDP_POP[region %in% richregions,]
     GDP_POP = GDP_POP[, .(GDP = sum(weight), POP_val = sum(POP_val)), by = c("year")]
     richave = merge(richave, GDP_POP, by = "year")
     ## average gdp per capita of the rich countries
     richave[, GDP_cap := GDP/POP_val]
 
     ## dt on which the GDPcap is checked
-    tmp1 = tmp[!iso %in% richcountries, c("iso", "year", "non_fuel_price", "GDP_cap", "technology", "vehicle_type", "fuel_price", "subsector_L1", "subsector_L2", "subsector_L3", "sector", "sector_fuel", "EJ_Mpkm_final" , "fuel_price_pkm")]
+    tmp1 = tmp[!region %in% richregions, c("region", "year", "non_fuel_price", "GDP_cap", "technology", "vehicle_type", "fuel_price", "subsector_L1", "subsector_L2", "subsector_L3", "sector", "sector_fuel", "EJ_Mpkm_final" , "fuel_price_pkm")]
     ## dt contaning the gdp towards which to converge
     tmp2 = richave[, c("year", "GDP_cap")]
     ## dt containing the non fuel price for rich countries
@@ -178,15 +176,15 @@ merge_prices <- function(gdx, REMINDmapping, REMINDyears,
     ## merge with non fuel price of corresponding values
     tmp2 = merge(tmp2, tmp3, by = c("time", "technology", "vehicle_type"))
 
-    ## find year closest to 2010 for each ISO, this is the year at which is going to converge
-    tmp2[, yearconv := time[which.min(abs(time - 2010))], by = c("iso")]
+    ## find year closest to 2010 for each region, this is the year at which is going to converge
+    tmp2[, yearconv := time[which.min(abs(time - 2010))], by = c("region")]
 
     ## in case one time step has multiple matches in more than one time step, the value is attributed only in the last time step
-    tmp2[time == yearconv & yearconv > 1990, time := ifelse(year == min(year), time, 1980), by = c("iso", "time")]
-    tmp2[time == yearconv & yearconv == 1990, time := ifelse(year == max(year), time, 1980), by = c("iso", "time")]
+    tmp2[time == yearconv & yearconv > 1990, time := ifelse(year == min(year), time, 1980), by = c("region", "time")]
+    tmp2[time == yearconv & yearconv == 1990, time := ifelse(year == max(year), time, 1980), by = c("region", "time")]
 
     ## year at which the convergence happens
-    tmp2[, year_at_yearconv := year[time == yearconv], by = c("iso","technology", "vehicle_type")]
+    tmp2[, year_at_yearconv := year[time == yearconv], by = c("region","technology", "vehicle_type")]
 
     ## value of the non-fuel price after the convergence
     tmp3 = richave[, c("year", "non_fuel_price", "technology", "vehicle_type")]
@@ -194,17 +192,17 @@ merge_prices <- function(gdx, REMINDmapping, REMINDyears,
     tmp2 = merge(tmp2,tmp3,by=c("year", "technology", "vehicle_type"))
 
     ## after the year of convergence, the values are the "average" developed countries values
-    tmp2[year >= year_at_yearconv & year > 2010, non_fuel_price := non_fuel_price_trend, by = c("iso","technology", "vehicle_type")]
+    tmp2[year >= year_at_yearconv & year > 2010, non_fuel_price := non_fuel_price_trend, by = c("region","technology", "vehicle_type")]
 
     ## value of yearconv represents the convergence value
-    tmp2[, non_fuel_price_conv := non_fuel_price_trend[time==yearconv], by = c("iso","technology", "vehicle_type")]
+    tmp2[, non_fuel_price_conv := non_fuel_price_trend[time==yearconv], by = c("region","technology", "vehicle_type")]
     ## convergence is linear until the value corresponding to 2010 is reached
-    tmp2[year <= year_at_yearconv & year >= 2010, non_fuel_price := non_fuel_price[year == 2010]+(year-2010)/(year_at_yearconv-2010)*(non_fuel_price_conv-non_fuel_price[year == 2010]), by =c("technology", "vehicle_type", "iso")]
+    tmp2[year <= year_at_yearconv & year >= 2010, non_fuel_price := non_fuel_price[year == 2010]+(year-2010)/(year_at_yearconv-2010)*(non_fuel_price_conv-non_fuel_price[year == 2010]), by =c("technology", "vehicle_type", "region")]
     ## select only useful columns
-    tmp2 = tmp2[,.(iso, year, non_fuel_price, technology, vehicle_type, fuel_price, subsector_L1, subsector_L2, subsector_L3, sector, sector_fuel, EJ_Mpkm_final , fuel_price_pkm)]
+    tmp2 = tmp2[,.(region, year, non_fuel_price, technology, vehicle_type, fuel_price, subsector_L1, subsector_L2, subsector_L3, sector, sector_fuel, EJ_Mpkm_final , fuel_price_pkm)]
 
     ## rich countries need to be reintegrated
-    tech_cost = rbind(tmp2, tech_cost[iso %in% richcountries])
+    tech_cost = rbind(tmp2, tech_cost[region %in% richregions])
     ## calculate the total price
     tech_cost[, tot_price := fuel_price_pkm + non_fuel_price]
 
