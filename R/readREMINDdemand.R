@@ -10,7 +10,7 @@
 
 
 readREMINDdemand= function(gdx,REMINDmapping,EDGE2teESmap, years, scenario){
-  `.` <- iso <- EDGE_top <- value <- demand <- NULL
+  `.` <- region <- EDGE_top <- value <- demand <- NULL
 
   dem <- readGDX(gdx, c("vm_cesIO"),field = "l")
   dem <- dem[, , c("entrp_pass_sm","entrp_pass_lo","entrp_frgt_sm","entrp_frgt_lo")]
@@ -21,14 +21,10 @@ readREMINDdemand= function(gdx,REMINDmapping,EDGE2teESmap, years, scenario){
   ## downscale to iso level
   gdp <- getRMNDGDP(scenario = scenario, usecache = T)
   dem <- dem[year %in% years]
-  dem <- disaggregate_dt(dem, REMINDmapping,
-                         valuecol="value",
-                         datacols=c("sector_remind"),
-                         weights=gdp)
 
   ## attribute EDGE sector names to CES values
   dem <- merge(x=dem, y=unique(EDGE2teESmap[,c("all_in","EDGE_top")]), all = TRUE, by.x = "sector_remind", by.y = "all_in")
-  dem <- dem[,.(iso, year, sector = EDGE_top, demand = value)]
+  dem <- dem[,.(region, year, sector = EDGE_top, demand = value)]
 
   ## find right units
   dem[, demand := demand  ## in trillion pkm or tkm

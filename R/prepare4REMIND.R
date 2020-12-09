@@ -32,12 +32,12 @@ prepare4REMIND <- function(demByTech, intensity, capCost,
               *1e-6         ## in [trillionkm/Twa]
               ]
     setcolorder(intensity, c("tall", "region", "all_teEs", "value"))
-
+    setnames(intensity, old = "region", new = "all_regi")
     ## non-fuel price
     budget=merge(capCost, unique(EDGE2teESmap[,c("teEs","EDGE_top")]),
                  by="teEs",all.x=TRUE)
     budget=budget[, c("year", "region", "teEs", "value"),with = F]
-    setnames(budget, old = c("year", "teEs"), new = c("tall", "all_teEs"))
+    setnames(budget, old = c("year", "teEs", "region"), new = c("tall", "all_teEs", "all_regi"))
 
     budget=approx_dt(dt=budget, xdata=REMINDtall,
                      xcol="tall", ycol="value",
@@ -58,7 +58,7 @@ prepare4REMIND <- function(demByTech, intensity, capCost,
                         idxcols=c("region","all_in","all_enty","all_teEs"),
                         extrapolate=T)[, value := EJ_2_Twa * value] ## in TWa
     setcolorder(demByTech, c("tall", "region","all_enty","all_in","all_teEs","value"))
-
+    setnames(demByTech, old = "region", new = "all_regi")
 
     result=list(demByTech=demByTech,
                 intensity=intensity,
