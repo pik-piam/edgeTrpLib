@@ -41,25 +41,24 @@ prepare4REMIND <- function(demByTech, intensity, capCost,
 
     budget=approx_dt(dt=budget, xdata=REMINDtall,
                      xcol="tall", ycol="value",
-                     idxcols=c("region", "all_teEs"),
+                     idxcols=c("all_regi", "all_teEs"),
                      extrapolate=T)
 
     budget[,value:=value ## in 1990USD/pkm
                    /conv_2005USD_1990USD] ## in [2005USD/pkm]
-    setcolorder(budget, c("tall", "region", "all_teEs", "value"))
+    setcolorder(budget, c("tall", "all_regi", "all_teEs", "value"))
 
     ## demand by technology
     demByTech=merge(demByTech, EDGE2teESmap[,c("CES_node","all_in","all_enty","teEs")],
                 by="CES_node", all.x=TRUE)
     demByTech=demByTech[, c("year", "region", "all_enty", "all_in", "teEs", "value"),with = F]
-    setnames(demByTech, old = c("year", "teEs"), new = c("tall", "all_teEs"))
+    setnames(demByTech, old = c("year", "teEs", "region"), new = c("tall", "all_teEs", "all_regi"))
     demByTech <- approx_dt(dt=demByTech, xdata=REMINDtall,
                         xcol="tall", ycol="value",
-                        idxcols=c("region","all_in","all_enty","all_teEs"),
+                        idxcols=c("all_regi","all_in","all_enty","all_teEs"),
                         extrapolate=T)[, value := EJ_2_Twa * value] ## in TWa
-    setcolorder(demByTech, c("tall", "region","all_enty","all_in","all_teEs","value"))
-    setnames(demByTech, old = "region", new = "all_regi")
-
+    setcolorder(demByTech, c("tall", "all_regi","all_enty","all_in","all_teEs","value"))
+    
     result=list(demByTech=demByTech,
                 intensity=intensity,
                 capCost=budget)
