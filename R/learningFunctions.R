@@ -1,7 +1,6 @@
 #' Applies learning to BEV purchase cost
 #'
 #' @param gdx input gdx file
-#' @param REMINDmapping mapping of REMIND regions to ISO3 country codes
 #' @param EDGE2teESmap mapping of EDGE-T/GCAM technologies to REMIND ES technologies
 #' @param ES_demandpr the ES demand of the previous iteration
 #' @param non_fuel_costs total non fuel costs
@@ -14,7 +13,7 @@
 #' @import data.table
 #' @export
 
-applylearning <- function(non_fuel_costs, capcost4W, gdx, REMINDmapping, EDGE2teESmap, demand_learntmp, ES_demandpr, ES_demand, rebates_febatesBEV, rebates_febatesFCEV){
+applylearning <- function(non_fuel_costs, capcost4W, gdx, EDGE2teESmap, demand_learntmp, ES_demandpr, ES_demand, rebates_febatesBEV, rebates_febatesFCEV){
   `.` <- ratio <- demandpr <- vehicles_number <- cumul <- technology <- subsector_L1 <- non_fuel_price <- b <- initialyear <- NULL
   Capital_costs_purchase <- totalNE_cost <- price_component <- NULL
   ## find the estimated number of cars

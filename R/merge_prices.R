@@ -137,14 +137,13 @@ merge_prices <- function(gdx, REMINDmapping, REMINDyears,
     ## missing non energy price for coal, Adv-Electric and Adv-Liquids freight rail
     ## (is not in the original database). Attribute the same non energy price as in
     ## El. Freight Rail
-    tech_cost[, non_fuel_price := ifelse(technology=="Adv-Electric", .SD[technology == "Electric"]$non_fuel_price, non_fuel_price), by=c("year", "region")]
-    tech_cost[, non_fuel_price := ifelse(technology=="Adv-Liquid", .SD[technology == "Liquids"]$non_fuel_price, non_fuel_price), by=c("year", "region")]
+    tech_cost[, non_fuel_price := ifelse(technology=="Adv-Electric", non_fuel_price[technology == "Electric" & subsector_L3 == "Freight Rail"], non_fuel_price), by=c("year", "region")]
+    tech_cost[, non_fuel_price := ifelse(technology=="Adv-Liquid", non_fuel_price[technology == "Liquids" & subsector_L3 == "Freight Rail"], non_fuel_price), by=c("year", "region")]
 
     ## convergence of non_fuel_price according to GDPcap
     ## working principle: non_fuel_price follows linear convergence between 2010 and the year it reaches GDPcap@(2010,richcountry). Values from richcountry for the following time steps (i.e. when GDPcap@(t,developing)>GDPcap@(2010,richcountry))
     ## load gdp per capita
     GDP_POP = getRMNDGDPcap(usecache = TRUE)
-
     tmp = merge(tech_cost, GDP_POP, by = c("region", "year"))
 
     ## define rich regions
@@ -157,7 +156,16 @@ merge_prices <- function(gdx, REMINDmapping, REMINDyears,
     richave = merge(richave, GDP_POP, by = "year")
     ## average gdp per capita of the rich countries
     richave[, GDP_cap := GDP/POP_val]
-
+    ## missing trucks categories are attributed an average cost for rich countries
+    richave = rbind(richave, richave[vehicle_type == "Truck (0-3.5t)"][,vehicle_type := "Truck (0-6t)"])
+    richave = rbind(richave, richave[vehicle_type == "Truck (0-1t)"][,vehicle_type := "Truck (0-2t)"])
+    richave = rbind(richave, richave[vehicle_type == "Truck (1-6t)"][,vehicle_type := "Truck (2-5t)"])
+    richave = rbind(richave, richave[vehicle_type == "Truck (4.5-12t)"][,vehicle_type := "Truck (5-9t)"])
+    richave = rbind(richave, richave[vehicle_type == "Truck (4.5-15t)"][,vehicle_type := "Truck (6-14t)"])
+    richave = rbind(richave, richave[vehicle_type == "Truck (6-15t)"][,vehicle_type := "Truck (9-16t)"])
+    richave = rbind(richave, richave[vehicle_type == "Truck (>15t)"][,vehicle_type := "Truck (>14t)"])
+    richave = rbind(richave, richave[vehicle_type == "Truck"][,vehicle_type := "Truck (>16t)"])
+    
     ## dt on which the GDPcap is checked
     tmp1 = tmp[!region %in% richregions, c("region", "year", "non_fuel_price", "GDP_cap", "technology", "vehicle_type", "fuel_price", "subsector_L1", "subsector_L2", "subsector_L3", "sector", "sector_fuel", "EJ_Mpkm_final" , "fuel_price_pkm")]
     ## dt contaning the gdp towards which to converge

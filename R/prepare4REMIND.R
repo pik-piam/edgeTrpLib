@@ -5,7 +5,6 @@
 #' @param capCost levelized capital costs of REMIND CES nodes
 #' @param EDGE2teESmap map EDGE-T technologies to REMIND ES techs
 #' @param REMINDtall the full REMIND timestep range as required for input data
-#' @param REMIND2ISO_MAPPING map REMIND regions to ISO3 country codes
 #' @import data.table
 #' @importFrom rmndt approx_dt
 #' @export
