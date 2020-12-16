@@ -23,7 +23,7 @@ calculate_capCosts <-function(base_price, Fdemand_ES,
   Fdemand_ES=Fdemand_ES[!subsector_L3 %in% c("Walk","Cycle"),]
   base_price=base_price[!subsector_L3 %in% c("Walk","Cycle"),]
   ## merge prices and demand
-  data=merge(base_price,Fdemand_ES,all.y=TRUE,by=intersect(names(base_price),names(Fdemand_ES)))
+  data=merge(base_price,Fdemand_ES[technology != "Hybrid Electric"],all.y=TRUE,by=intersect(names(base_price),names(Fdemand_ES)))
   ## load the mapping to CES nodes ->needed to attribute the CES node to data
 
   ## merge with mappings
