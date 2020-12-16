@@ -527,47 +527,6 @@ calculate_logit_inconv_endog = function(prices,
 
   }
 
-  E2Fcalc <- function(base, mj_km_data){
-    ## data based on CarCulator from PSI
-    ## filter out only 4wheelers running on Liquids
-    mj = mj_km_data[technology == "Liquids" & subsector_L1 == "trn_pass_road_LDV_4W"]
-    price = base[subsector_L1 == "trn_pass_road_LDV_4W" & technology == "Liquids"]
-    ## energy intensity per km is expressed as a function of the base value in 2010
-    mj[, MJ_km := ifelse(year == 2010, MJ_km, NA)]
-    mj[, MJ_km := ifelse(year == 1990, 1.2*MJ_km[year == 2010], MJ_km), by = c("region", "vehicle_type", "technology")]
-    mj[, MJ_km := ifelse(year == 2010, 1*MJ_km[year == 2010], MJ_km), by = c("region", "vehicle_type", "technology")]
-    mj[, MJ_km := ifelse(year == 2020, 0.8*MJ_km[year == 2010], MJ_km), by = c("region", "vehicle_type", "technology")]
-    mj[, MJ_km := ifelse(year == 2030, 0.7*MJ_km[year == 2010], MJ_km), by = c("region", "vehicle_type", "technology")]
-    mj[, MJ_km := ifelse(year == 2040, 0.54*MJ_km[year == 2010], MJ_km), by = c("region", "vehicle_type", "technology")]
-    mj[, MJ_km := ifelse(year == 2050, 0.45*MJ_km[year == 2010], MJ_km), by = c("region", "vehicle_type", "technology")]
-    mj[, MJ_km := ifelse(year == 2100, 0.40*MJ_km[year == 2010], MJ_km), by = c("region", "vehicle_type", "technology")]
-    ## approximate the trend of energy intensity to fill in the missing time steps
-    mj = approx_dt(mj, unique(mj$year),
-                   xcol = "year", ycol = c("MJ_km"),
-                   idxcols = c("region", "technology", "vehicle_type"),
-                   extrapolate=T)
-
-    ## merge prices and intensity
-    price = merge(price, mj, by = c("region", "year", "technology", "vehicle_type", "subsector_L1", "subsector_L2", "subsector_L3", "sector", "sector_fuel"))
-
-    ## fuel price needs to be recalculated as the energy intensity changed
-    price[, c("fuel_price_pkm", "MJ_km") := list(fuel_price    ## in $/EJ
-                                                 *MJ_km        ## in MJ/km
-                                                 *1e-12,       ## in $/km
-                                                 NULL)]
-    ## total price changes as a consequence
-    price[, tot_price := fuel_price_pkm + non_fuel_price]
-
-    ## merge with original databases
-    base <- rbind(base[!(subsector_L1 == "trn_pass_road_LDV_4W" & technology =="Liquids"),  c("region","year","technology","vehicle_type","subsector_L1","subsector_L2","subsector_L3","sector", "tot_price","fuel_price_pkm", "non_fuel_price", "tot_VOT_price", "sector_fuel")],
-                  price[,c("region","year","technology","vehicle_type","subsector_L1","subsector_L2","subsector_L3","sector", "tot_price","fuel_price_pkm", "non_fuel_price", "tot_VOT_price", "sector_fuel")])
-
-    mj_km_data <- rbind(mj_km_data[!(subsector_L1 == "trn_pass_road_LDV_4W"  & technology =="Liquids"), c("region", "year", "technology", "vehicle_type", "subsector_L1", "subsector_L2", "subsector_L3", "sector", "MJ_km", "sector_fuel")],
-                        mj)
-
-    return(list(mj_km_data =  mj_km_data, base = base))
-
-  }
 
   ## FV load technology prices and merge with value of time (~technology price for
   ## non-motorized)
@@ -588,11 +547,6 @@ calculate_logit_inconv_endog = function(prices,
                                * 1e-6 # MJ/km
                                ]
   mj_km_data <- mj_km_data[,-"EJ_Mpkm_final"]
-
-  ## Conventional Liquids energy intensity based on hybridization rate
-  EF_all = E2Fcalc(base, mj_km_data)
-  base = EF_all[["base"]]
-  mj_km_data = EF_all[["mj_km_data"]]
 
   ## FV
   FV_all <- F2Vcalc(prices = base,
