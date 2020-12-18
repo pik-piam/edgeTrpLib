@@ -140,10 +140,11 @@ calculate_logit_inconv_endog = function(prices,
     ## needs random lambdas for the sectors that are not explicitly calculated
     df <- df[ is.na(logit.exponent), logit.exponent := -10]
 
+    if(techswitch %in% c("BEV", "FCEV")) {
     ## logit exponent gets higher in time for LDVs and road freight, doubling by 2035
     df[subsector_L1 %in% c("trn_freight_road_tmp_subsector_L1", "trn_pass_road_LDV_4W") & year >=2020, logit.exponent := ifelse(year <= 2035 & year >= 2020, logit.exponent[year==2020] + (2*logit.exponent[year==2020]-logit.exponent[year==2020]) * (year-2020)/(2035-2020), 2*logit.exponent[year==2020]),
        by=c("region", "vehicle_type", "technology")]
-
+    }
 
     ## define the years on which the inconvenience price will be calculated on the basis of the previous time steps sales
     futyears_all = seq(2020, 2101, 1)
@@ -396,22 +397,6 @@ calculate_logit_inconv_endog = function(prices,
                                    pmax(pinco_tot, floor),
                                    pinco_tot), by = c("region", "technology", "vehicle_type", "subsector_L1")]
 
-      ## the policymaker bans hybrid liquids increasingly more strictly
-      if (t >= 2033 & t < 2035) {
-        floor = 0.05
-      } else if (t >= 2035 & t < 2037) {
-        floor = 0.1
-      } else if (t >= 2037 & t <=2040) {
-        floor = 0.15
-      } else if (t > 2040) {
-        floor = 0.2
-      } else {
-        floor = 0
-      }
-
-        tmp[technology %in% c("Hybrid Liquids"), pmod_av := ifelse(year == t,
-                                                 pmax(pmod_av, floor),
-                                                 pmod_av), by = c("region", "technology", "vehicle_type", "subsector_L1")]
 
       }
 
@@ -419,6 +404,11 @@ calculate_logit_inconv_endog = function(prices,
       tmp[technology %in% c("Hybrid Electric"), pmod_av := ifelse(year == t,
                                pmax(pmod_av, 0.5*pmod_av[year == 2020]),
                                pmod_av), by = c("region", "technology", "vehicle_type", "subsector_L1")]
+
+      tmp[technology %in% c("Hybrid Liquids"), pmod_av := ifelse(year == t,
+                               pmax(pmod_av, 0.8*pmod_av[year == 2020]),
+                               pmod_av), by = c("region", "technology", "vehicle_type", "subsector_L1")]
+
 
 
 
