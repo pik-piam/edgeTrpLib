@@ -12,7 +12,6 @@
 calcVint <- function(shares, totdem_regr, prices, mj_km_data, years){
 
   `.` <- C_2010x <- Ddt_2010_new <- share <- region <- subsector_L3 <- sector <- subsector_L2 <- subsector_L1 <- vehicle_type <- technology <- shareS3S <- shareS2S3 <- shareS1S2 <- totdem <- demand <- D <- index_yearly <- k <- vint <- C_2010 <- check <- C_t <- decrease <- index <- value <- shareVS1 <- shareFV <- shareFVVS1 <- variable <- demVintEachYear <- vintdem <- sharetech <- sharetech_vint <- sharetech_new <- relative_share <- non_fuel_price <- non_fuel_price_vint <- tot_price <- fuel_price_pkm <- MJ_km <- MJ_km_vint <- NULL
-  
   ## function that allows to calculate , given the depreciation trend for the capacity built before 2010
   find2010cap = function(percentage, dem, cap, Ddt){
     Cap_2010x = copy(dem)
@@ -143,7 +142,6 @@ calcVint <- function(shares, totdem_regr, prices, mj_km_data, years){
     Vint = Vint[year == tall[tall>baseyear][i+1], vint := Reduce(`+`, .SD), .SDcols=c(listCol), by = c("region", "subsector_L1", "sector")]
 
   }
-
   ## melt according to the columns of the "starting" year
   listCol <- colnames(Vint)[grep("C_", colnames(Vint))]
   Vint = melt(Vint, id.vars = c("year", "vint", "region", "subsector_L1", "sector"), measure.vars = listCol)
@@ -230,7 +228,7 @@ calcVint <- function(shares, totdem_regr, prices, mj_km_data, years){
   totcost = rbind(totcost, totcost[year == 2100][, year := 2110], totcost[year == 2100][, year := 2130], totcost[year == 2100][, year := 2150])
   ## updated values of FV_shares
   prices$base = merge(prices$base[(!subsector_L1 %in% c("trn_pass_road_LDV_4W"))| (subsector_L1 %in% c("trn_pass_road_LDV_4W") & year %in% c(1990, 2005,2010))],
-                totcost[year %in% years[years>baseyear], c("region", "technology", "year", "vehicle_type", "subsector_L1", "subsector_L2", "subsector_L3", "sector", "non_fuel_price", "tot_price", "fuel_price_pkm",  "tot_VOT_price", "sector_fuel")], by = names(prices$base), all = TRUE)
+                totcost[year %in% years[years>baseyear], c("region", "technology", "year", "vehicle_type", "subsector_L1", "subsector_L2", "subsector_L3", "sector", "non_fuel_price", "tot_price", "fuel_price_pkm",  "tot_VOT_price", "sector_fuel")], by = c("region", "technology", "year", "vehicle_type", "subsector_L1", "subsector_L2", "subsector_L3", "sector", "non_fuel_price", "tot_price", "fuel_price_pkm",  "tot_VOT_price", "sector_fuel"), all = TRUE)
 
   ## calculate the average intensity of the fleet
   mj_km_data4W = mj_km_data[ subsector_L1 %in% c("trn_pass_road_LDV_4W"),]

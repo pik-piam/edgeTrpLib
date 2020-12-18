@@ -302,7 +302,6 @@ calculate_logit_inconv_endog = function(prices,
       ## merge with fraction of stations offering fuel
       tmp = merge(tmp, stations, by = c("region", "year", "technology"), all.x = TRUE)
       tmp[is.na(fracst), fracst := 0]
-
       ## Calculate trend of inconvenience costs components
       tmp[, pref := ifelse(year == t,
                             pref[year == 2020]*exp(1)^(fracst[year == (t-1)]*bfuelav),
@@ -439,7 +438,6 @@ calculate_logit_inconv_endog = function(prices,
     print(paste("Iterative logit calculation finished in",
                 difftime(Sys.time(), start, units="mins"),
                 "Minutes"))
-
     ## tmp1 needs the same structure as dfhistorical4W to produce the complete trend in time of 4wheelers
     tmp1[, c("subsector_L2", "subsector_L3", "sector") := list("trn_pass_road_LDV", "trn_pass_road", "trn_pass")]
     tmp1[, share := NULL]
@@ -531,7 +529,7 @@ calculate_logit_inconv_endog = function(prices,
   ## FV load technology prices and merge with value of time (~technology price for
   ## non-motorized)
   ## non-fuel prices
-  base <- merge(prices, price_nonmot, all = TRUE,
+  base <- merge(prices[!is.na(tot_price)], price_nonmot, all = TRUE,
                 by = c("tot_price","region","year",
                        "technology","vehicle_type",
                        "subsector_L1","subsector_L2","subsector_L3","sector"))
