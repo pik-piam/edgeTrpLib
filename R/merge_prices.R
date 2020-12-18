@@ -165,7 +165,7 @@ merge_prices <- function(gdx, REMINDmapping, REMINDyears,
     richave = rbind(richave, richave[vehicle_type == "Truck (6-15t)"][,vehicle_type := "Truck (9-16t)"])
     richave = rbind(richave, richave[vehicle_type == "Truck (>15t)"][,vehicle_type := "Truck (>14t)"])
     richave = rbind(richave, richave[vehicle_type == "Truck"][,vehicle_type := "Truck (>16t)"])
-    
+
     ## dt on which the GDPcap is checked
     tmp1 = tmp[!region %in% richregions, c("region", "year", "non_fuel_price", "GDP_cap", "technology", "vehicle_type", "fuel_price", "subsector_L1", "subsector_L2", "subsector_L3", "sector", "sector_fuel", "EJ_Mpkm_final" , "fuel_price_pkm")]
     ## dt contaning the gdp towards which to converge
