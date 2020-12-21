@@ -1,0 +1,13 @@
+{
+  "title": "edgeTrpLib: Helper functions for EDGE transport calculations",
+  "version": "0.1.19",
+  "description": "<p>This package is highly specialized and created solely to not duplicate helper functions.<\/p>",
+  "creators": [
+    {
+      "name": "Dirnaichner, Alois"
+    },
+    {
+      "name": "Rottoli, Marianna"
+    }
+  ]
+}

@@ -162,7 +162,7 @@ calc_num_vehicles_stations <- function(norm_dem, ES_demand_all, techswitch, load
  
  else if (techswitch ==  "Liquids") {
     ## industry and policymakers don't push BEVs in case the scenario is ConvCase
-    stations[technology == "BEV",  statnum := 0.5*               ## BEV do not take over due to the dispreference
+    stations[technology == "BEV",  statnum := 0.7*               ## BEV do not take over due to the dispreference
                                               vehicles_number*  ## in trillion veh
                                               1e6/              ## in kveh
                                               1000]             ## in stations
