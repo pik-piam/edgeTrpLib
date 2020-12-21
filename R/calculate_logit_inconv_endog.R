@@ -397,31 +397,17 @@ calculate_logit_inconv_endog = function(prices,
                                    pmax(pinco_tot, floor),
                                    pinco_tot), by = c("iso", "technology", "vehicle_type", "subsector_L1")]
 
-      ## the policymaker bans hybrid liquids increasingly more strictly
-      if (t >= 2033 & t < 2035) {
-        floor = 0.05
-      } else if (t >= 2035 & t < 2037) {
-        floor = 0.1
-      } else if (t >= 2037 & t <=2040) {
-        floor = 0.15
-      } else if (t > 2040) {
-        floor = 0.2
-      } else {
-        floor = 0
       }
 
-        tmp[technology %in% c("Hybrid Liquids"), pmod_av := ifelse(year == t,
-                                                 pmax(pmod_av, floor),
-                                                 pmod_av), by = c("iso", "technology", "vehicle_type", "subsector_L1")]
-
-      }
-
-      ## hybrid electric inconvenience cost cannot decrease below 50% of 2020 value
+      ## hybrid liquids and hybrid electric inconvenience cost cannot decrease below 50% of 2020 value
       tmp[technology %in% c("Hybrid Electric"), pmod_av := ifelse(year == t,
                                pmax(pmod_av, 0.5*pmod_av[year == 2020]),
                                pmod_av), by = c("iso", "technology", "vehicle_type", "subsector_L1")]
 
 
+      tmp[technology %in% c("Hybrid Liquids"), pmod_av := ifelse(year == t,
+                               pmax(pmod_av, 0.8*pmod_av[year == 2020]),
+                               pmod_av), by = c("iso", "technology", "vehicle_type", "subsector_L1")]
 
       ## annual sales, needed for reporting purposes
       if (t == 2101) {
