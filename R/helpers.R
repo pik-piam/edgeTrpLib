@@ -10,6 +10,7 @@
 #' @param valuecol, name of the column containing the GDP values, default is "weight".
 #' @param usecache, store the result in a RDS file in the working directory, default is FALSE.
 #' @param gdpfile, if caching is required, specify the filename here, default is "GDPcache.rds"
+#' @param isolev, if the data provided has to be on ISO or regional level
 #' @keywords gdp
 #' @import data.table
 #' @importFrom madrat calcOutput
