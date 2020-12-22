@@ -19,7 +19,7 @@ readREMINDdemand= function(gdx,REMINDmapping,EDGE2teESmap, years, scenario){
                    yearcol = "year", datacols = "sector_remind")
 
   ## downscale to iso level
-  gdp <- getRMNDGDP(scenario = scenario, usecache = T)
+  gdp <- getRMNDGDP(scenario = scenario, usecache = T, isolev = F, isocol = "region")
   dem <- dem[year %in% years]
 
   ## attribute EDGE sector names to CES values
