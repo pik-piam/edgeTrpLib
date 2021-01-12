@@ -18,22 +18,44 @@
 
 getRMNDGDPcap <- function(scenario="gdp_SSP2",
                           yearcol="year",
-                          isocol = "region",
-                          isolev = F,
+                          isocol,
                           valuecol="weight",
-                          usecache=F,
-                          gdpfile="GDPcache.rds"){
+                          isolev = F,
+                          usecache = F,
+                          gdpfile ="GDPcache.rds"){
 
-  `.` <- iso <- value <- GDP_cap <- weight <- POP_val <- region <- NULL
-  scenario <- gsub("gdp_", "", scenario)
-  gdp <- getRMNDGDP(paste0("gdp_", scenario), usecache=F, isocol = isocol, isolev = isolev)
-  setnames(gdp, old="ISO3", new = "region", skip_absent = TRUE)
-  POP_country=calcOutput("Population", aggregate = T)[,, paste0("pop_", scenario)]
-  POP <- magpie2dt(POP_country, regioncol = "region",
-                   yearcol = "year", datacols = "POP")
-  POP=POP[,.(region,year,POP,POP_val=value)]
-  GDP_POP=merge(gdp,POP,all = TRUE,by=c("region","year"))
-  GDP_POP[,GDP_cap:=weight/POP_val]
+  `.` <- iso <- value <- GDP_cap <- weight <- POP_val <- region <- variable <- Year <- NULL
+
+  if (isolev) {
+    gdpfileCap = "GDPCAPcacheISO.rds"
+    toagg = FALSE
+  } else {
+    gdpfileCap = "GDPCAPcache.rds"
+    toagg = TRUE
+  }
+
+  if(usecache && file.exists(gdpfileCap)){
+    cat("getGDP_dt: Using cached GDP data in", gdpfileCap, "\n")
+    GDP_POP = readRDS(gdpfileCap)
+  } else {
+    GDPppp_country <- calcOutput("GDPppp", aggregate = toagg)[,, scenario]
+
+    gdp <- as.data.table(GDPppp_country)[variable == scenario]
+    gdp[, (yearcol) := as.numeric(gsub("y", "", Year))][, Year := NULL]
+    setnames(gdp, c("ISO3", "value"), c(isocol, valuecol), skip_absent=TRUE)
+    scenario_POP = gsub("gdp_", "", scenario)
+    POP_country=calcOutput("Population", aggregate = toagg)[,, paste0("pop_", scenario_POP)]
+    POP <- magpie2dt(POP_country, regioncol = isocol,
+                     yearcol = "year", datacols = "POP")
+    POP=POP[,.(region,year,POP,POP_val=value)]
+    GDP_POP=merge(gdp,POP,all = TRUE,by=c(isocol,"year"))
+    GDP_POP[,GDP_cap:=weight/POP_val]
+  }
+
+
+  if(usecache){
+    saveRDS(GDP_POP, gdpfileCap)
+  }
 
   return(GDP_POP)
 }
@@ -80,11 +102,7 @@ getRMNDGDP <- function(scenario="gdp_SSP2",
 
   gdp <- as.data.table(GDPppp_country)[variable == scenario]
   gdp[, (yearcol) := as.numeric(gsub("y", "", Year))][, Year := NULL]
-  if (isolev) {
-    setnames(gdp, c("ISO3", "value"), c(isocol, valuecol))
-  } else {
-    setnames(gdp, c("ISO3", "value"), c(isocol, valuecol))
-  }
+  setnames(gdp, c("ISO3", "value"), c(isocol, valuecol))
 
   if(usecache){
     saveRDS(gdp, gdpfile)
