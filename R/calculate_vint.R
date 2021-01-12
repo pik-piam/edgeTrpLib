@@ -81,7 +81,12 @@ calcVint <- function(shares, totdem_regr, prices, mj_km_data, years){
   Cap_2010[, year := years_origin + index_yearly]
   Cap_2010 = Cap_2010[year>=2010, .(C_2010=sum(totdem)), by = c("region","year","subsector_L1", "sector")]
   ## after the last year when 2010 sales disappear from the fleet, all values should be 0
-  tmp = CJ(year = seq(2026,2100,1), region = unique(Cap_2010$region), subsector_L1 = unique(Cap_2010$subsector_L1), sector = unique(Cap_2010$sector), C_2010 = 0)
+  tmp = CJ(
+    year = seq(2026,2100,1), 
+    region = unique(Cap_2010$region), 
+    subsector_L1 = unique(Cap_2010$subsector_L1), 
+    sector = unique(Cap_2010$sector), 
+    C_2010 = 0)
   Cap_2010 = rbind(Cap_2010, tmp)
 
   Vint = Cap_2010[year > baseyear]
