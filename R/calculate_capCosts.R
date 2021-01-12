@@ -23,6 +23,8 @@ calculate_capCosts <-function(base_price, Fdemand_ES,
   Fdemand_ES=Fdemand_ES[!subsector_L3 %in% c("Walk","Cycle"),]
   base_price=base_price[!subsector_L3 %in% c("Walk","Cycle"),]
   ## merge prices and demand
+  ## TODO at the moment, Hybrid Electric veh cannot be included in this calculation because they have 2 fuels (elec, liq) and cannot be mapped to one
+  ## fuel only. This has to be fixed.
   data=merge(base_price,Fdemand_ES[technology != "Hybrid Electric"],all.y=TRUE,by=intersect(names(base_price),names(Fdemand_ES)))
   ## load the mapping to CES nodes ->needed to attribute the CES node to data
 
