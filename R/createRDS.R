@@ -97,12 +97,18 @@ loadInputData <- function(data_path){
   price_nonmot <- readRDS(datapathForFile("price_nonmot.RDS"))
   loadFactor <- readRDS(datapathForFile("loadFactor.RDS"))
 
-  ## FIXME: hotfix to make the (empty) vot_data$value_time_VS1 with the right column types. Probably there is another way to do that, did not look for it.
+  ## FIXME: hotfix to make the (empty) vot_data$value_time_VS1 and vot_data$value_time_S1S2 with the right column types. Probably there is another way to do that, did not look for it.
   vot_data$value_time_VS1$region = as.character(vot_data$value_time_VS1$region)
   vot_data$value_time_VS1$subsector_L1 = as.character(vot_data$value_time_VS1$subsector_L1)
   vot_data$value_time_VS1$vehicle_type = as.character(vot_data$value_time_VS1$vehicle_type)
   vot_data$value_time_VS1$year = as.numeric(vot_data$value_time_VS1$year)
   vot_data$value_time_VS1$time_price = as.numeric(vot_data$value_time_VS1$time_price)
+
+  vot_data$value_time_S1S2$region = as.character(vot_data$value_time_S1S2$region)
+  vot_data$value_time_S1S2$subsector_L1 = as.character(vot_data$value_time_S1S2$subsector_L1)
+  vot_data$value_time_S1S2$subsector_L2 = as.character(vot_data$value_time_S1S2$subsector_L2)
+  vot_data$value_time_S1S2$year = as.numeric(vot_data$value_time_S1S2$year)
+  vot_data$value_time_S1S2$time_price = as.numeric(vot_data$value_time_S1S2$time_price)
 
   ## change structure of preferences
   pref_data$VS1_final_pref = dcast(pref_data$VS1_final_pref, region + year + vehicle_type + subsector_L1 + subsector_L2 + subsector_L3 + sector ~ logit_type, value.var = "value")
