@@ -11,7 +11,12 @@
 
 calcVint <- function(shares, totdem_regr, prices, mj_km_data, years){
 
-  `.` <- C_2010x <- Ddt_2010_new <- share <- region <- subsector_L3 <- sector <- subsector_L2 <- subsector_L1 <- vehicle_type <- technology <- shareS3S <- shareS2S3 <- shareS1S2 <- totdem <- demand <- D <- index_yearly <- k <- vint <- C_2010 <- check <- C_t <- decrease <- index <- value <- shareVS1 <- shareFV <- shareFVVS1 <- variable <- demVintEachYear <- vintdem <- sharetech <- sharetech_vint <- sharetech_new <- relative_share <- non_fuel_price <- non_fuel_price_vint <- tot_price <- fuel_price_pkm <- MJ_km <- MJ_km_vint <- NULL
+  `.` <- C_2010x <- Ddt_2010_new <- share <- region <- subsector_L3 <- sector <- NULL
+  subsector_L2 <- subsector_L1 <- vehicle_type <- technology <- shareS3S <- shareS2S3 <- NULL
+  shareS1S2 <- totdem <- demand <- D <- index_yearly <- k <- vint <- C_2010 <- check <- C_t <- decrease <- NULL 
+  index <- value <- shareVS1 <- shareFV <- shareFVVS1 <- variable <- demVintEachYear <- NULL
+  vintdem <- sharetech <- sharetech_vint <- sharetech_new <- relative_share <- NULL
+  non_fuel_price <- non_fuel_price_vint <- tot_price <- fuel_price_pkm <- MJ_km <- MJ_km_vint <- NULL 
   ## function that allows to calculate , given the depreciation trend for the capacity built before 2010
   find2010cap = function(percentage, dem, cap, Ddt){
     Cap_2010x = copy(dem)
