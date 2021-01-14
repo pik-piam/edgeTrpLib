@@ -143,7 +143,7 @@ merge_prices <- function(gdx, REMINDmapping, REMINDyears,
     ## convergence of non_fuel_price according to GDPcap
     ## working principle: non_fuel_price follows linear convergence between 2010 and the year it reaches GDPcap@(2010,richcountry). Values from richcountry for the following time steps (i.e. when GDPcap@(t,developing)>GDPcap@(2010,richcountry))
     ## load gdp per capita
-    GDP_POP = getRMNDGDPcap(usecache = TRUE, isocol = "region", isolev = F)
+    GDP_POP = getRMNDGDPcap(usecache = TRUE, isocol = "region", to_aggregate = T, gdpCapfile = "GDPcapCache.RDS")
     tmp = merge(tech_cost, GDP_POP, by = c("region", "year"))
 
     ## define rich regions

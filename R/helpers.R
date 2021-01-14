@@ -9,9 +9,9 @@
 #' @param isocol, name of the column containing ISO3 codes, default is "iso".
 #' @param valuecol, name of the column containing the GDP values, default is "weight".
 #' @param usecache, store the result in a RDS file in the working directory, default is FALSE.
-#' @param gdpfile, if caching is required, specify the filename here, default is "GDPcache.rds"
-#' @param isolev, if the data provided has to be on ISO or regional level
-#' @keywords gdp
+#' @param gdpCapfile, if caching is required, specify the filename here. The user has to create 2 distint names for a ISO and a regional cache, in line with to_aggregate.
+#' @param to_aggregate, if the data provided has to be on ISO or regional level. Has to be coherent with the selected name of gdpCapfile.
+#' @keywords gdpcap
 #' @import data.table
 #' @importFrom madrat calcOutput
 #' @export
@@ -20,31 +20,23 @@ getRMNDGDPcap <- function(scenario="gdp_SSP2",
                           yearcol="year",
                           isocol,
                           valuecol="weight",
-                          isolev = F,
+                          to_aggregate = F,
                           usecache = F,
-                          gdpfile ="GDPcache.rds"){
+                          gdpCapfile){
 
   `.` <- iso <- value <- GDP_cap <- weight <- POP_val <- region <- variable <- Year <- NULL
 
-  if (isolev) {
-    gdpfileCap = "GDPCAPcacheISO.rds"
-    toagg = FALSE
+  if(usecache && file.exists(gdpCapfile)){
+    cat("getGDP_dt: Using cached GDP data in", gdpCapfile, "\n")
+    GDP_POP = readRDS(gdpCapfile)
   } else {
-    gdpfileCap = "GDPCAPcache.rds"
-    toagg = TRUE
-  }
-
-  if(usecache && file.exists(gdpfileCap)){
-    cat("getGDP_dt: Using cached GDP data in", gdpfileCap, "\n")
-    GDP_POP = readRDS(gdpfileCap)
-  } else {
-    GDPppp_country <- calcOutput("GDPppp", aggregate = toagg)[,, scenario]
+    GDPppp_country <- calcOutput("GDPppp", aggregate = to_aggregate)[,, scenario]
 
     gdp <- as.data.table(GDPppp_country)[variable == scenario]
     gdp[, (yearcol) := as.numeric(gsub("y", "", Year))][, Year := NULL]
     setnames(gdp, c("ISO3", "value"), c(isocol, valuecol), skip_absent=TRUE)
     scenario_POP = gsub("gdp_", "", scenario)
-    POP_country=calcOutput("Population", aggregate = toagg)[,, paste0("pop_", scenario_POP)]
+    POP_country=calcOutput("Population", aggregate = to_aggregate)[,, paste0("pop_", scenario_POP)]
     POP <- magpie2dt(POP_country, regioncol = isocol,
                      yearcol = "year", datacols = "POP")
     POP=POP[,.(region,year,POP,POP_val=value)]
@@ -54,7 +46,7 @@ getRMNDGDPcap <- function(scenario="gdp_SSP2",
 
 
   if(usecache){
-    saveRDS(GDP_POP, gdpfileCap)
+    saveRDS(GDP_POP, gdpCapfile)
   }
 
   return(GDP_POP)
@@ -71,7 +63,8 @@ getRMNDGDPcap <- function(scenario="gdp_SSP2",
 #' @param isocol, name of the column containing ISO3 codes, default is "iso".
 #' @param valuecol, name of the column containing the GDP values, default is "weight".
 #' @param usecache, store the result in a RDS file in the working directory, default is FALSE.
-#' @param isolev, if the data provided has to be on ISO or regional level
+#' @param to_aggregate, if the data provided has to be on ISO or regional level. Has to be coherent with the selected name of gdpCapfile.
+#' @param gdpfile, if caching is required, specify the filename here. The user has to create 2 distint names for a ISO and a regional cache, in line with to_aggregate.
 #' @keywords gdp
 #' @import data.table
 #' @importFrom madrat calcOutput
@@ -81,24 +74,18 @@ getRMNDGDP <- function(scenario="gdp_SSP2",
                        yearcol="year",
                        isocol,
                        valuecol="weight",
-                       isolev = F,
-                       usecache = F){
+                       to_aggregate = F,
+                       usecache = F,
+                       gdpfile){
   variable <- Year <- NULL
 
-  if (isolev) {
-    gdpfile = "GDPcacheISO.rds"
-    toagg = FALSE
-  } else {
-    gdpfile = "GDPcache.rds"
-    toagg = TRUE
-  }
 
   if(usecache && file.exists(gdpfile)){
     cat("getGDP_dt: Using cached GDP data in", gdpfile, "\n")
     return(readRDS(gdpfile))
   }
 
-  GDPppp_country <- calcOutput("GDPppp", aggregate = toagg)[,, scenario]
+  GDPppp_country <- calcOutput("GDPppp", aggregate = to_aggregate)[,, scenario]
 
   gdp <- as.data.table(GDPppp_country)[variable == scenario]
   gdp[, (yearcol) := as.numeric(gsub("y", "", Year))][, Year := NULL]
