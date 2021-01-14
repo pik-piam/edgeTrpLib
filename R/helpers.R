@@ -16,13 +16,13 @@
 #' @importFrom madrat calcOutput
 #' @export
 
-getRMNDGDPcap <- function(scenario="gdp_SSP2",
-                          yearcol="year",
+getRMNDGDPcap <- function(gdpCapfile,
                           isocol,
+                          scenario="gdp_SSP2",
+                          yearcol="year",
                           valuecol="weight",
                           to_aggregate = F,
-                          usecache = F,
-                          gdpCapfile){
+                          usecache = F){
 
   `.` <- iso <- value <- GDP_cap <- weight <- POP_val <- region <- variable <- Year <- NULL
 
@@ -70,13 +70,13 @@ getRMNDGDPcap <- function(scenario="gdp_SSP2",
 #' @importFrom madrat calcOutput
 #' @export
 
-getRMNDGDP <- function(scenario="gdp_SSP2",
-                       yearcol="year",
+getRMNDGDP <- function(gdpfile,
                        isocol,
+                       scenario="gdp_SSP2",
+                       yearcol="year",
                        valuecol="weight",
                        to_aggregate = F,
-                       usecache = F,
-                       gdpfile){
+                       usecache = F){
   variable <- Year <- NULL
 
 
