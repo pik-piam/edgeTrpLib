@@ -6,7 +6,6 @@
 #' @param REMINDyears range of REMIND time steps
 #' @param scenario REMIND GDP scenario
 #' @param demand_input full REMIND CES level ES demand, optional. If not given, logit level demand output is normalized.
-#' @param REMIND2ISO_MAPPING map REMIND regions to ISO3 country codes, optional. If given, aggregate output to REMIND regions.
 #' @import data.table
 #' @importFrom rmndt aggregate_dt approx_dt
 #' @export
@@ -16,11 +15,10 @@ shares_intensity_and_demand <- function(logit_shares,
                                         EDGE2CESmap,
                                         REMINDyears,
                                         scenario,
-                                        demand_input=NULL,
-                                        REMIND2ISO_MAPPING=NULL){
+                                        demand_input=NULL){
 
     ## variable masks for code checking facility
-    `.` <- share <- iso <- sector <- subsector_L3 <- subsector_L2 <- subsector_L1 <- NULL
+    `.` <- share <- region <- sector <- subsector_L3 <- subsector_L2 <- subsector_L1 <- NULL
     demand_L2 <- demand_L1 <- demand_L3 <- vehicle_type <- demand_V <- demand_EJ <- demand_F <- NULL
     technology <- MJ_km <- demand_EJel <- demand_EJliq <- MJ_kmel <- MJ_kmliq <- NULL
     variable <- sector_fuel <- CES_node <- Value_demand <- value <- CES_parent <- NULL
@@ -33,7 +31,7 @@ shares_intensity_and_demand <- function(logit_shares,
     FV_shares <- logit_shares[["FV_shares"]]
     ## create a normalized total demand OR loads absolute demand if given
     if (is.null(demand_input)) {
-        demand=CJ(iso=unique(S3S_shares$iso),
+        demand=CJ(region=unique(S3S_shares$region),
                   sector=unique(S3S_shares$sector),
                   year=unique(S3S_shares$year))
         demand[,demand:=1]
@@ -41,39 +39,34 @@ shares_intensity_and_demand <- function(logit_shares,
         demand=demand_input
     }
 
-    ## define regional aggregation
-    if (!is.null(REMIND2ISO_MAPPING)) {
-      regcol = "region"
-    } else { regcol = "iso"}
-
     ## calculate demand in million pkm for each level
     #S->S3
-    demand = merge(demand, S3S_shares, all.y = TRUE, by = c("iso", "year", "sector"))
-    demand = demand[,.(demand_L3 = demand*share, iso, year, sector, subsector_L3)]
+    demand = merge(demand, S3S_shares, all.y = TRUE, by = c("region", "year", "sector"))
+    demand = demand[,.(demand_L3 = demand*share, region, year, sector, subsector_L3)]
     #S3->S2
-    demand = merge(demand, S2S3_shares, all=TRUE, by = c("iso", "year", "sector", "subsector_L3"))
-    demand = demand[,.(demand_L2 = demand_L3*share, iso, sector, year, subsector_L3, subsector_L2)]
+    demand = merge(demand, S2S3_shares, all=TRUE, by = c("region", "year", "sector", "subsector_L3"))
+    demand = demand[,.(demand_L2 = demand_L3*share, region, sector, year, subsector_L3, subsector_L2)]
     #S2->S1
-    demand = merge(demand, S1S2_shares, all=TRUE, by = c("iso", "year", "sector", "subsector_L3", "subsector_L2"))
-    demand = demand[,.(demand_L1 = demand_L2*share, iso, sector, year, subsector_L3, subsector_L2, subsector_L1)]
+    demand = merge(demand, S1S2_shares, all=TRUE, by = c("region", "year", "sector", "subsector_L3", "subsector_L2"))
+    demand = demand[,.(demand_L1 = demand_L2*share, region, sector, year, subsector_L3, subsector_L2, subsector_L1)]
     #S1->V
-    demand = merge(demand, VS1_shares, all=TRUE, by = c("iso", "year", "subsector_L1"))
-    demand = demand[,.(demand_V = demand_L1*share, iso, sector, year, subsector_L3, subsector_L2, subsector_L1, vehicle_type)]
+    demand = merge(demand, VS1_shares, all=TRUE, by = c("region", "year", "subsector_L1"))
+    demand = demand[,.(demand_V = demand_L1*share, region, sector, year, subsector_L3, subsector_L2, subsector_L1, vehicle_type)]
     #V->F
-    demand = merge(demand, FV_shares, all=TRUE, by = c("iso", "year", "subsector_L1", "vehicle_type"))
-    demand = demand[,.(demand_F = demand_V*share, iso, sector, year, subsector_L3, subsector_L2, subsector_L1, vehicle_type, technology)]
+    demand = merge(demand, FV_shares, all=TRUE, by = c("region", "year", "subsector_L1", "vehicle_type"))
+    demand = demand[,.(demand_F = demand_V*share, region, sector, year, subsector_L3, subsector_L2, subsector_L1, vehicle_type, technology)]
 
     ## we save the ES demand and throw away years > 2100 for they are NA
     demandF_plot_pkm = demand[
       year <= 2100,
-      c("demand_F", "year","iso", "sector", "subsector_L3", "subsector_L2","subsector_L1", "vehicle_type", "technology")]
+      c("demand_F", "year","region", "sector", "subsector_L3", "subsector_L2","subsector_L1", "vehicle_type", "technology")]
 
     ## put aside the non motorized modes
     demandNM = demand[subsector_L3 %in% c("Cycle", "Walk")]
 
     ## Calculate demand in EJ
     ## merge the demand in pkm with the energy intensity
-    demandF = merge(demand, MJ_km_base, all=FALSE, by = c("iso", "sector", "year", "subsector_L3", "subsector_L2", "subsector_L1", "vehicle_type", "technology"))
+    demandF = merge(demand, MJ_km_base, all=FALSE, by = c("region", "sector", "year", "subsector_L3", "subsector_L2", "subsector_L1", "vehicle_type", "technology"))
 
     demandF[, demand_EJ:=demand_F # in Mpkm or Mtkm
             * 1e6 # in pkm or tkm
@@ -87,7 +80,7 @@ shares_intensity_and_demand <- function(logit_shares,
     demandFPIH[, c("MJ_kmel", "MJ_kmliq") := list((demand_EJel+demand_EJliq)*MJ_km/demand_EJel, (demand_EJel+demand_EJliq)*MJ_km/demand_EJliq)]
     demandFPIH[, c("demand_Fel", "demand_Fliq") := list(demand_EJel/(1e6*MJ_kmel*1e-12), demand_EJel/(1e6*MJ_kmliq*1e-12))]
     demandFPIH[, c("demand_EJ", "demand_F", "technology", "sector_fuel", "MJ_kmel", "MJ_kmliq") := NULL]
-    demandFPIH = melt(demandFPIH, id.vars = c("iso", "sector", "year", "subsector_L3", "subsector_L2", "subsector_L1", "vehicle_type", "MJ_km"),
+    demandFPIH = melt(demandFPIH, id.vars = c("region", "sector", "year", "subsector_L3", "subsector_L2", "subsector_L1", "vehicle_type", "MJ_km"),
                       measure.vars = c("demand_Fel", "demand_Fliq", "demand_EJel", "demand_EJliq"))
     demandFPIH[, technology := ifelse(variable %in%  c("demand_Fel", "demand_EJel"), "BEV", "Liquids")]
     demandFPIHEJ = demandFPIH[variable %in%  c("demand_EJliq", "demand_EJel")]
@@ -101,8 +94,8 @@ shares_intensity_and_demand <- function(logit_shares,
     demandFPIH[, sector_fuel := ifelse(technology =="BEV", "elect_td_trn", "refined liquids enduse")]
     demandF = rbind(demandFPIH[,MJ_km := NULL], demandF[technology != "Hybrid Electric"][,MJ_km := NULL])
     demandF = demandF[,.(demand_EJ = sum(demand_EJ), demand_F = sum(demand_F)),
-            by = c("year","iso", "sector", "subsector_L3", "subsector_L2","subsector_L1", "vehicle_type", "technology")]
-    ## demandF_plot_pkm = rbind(demandNM, demandF[,c("demand_F", "year","iso", "sector", "subsector_L3", "subsector_L2","subsector_L1", "vehicle_type", "technology")])
+            by = c("year","region", "sector", "subsector_L3", "subsector_L2","subsector_L1", "vehicle_type", "technology")]
+    ## demandF_plot_pkm = rbind(demandNM, demandF[,c("demand_F", "year","region", "sector", "subsector_L3", "subsector_L2","subsector_L1", "vehicle_type", "technology")])
     demandF_plot_EJ = copy(demandF)
 
     ## first I need to merge with a mapping that represents how the entries match to the CES
@@ -111,55 +104,37 @@ shares_intensity_and_demand <- function(logit_shares,
                          "subsector_L1", "vehicle_type", "technology"))
 
     ## calculate both shares and average energy intensity
-    demandF = demandF[,.(iso, year, Value_demand = demand_EJ, demand_F, CES_node, sector)]
+    demandF = demandF[,.(region, year, Value_demand = demand_EJ, demand_F, CES_node, sector)]
 
     demandF = demandF[,.(Value_demand = sum(Value_demand),
                        Value_intensity = sum(demand_F)/sum(Value_demand)), #in million pkm/EJ
-                    by=c("iso","year","CES_node","sector")]
+                    by=c("region","year","CES_node","sector")]
 
     ## from wide to long format
-    demandF = melt(demandF, id.vars = c("iso","year","CES_node","sector"),
+    demandF = melt(demandF, id.vars = c("region","year","CES_node","sector"),
                    measure.vars = c("Value_demand", "Value_intensity"))
 
     ## get rid on NaNs energy intensity (they appear wherever demand is 0, so they are not useful)
     demandF = demandF[!is.nan(value),]
 
     ## calculate demand
-    demand = demandF[variable == "Value_demand", .(iso, year, CES_node, value)]
+    demand = demandF[variable == "Value_demand", .(region, year, CES_node, value)]
     demand = approx_dt(demand, REMINDyears,
                      xcol = "year", ycol = "value",
-                     idxcols = c("iso", "CES_node"),
+                     idxcols = c("region", "CES_node"),
                      extrapolate=T)
-
-
-    if (!is.null(REMIND2ISO_MAPPING)) {
-      demand = aggregate_dt(demand,REMIND2ISO_MAPPING,
-                          datacols = "CES_node",
-                          valuecol = "value")
-    }
 
 
     ## create parent node
     demand[, CES_parent:= sub("^[^_]*_", "",CES_node)]
-    setcolorder(demand, neworder = c(regcol, "year", "CES_parent", "CES_node", "value"))
+    setcolorder(demand, neworder = c("region", "year", "CES_parent", "CES_node", "value"))
 
     ## calculate intensity
-    demandI = demandF[variable == "Value_intensity", .(iso, year, CES_node, value)]
+    demandI = demandF[variable == "Value_intensity", .(region, year, CES_node, value)]
     demandI = approx_dt(demandI, REMINDyears,
                       xcol = "year", ycol = "value",
-                      idxcols = c("iso", "CES_node"),
+                      idxcols = c("region", "CES_node"),
                       extrapolate=T)
-
-    if (!is.null(REMIND2ISO_MAPPING)) {
-      gdp <- getRMNDGDP(scenario = scenario, usecache = T)
-
-      demandI = aggregate_dt(demandI, REMIND2ISO_MAPPING,
-                           datacols = "CES_node",
-                           valuecol = "value",
-                           weights = gdp)
-    }
-
-
 
     demand_list = list(demand = demand,
                      demandI = demandI,
