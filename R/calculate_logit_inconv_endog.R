@@ -140,11 +140,6 @@ calculate_logit_inconv_endog = function(prices,
     ## needs random lambdas for the sectors that are not explicitly calculated
     df <- df[ is.na(logit.exponent), logit.exponent := -10]
 
-    if(techswitch %in% c("BEV", "FCEV")) {
-    ## logit exponent gets higher in time for LDVs and road freight, doubling by 2035
-    df[subsector_L1 %in% c("trn_freight_road_tmp_subsector_L1", "trn_pass_road_LDV_4W") & year >=2020, logit.exponent := ifelse(year <= 2035 & year >= 2020, logit.exponent[year==2020] + (2*logit.exponent[year==2020]-logit.exponent[year==2020]) * (year-2020)/(2035-2020), 2*logit.exponent[year==2020]),
-       by=c("region", "vehicle_type", "technology")]
-    }
 
     ## define the years on which the inconvenience price will be calculated on the basis of the previous time steps sales
     futyears_all = seq(2020, 2101, 1)
@@ -172,6 +167,11 @@ calculate_logit_inconv_endog = function(prices,
     ## apply the same logit exponent to all the years
     df[, logit.exponent := as.double(logit.exponent)]
     df[, logit.exponent := ifelse(is.na(logit.exponent), mean(logit.exponent, na.rm = TRUE), logit.exponent), by = c("vehicle_type")]
+    if(techswitch %in% c("BEV", "FCEV")) {
+      ## logit exponent gets higher in time for LDVs and road freight, doubling by 2035
+      df[subsector_L1 %in% c("trn_freight_road_tmp_subsector_L1", "trn_pass_road_LDV_4W") & year >=2020, logit.exponent := ifelse(year <= 2035 & year >= 2020, logit.exponent[year==2020] + (2*logit.exponent[year==2020]-logit.exponent[year==2020]) * (year-2020)/(2035-2020), 2*logit.exponent[year==2020]),
+         by=c("region", "vehicle_type", "technology")]
+    }
 
     ## for 4W the value of V->S1 market shares is needed on a yearly basis
     final_prefVS1cp = final_prefVS1[subsector_L1 == "trn_pass_road_LDV_4W"]
