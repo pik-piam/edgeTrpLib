@@ -53,7 +53,7 @@ shares_intensity_and_demand <- function(logit_shares,
     demand = merge(demand, VS1_shares, all=TRUE, by = c("region", "year", "subsector_L1"))
     demand = demand[,.(demand_V = demand_L1*share, region, sector, year, subsector_L3, subsector_L2, subsector_L1, vehicle_type)]
     #V->F
-    demand = merge(demand, FV_shares, all=TRUE, by = c("region", "year", "subsector_L1", "vehicle_type"))
+    demand = merge(demand, FV_shares[, c("subsector_L2","subsector_L3","sector"):=NULL], all=TRUE, by = c("region", "year", "subsector_L1", "vehicle_type"))
     demand = demand[,.(demand_F = demand_V*share, region, sector, year, subsector_L3, subsector_L2, subsector_L1, vehicle_type, technology)]
 
     ## we save the ES demand and throw away years > 2100 for they are NA

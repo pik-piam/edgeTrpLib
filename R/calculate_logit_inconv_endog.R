@@ -9,7 +9,7 @@
 #' @param price_nonmot price of non-motorized modes in the logit tree
 #' @param techswitch technology that the policymaker wants to promote
 #' @param stations share of stations offering the different fuels
-#' @param totveh total demand for LDVs by tecnology
+#' @param totveh total demand for LDVs by tecnology in million veh
 #' @import data.table
 #' @export
 
