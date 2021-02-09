@@ -93,14 +93,16 @@ applylearning <- function(non_fuel_costs, capcost4W, gdx, EDGE2teESmap, demand_l
 #' @param ES_demand_all total demand for ESs
 #' @param techswitch technology that the policymaker wants to promote
 #' @param loadFactor load factor of vehicles
+#' @param EDGE2teESmap mapping of EDGE-T/GCAM technologies to REMIND ES technologies
 #' @param rep if is it a stand alone run or the last iteration of the coupled run->set to TRUE
 #' @import data.table
 #' @export
 
 
 
-calc_num_vehicles_stations <- function(norm_dem, intensity, ES_demand_all, techswitch, loadFactor, rep){
+calc_num_vehicles_stations <- function(norm_dem, intensity, ES_demand_all, techswitch, loadFactor, EDGE2teESmap, rep){
   demand_F <- demand <- annual_mileage <- region <- `.` <- vehicles_number <- vehicle_type <- demand_F <- technology <- statnum <- fracst <- NULL
+  cost_st_km <- cost <- en_int <- value <- teEs <- NULL
   if (!rep) {
     norm_dem = merge(norm_dem, ES_demand_all, by = c("region", "year", "sector"))
     ## scale the normalized demand
