@@ -2,13 +2,13 @@
 #'
 #' @param gdx input gdx file
 #' @param EDGE2teESmap mapping of EDGE-T/GCAM technologies to REMIND ES technologies
-#' @param ES_demandpr the ES demand of the previous iteration in million km
+#' @param ES_demandpr the ES demand of the previous iteration
 #' @param non_fuel_costs total non fuel costs
 #' @param capcost4W purchase prices of 4W on which learning is applied
-#' @param demand_learntmp the demand for vehicles from the previous iteration in million veh
+#' @param demand_learntmp the demand for vehicles from the previous iteration
 #' @param rebates_febatesBEV option rebates for BEVs
 #' @param rebates_febatesFCEV option rebates for FCEVs
-#' @param ES_demand the ES demand of the current iteration in million km
+#' @param ES_demand the ES demand of the current iteration
 #'
 #' @import data.table
 #' @export
@@ -92,31 +92,28 @@ applylearning <- function(non_fuel_costs, capcost4W, gdx, EDGE2teESmap, demand_l
 #' @param ES_demand_all total demand for ESs
 #' @param techswitch technology that the policymaker wants to promote
 #' @param loadFactor load factor of vehicles
-#' @param rep if is it a stand alone run or the last iteration of the coupled run->set to TRUE
 #' @import data.table
 #' @export
 
 
 
-calc_num_vehicles_stations <- function(norm_dem, ES_demand_all, techswitch, loadFactor, rep){
+calc_num_vehicles_stations <- function(norm_dem, ES_demand_all, techswitch, loadFactor){
   demand_F <- demand <- annual_mileage <- region <- `.` <- vehicles_number <- vehicle_type <- demand_F <- technology <- statnum <- fracst <- NULL
-  if (rep) {
-    LDVdem = merge(norm_dem, loadFactor, all.x = TRUE, by = c("region", "year", "vehicle_type"))
-  } else {
-    LDVdem = merge(norm_dem, ES_demand_all, by = c("region", "year", "sector"))
-    ## scale the normalized demand
-    LDVdem[, demand_F := demand_F*   ## normalized to 1
-                         demand]     ## in million km (total passenger demand)
-  }
 
-  LDVdem[, annual_mileage := 13000]
+  LDVdem = merge(norm_dem, ES_demand_all, by = c("region", "year", "sector"))
+  LDVdem[, demand_F := demand_F*demand] ## scale up the normalized demand
+  LDVdem = merge(LDVdem, loadFactor, all.x = TRUE, by = c("region", "year", "vehicle_type"))
 
-  LDVdem[,vehicles_number:=demand_F   ## in millionpkm
-         /loadFactor                  ## in millionvkm
-         /annual_mileage]             ## in million veh
+  LDVdem[, annual_mileage := 15000]
+
+  LDVdem[,vehicles_number:=demand_F   ## in trillionpkm
+         /loadFactor                  ## in trillionvkm
+         /annual_mileage]             ## in trillion veh
 
   LDVdem = LDVdem[, .(region, year, vehicles_number, technology, vehicle_type)]
-  alltechdem = LDVdem[,.(vehicles_number = sum(vehicles_number)), by = c("region", "year")]
+
+  alltechdem = LDVdem[technology %in% c("BEV", "FCEV", "Liquids", "Hybrid Liquids", "Hybrid Electric"),]
+  alltechdem = alltechdem[,.(vehicles_number = sum(vehicles_number)), by = c("region", "year")]
 
   learntechdem = LDVdem[technology %in% c("BEV", "FCEV"),][, .(region, year, vehicles_number, vehicle_type, technology)]
 
@@ -125,64 +122,59 @@ calc_num_vehicles_stations <- function(norm_dem, ES_demand_all, techswitch, load
 
  if (techswitch =="FCEV"){
    stations[technology == "FCEV" & year > 2025 &  year <= 2027,  statnum := 1.1*               ## policy over-reacts to FCEVs number and incentivize the construction of stations
-                                              vehicles_number*  ## in million veh
-                                              1e3/              ## in kveh
+                                              vehicles_number*  ## in trillion veh
+                                              1e6/              ## in kveh
                                               1000]             ## in stations
    stations[technology == "FCEV" & year > 2027 &  year <= 2028,  statnum := 1.4*               ## policy over-reacts to FCEVs number and incentivize the construction of stations
-                                              vehicles_number*  ## in million veh
-                                              1e3/              ## in kveh
+                                              vehicles_number*  ## in trillion veh
+                                              1e6/              ## in kveh
                                               1000]             ## in stations
 
    stations[technology == "FCEV" & year > 2028 &  year <= 2030,  statnum := 1.5*               ## policy over-reacts to FCEVs number and incentivize the construction of stations
-                                              vehicles_number*  ## in million veh
-                                              1e3/              ## in kveh
+                                              vehicles_number*  ## in trillion veh
+                                              1e6/              ## in kveh
                                               1000]             ## in stations
 
-
+   
    stations[technology == "FCEV" & year > 2030 &  year <= 2035,  statnum := 1.6*               ## policy over-reacts to FCEVs number and incentivize the construction of stations
-                                              vehicles_number*  ## in million veh
-                                              1e3/              ## in kveh
+                                              vehicles_number*  ## in trillion veh
+                                              1e6/              ## in kveh
                                               1000]             ## in stations
 
    stations[technology == "FCEV" & year > 2035 &  year <= 2040,  statnum := 1.4*               ## policy over-reacts to FCEVs number and incentivize the construction of stations
-                                              vehicles_number*  ## in million veh
-                                              1e3/              ## in kveh
+                                              vehicles_number*  ## in trillion veh
+                                              1e6/              ## in kveh
                                               1000]             ## in stations
-   stations[technology == "FCEV" & year <= 2025, statnum := 1*vehicles_number*   ## in million veh
-                                                            1e3/                 ## in kveh
-                                                            1000]                ## in stations
-
-   stations[technology == "FCEV" & year > 2040,  statnum := 1*   ## policy over-reacts to FCEVs number and incentivize the construction of stations
-                                              vehicles_number*  ## in million veh
-                                              1e3/              ## in kveh
+   stations[technology == "FCEV" & year <= 2025, statnum := 1*vehicles_number*1e6/1000]
+  
+   stations[technology == "FCEV" & year > 2040,  statnum := 1*               ## policy over-reacts to FCEVs number and incentivize the construction of stations
+                                              vehicles_number*  ## in trillion veh
+                                              1e6/              ## in kveh
                                               1000]             ## in stations
-   stations[technology != "FCEV",  statnum := vehicles_number*  ## in million veh
-                                              1e3/              ## in kveh
+   stations[technology != "FCEV",  statnum := vehicles_number*  ## in trillion veh
+                                              1e6/              ## in kveh
                                               1000]             ## in stations
 
 
-   stations[technology == "BEV", statnum := 0.01*               ## BEV do not take over due to the dispreference
-                                            vehicles_number*    ## in million veh
-                                            1e3/                ## in kveh
-                                            1000]               ## in stations
+   stations[technology == "BEV", statnum := vehicles_number*0.01*1e6/1000]
  }
 
  else if (techswitch ==  "Liquids") {
     ## industry and policymakers don't push BEVs in case the scenario is ConvCase
-    stations[technology == "BEV",  statnum := 0.7*              ## BEV do not take over due to the dispreference
-                                              vehicles_number*  ## in million veh
-                                              1e3/              ## in kveh
+    stations[technology == "BEV",  statnum := 0.7*               ## BEV do not take over due to the dispreference
+                                              vehicles_number*  ## in trillion veh
+                                              1e6/              ## in kveh
                                               1000]             ## in stations
 
-   stations[technology != "BEV",  statnum := vehicles_number*  ## in million veh
-                                              1e3/              ## in kveh
+   stations[technology != "BEV",  statnum := vehicles_number*  ## in trillion veh
+                                              1e6/              ## in kveh
                                               1000]             ## in stations
  }
-
+ 
  else {
-    stations[,  statnum := vehicles_number*  ## in million veh
-                          1e3/               ## in kveh
-                          1000]              ## in stations
+    stations[,  statnum := vehicles_number*  ## in trillion veh
+                        1e6/              ## in kveh
+                        1000]             ## in stations
  }
 
   stations[, fracst := statnum/sum(statnum), by = c("region", "year")]
