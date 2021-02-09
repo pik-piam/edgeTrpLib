@@ -100,14 +100,14 @@ applylearning <- function(non_fuel_costs, capcost4W, gdx, EDGE2teESmap, demand_l
 
 calc_num_vehicles_stations <- function(norm_dem, ES_demand_all, techswitch, loadFactor, rep){
   demand_F <- demand <- annual_mileage <- region <- `.` <- vehicles_number <- vehicle_type <- demand_F <- technology <- statnum <- fracst <- NULL
-  if (!rep) {
+  if (rep) {
+    LDVdem = merge(norm_dem, loadFactor, all.x = TRUE, by = c("region", "year", "vehicle_type"))
+  } else {
     LDVdem = merge(norm_dem, ES_demand_all, by = c("region", "year", "sector"))
     ## scale the normalized demand
     LDVdem[, demand_F := demand_F*   ## normalized to 1
                          demand]     ## in million km (total passenger demand)
   }
-
-  LDVdem = merge(norm_dem, loadFactor, all.x = TRUE, by = c("region", "year", "vehicle_type"))
 
   LDVdem[, annual_mileage := 13000]
 
