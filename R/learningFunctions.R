@@ -125,22 +125,39 @@ calc_num_vehicles_stations <- function(norm_dem, intensity, ES_demand_all, techs
 
   ## calculate the cost of refueling/recharging infrastructure
   intensity = merge(intensity, EDGE2teESmap, all.x=TRUE, by = "CES_node")
-  charact_stations = data.table(teEs = c("te_eselt_pass_sm", "te_esgat_pass_sm", "te_espet_pass_sm", "te_esh2t_pass_sm"),
-                          cost = c(0.02, 2, 2, 4),                                ## costs associated to each station (dollars per kg for H2, NG and Liquids; dollars per MWh for BEVs)
-                          en_int = c(3.6e-9, 50*1e-12, 44*1e-12, 120*1e-12))      ## energy intensity in EJ/kg (for H2, Liquids and NG and liquids), EJ/MWh for BEVs
 
-  ## merge costs with number of stations
-  stations = merge(intensity, charact_stations, by = "teEs")
-
-  ## sources:
-  ## costs H2 https://www.osti.gov/pages/servlets/purl/1393842
-  ## costs NG, Liquids ??
-  ## costs BEV partially here file:///C:/Users/rottoli/AppData/Local/Temp/wevj-08-00001.pdf but no costs of total -> to be found
+  ## costs H2 https://www.osti.gov/pages/servlets/purl/1393842 ->4-6 $/kg
+  ## https://www.researchgate.net/publication/318056062_Impact_of_hydrogen_refueling_configurations_and_market_parameters_on_the_refueling_cost_of_hydrogen ->6-15 $kg
+  ## costs NG, Liquids -> assumed half of the hydrogen, as no compressor and refrigeration are required
   ## energy content
   ## 120 MJ/kg = 120*1e-12EJ/kg Hydrogen
   ## 44 MJ/kg = 44*1e-12EJ/kg Liquids
   ## 50 MJ/kg = 50*1e-12EJ/kg NG
-  ## 20$/kWh = 0.02$/MWh for BEVs
+
+  charact_stations = data.table(teEs = c("te_eselt_pass_sm", "te_esgat_pass_sm", "te_espet_pass_sm", "te_esh2t_pass_sm"),
+                                cost = c(NA, 4, 4, 8),                                ## costs associated to each station (dollars per kg for H2, NG and Liquids; dollars per MWh for BEVs)
+                                en_int = c(3.6e-9, 50*1e-12, 44*1e-12, 120*1e-12))      ## energy intensity in EJ/kg (for H2, Liquids and NG and liquids), EJ/MWh for BEVs
+
+  ## calculation of recharging points costs
+  ## data for purchase/installation costs from: https://theicct.org/sites/default/files/publications/ICCT_EV_Charging_Cost_20190813.pdf
+  ##                                            https://afdc.energy.gov/files/u/publication/evse_cost_report_2015.pdf
+  discount_rate_veh = 0.05   ## Consumer discount rate for recharger purchase (assumed)
+  nper_amort_veh = 5         ## Number of periods (years) over which vehicle capital payments are amortized (assumed)
+  fcr_veh = discount_rate_veh + discount_rate_veh/(((1+discount_rate_veh)^nper_amort_veh)-1)
+
+  purchase_cost = 45000 ## dollars/charger (~25k$ purchase, ~20k$installation)
+  cap = 50 ## kW/charger
+  util_rate = 0.05 ## utilization rate of the charger (Benchmarking Charging Infrastructure Utilization, Wolbertus, 2016)
+
+  cost_ch = purchase_cost*fcr_veh/  ## in $/charger (levelized)
+            cap/                    ## in $/kW
+            (365*24*util_rate)/     ## in $/kWh
+            1000                    ## in $/MWh
+
+  charact_stations[teEs == "te_eselt_pass_sm", cost := cost_ch]
+
+  ## merge costs with number of stations
+  stations = merge(intensity, charact_stations, by = "teEs")
 
   stations[, cost_st_km := cost/       ## in dollars/kg (or dollars/MWh)
                            en_int/     ## in dollars/EJ
