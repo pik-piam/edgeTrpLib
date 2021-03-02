@@ -18,6 +18,8 @@
 
 getRMNDGDPcap <- function(gdpCapfile,
                           isocol,
+                          gdp,
+                          POP,
                           scenario="gdp_SSP2",
                           yearcol="year",
                           valuecol="weight",
@@ -30,18 +32,10 @@ getRMNDGDPcap <- function(gdpCapfile,
     cat("getGDP_dt: Using cached GDP data in", gdpCapfile, "\n")
     GDP_POP = readRDS(gdpCapfile)
   } else {
-    GDPppp_country <- calcOutput("GDPppp", aggregate = to_aggregate)[,, scenario]
-
-    gdp <- as.data.table(GDPppp_country)[variable == scenario]
-    gdp[, (yearcol) := as.numeric(gsub("y", "", Year))][, Year := NULL]
-    setnames(gdp, c("ISO3", "value"), c(isocol, valuecol), skip_absent=TRUE)
-    scenario_POP = gsub("gdp_", "", scenario)
-    POP_country=calcOutput("Population", aggregate = to_aggregate)[,, paste0("pop_", scenario_POP)]
-    POP <- magpie2dt(POP_country, regioncol = isocol,
-                     yearcol = "year", datacols = "POP")
-    POP=POP[,.(region,year,POP,POP_val=value)]
+    POP=POP[,.(region,year,POP_val=value)]
     GDP_POP=merge(gdp,POP,all = TRUE,by=c(isocol,"year"))
-    GDP_POP[,GDP_cap:=weight/POP_val]
+    GDP_POP[,GDP_cap:=value/POP_val]
+    setnames(GDP_POP, old = "value", new = "weight")
   }
 
 
@@ -72,6 +66,7 @@ getRMNDGDPcap <- function(gdpCapfile,
 
 getRMNDGDP <- function(gdpfile,
                        isocol,
+                       gdp,
                        scenario="gdp_SSP2",
                        yearcol="year",
                        valuecol="weight",
@@ -79,17 +74,14 @@ getRMNDGDP <- function(gdpfile,
                        usecache = F){
   variable <- Year <- NULL
 
-
   if(usecache && file.exists(gdpfile)){
     cat("getGDP_dt: Using cached GDP data in", gdpfile, "\n")
     return(readRDS(gdpfile))
   }
-
-  GDPppp_country <- calcOutput("GDPppp", aggregate = to_aggregate)[,, scenario]
-
-  gdp <- as.data.table(GDPppp_country)[variable == scenario]
-  gdp[, (yearcol) := as.numeric(gsub("y", "", Year))][, Year := NULL]
-  setnames(gdp, c("ISO3", "value"), c(isocol, valuecol))
+  if (!to_aggregate) {
+    setnames(gdp, c("ISO3"), c(isocol, valuecol))
+  }
+    setnames(gdp, c("value"), c(valuecol))
 
   if(usecache){
     saveRDS(gdp, gdpfile)
