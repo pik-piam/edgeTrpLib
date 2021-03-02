@@ -1,4 +1,5 @@
-#' Load GDP per capita data using `moinput` on ISO country resolution
+#' Load GDP per capita data using `mrremind` on ISO country resolution, either
+#' loaded from the standalone input data or from mrremind (if in a REMIND preprocessing run)
 #' for a scenario as data.table object with given colnames.
 #'
 #' If GDP values are required frequently, a cache file can be used to retrieve the
@@ -6,6 +7,8 @@
 #'
 #' @param scenario, GDP scenario, default is gdp_SSP2.
 #' @param yearcol, name of the year column, default "year".
+#' @param gdp GDP value.
+#' @param POP population.
 #' @param isocol, name of the column containing ISO3 codes, default is "iso".
 #' @param valuecol, name of the column containing the GDP values, default is "weight".
 #' @param usecache, store the result in a RDS file in the working directory, default is FALSE.
@@ -46,7 +49,8 @@ getRMNDGDPcap <- function(gdpCapfile,
   return(GDP_POP)
 }
 
-#' Load GDP data using `moinput` on ISO country resolution for a scenario as
+#' Load GDP data data using `mrremind` on ISO country resolution, either
+#' loaded from the standalone input data or from mrremind (if in a REMIND preprocessing run)
 #' data.table object with given colnames.
 #'
 #' If GDP values are required frequently, a cache file can be used to retrieve the
@@ -55,6 +59,7 @@ getRMNDGDPcap <- function(gdpCapfile,
 #' @param scenario, GDP scenario, default is gdp_SSP2.
 #' @param yearcol, name of the year column, default "year".
 #' @param isocol, name of the column containing ISO3 codes, default is "iso".
+#' @param gdp GDP value.
 #' @param valuecol, name of the column containing the GDP values, default is "weight".
 #' @param usecache, store the result in a RDS file in the working directory, default is FALSE.
 #' @param to_aggregate, if the data provided has to be on ISO or regional level. Has to be coherent with the selected name of gdpCapfile.
