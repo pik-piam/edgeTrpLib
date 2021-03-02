@@ -1,6 +1,7 @@
 #' Loads the total demand of transport CES nodes from last iteration
 #'
 #' @param gdx REMIND binary output, gdx format
+#' @param GDP GDP on a regional level
 #' @param REMINDmapping map REMIND regions to ISO3 country codes
 #' @param EDGE2teESmap map EDGE-T technologies to REMIND ES techs
 #' @param years REMIND timesteps
@@ -9,7 +10,7 @@
 #' @export
 
 
-readREMINDdemand= function(gdx,REMINDmapping,EDGE2teESmap, years, scenario){
+readREMINDdemand= function(gdx, GDP, REMINDmapping,EDGE2teESmap, years, scenario){
   `.` <- region <- EDGE_top <- value <- demand <- NULL
 
   dem <- readGDX(gdx, c("vm_cesIO"),field = "l")
@@ -17,9 +18,8 @@ readREMINDdemand= function(gdx,REMINDmapping,EDGE2teESmap, years, scenario){
 
   dem <- magpie2dt(dem, regioncol = "region",
                    yearcol = "year", datacols = "sector_remind")
-
   ## downscale to iso level
-  gdp <- getRMNDGDP(scenario = scenario, usecache = T, to_aggregate = T, isocol = "region", gdpfile = "GDPcache.RDS")
+  gdp <- getRMNDGDP(scenario = scenario, usecache = T, gdp = GDP, to_aggregate = T, isocol = "region", gdpfile = "GDPcache.RDS")
   dem <- dem[year %in% years]
 
   ## attribute EDGE sector names to CES values
