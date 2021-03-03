@@ -78,13 +78,12 @@ getRMNDGDP <- function(gdpfile,
                        to_aggregate = F,
                        usecache = F){
   variable <- Year <- NULL
-
   if(usecache && file.exists(gdpfile)){
     cat("getGDP_dt: Using cached GDP data in", gdpfile, "\n")
     return(readRDS(gdpfile))
   }
   if (!to_aggregate) {
-    setnames(gdp, c("ISO3"), c(isocol, valuecol))
+    setnames(gdp, c("ISO3"), c(isocol))
   }
     setnames(gdp, c("value"), c(valuecol))
 
