@@ -89,103 +89,81 @@ applylearning <- function(non_fuel_costs, capcost4W, gdx, EDGE2teESmap, demand_l
 #' Calculate number of vehicles scaling up the normalized demand with the aggregate total demand
 #'
 #' @param norm_dem normalized demand shares
+#' @param intensity energy intensity of CES nodes, in million pkm/EJ
 #' @param ES_demand_all total demand for ESs
 #' @param techswitch technology that the policymaker wants to promote
 #' @param loadFactor load factor of vehicles
+#' @param EDGE2teESmap mapping of EDGE-T/GCAM technologies to REMIND ES technologies
+#' @param rep if is it a stand alone run or the last iteration of the coupled run->set to TRUE
 #' @import data.table
 #' @export
 
 
 
-calc_num_vehicles_stations <- function(norm_dem, ES_demand_all, techswitch, loadFactor){
+calc_num_vehicles_stations <- function(norm_dem, intensity, ES_demand_all, techswitch, loadFactor, EDGE2teESmap, rep){
   demand_F <- demand <- annual_mileage <- region <- `.` <- vehicles_number <- vehicle_type <- demand_F <- technology <- statnum <- fracst <- NULL
+  cost_st_km <- cost <- en_int <- value <- teEs <- NULL
+  if (!rep) {
+    norm_dem = merge(norm_dem, ES_demand_all, by = c("region", "year", "sector"))
+    ## scale the normalized demand
+    norm_dem[, demand_F := demand_F*   ## normalized to 1
+                           demand]     ## in million km (total passenger demand)
+  }
+  LDVdem = merge(norm_dem, loadFactor, all.x = TRUE, by = c("region", "year", "vehicle_type"))
 
-  LDVdem = merge(norm_dem, ES_demand_all, by = c("region", "year", "sector"))
-  LDVdem[, demand_F := demand_F*demand] ## scale up the normalized demand
-  LDVdem = merge(LDVdem, loadFactor, all.x = TRUE, by = c("region", "year", "vehicle_type"))
+  LDVdem[, annual_mileage := 13000]
 
-  LDVdem[, annual_mileage := 15000]
+  LDVdem[, vehicles_number := demand_F             ## in millionpkm
+                              /loadFactor          ## in millionvkm
+                              /annual_mileage]     ## in million veh
 
-  LDVdem[,vehicles_number:=demand_F   ## in trillionpkm
-         /loadFactor                  ## in trillionvkm
-         /annual_mileage]             ## in trillion veh
+  LDVdem = LDVdem[, .(region, year, vehicles_number, technology, vehicle_type, demand_F)]
 
-  LDVdem = LDVdem[, .(region, year, vehicles_number, technology, vehicle_type)]
-
-  alltechdem = LDVdem[technology %in% c("BEV", "FCEV", "Liquids", "Hybrid Liquids", "Hybrid Electric"),]
-  alltechdem = alltechdem[,.(vehicles_number = sum(vehicles_number)), by = c("region", "year")]
+  alltechdem = LDVdem[,.(vehicles_number = sum(vehicles_number)), by = c("region", "year")]
 
   learntechdem = LDVdem[technology %in% c("BEV", "FCEV"),][, .(region, year, vehicles_number, vehicle_type, technology)]
 
-  stations = LDVdem[, .(vehicles_number = sum(vehicles_number)), by = c("region", "year", "technology")]
-  stations = stations[year >= 2020]
+  ## calculate the cost of refueling/recharging infrastructure
+  intensity = merge(intensity, EDGE2teESmap, all.x=TRUE, by = "CES_node")
 
- if (techswitch =="FCEV"){
-   stations[technology == "FCEV" & year > 2025 &  year <= 2027,  statnum := 1.1*               ## policy over-reacts to FCEVs number and incentivize the construction of stations
-                                              vehicles_number*  ## in trillion veh
-                                              1e6/              ## in kveh
-                                              1000]             ## in stations
-   stations[technology == "FCEV" & year > 2027 &  year <= 2028,  statnum := 1.4*               ## policy over-reacts to FCEVs number and incentivize the construction of stations
-                                              vehicles_number*  ## in trillion veh
-                                              1e6/              ## in kveh
-                                              1000]             ## in stations
+  ## costs H2 https://www.osti.gov/pages/servlets/purl/1393842 ->4-6 $/kg
+  ## https://www.researchgate.net/publication/318056062_Impact_of_hydrogen_refueling_configurations_and_market_parameters_on_the_refueling_cost_of_hydrogen ->6-15 $kg
+  ## costs NG, Liquids -> assumed half of the hydrogen, as no compressor and refrigeration are required
+  ## energy content
+  ## 120 MJ/kg = 120*1e-12EJ/kg Hydrogen
+  ## 44 MJ/kg = 44*1e-12EJ/kg Liquids
+  ## 50 MJ/kg = 50*1e-12EJ/kg NG
 
-   stations[technology == "FCEV" & year > 2028 &  year <= 2030,  statnum := 1.5*               ## policy over-reacts to FCEVs number and incentivize the construction of stations
-                                              vehicles_number*  ## in trillion veh
-                                              1e6/              ## in kveh
-                                              1000]             ## in stations
+  charact_stations = data.table(teEs = c("te_eselt_pass_sm", "te_esgat_pass_sm", "te_espet_pass_sm", "te_esh2t_pass_sm"),
+                                cost = c(NA, 4, 4, 8),                                ## costs associated to each station (dollars per kg for H2, NG and Liquids; dollars per MWh for BEVs)
+                                en_int = c(3.6e-9, 50*1e-12, 44*1e-12, 120*1e-12))      ## energy intensity in EJ/kg (for H2, Liquids and NG and liquids), EJ/MWh for BEVs
 
-   
-   stations[technology == "FCEV" & year > 2030 &  year <= 2035,  statnum := 1.6*               ## policy over-reacts to FCEVs number and incentivize the construction of stations
-                                              vehicles_number*  ## in trillion veh
-                                              1e6/              ## in kveh
-                                              1000]             ## in stations
+  ## calculation of recharging points costs
+  ## data for purchase/installation costs from: https://theicct.org/sites/default/files/publications/ICCT_EV_Charging_Cost_20190813.pdf
+  ##                                            https://afdc.energy.gov/files/u/publication/evse_cost_report_2015.pdf
+  discount_rate_veh = 0.05   ## Consumer discount rate for recharger purchase (assumed)
+  nper_amort_veh = 5         ## Number of periods (years) over which vehicle capital payments are amortized (assumed)
+  fcr_veh = discount_rate_veh + discount_rate_veh/(((1+discount_rate_veh)^nper_amort_veh)-1)
 
-   stations[technology == "FCEV" & year > 2035 &  year <= 2040,  statnum := 1.4*               ## policy over-reacts to FCEVs number and incentivize the construction of stations
-                                              vehicles_number*  ## in trillion veh
-                                              1e6/              ## in kveh
-                                              1000]             ## in stations
-   stations[technology == "FCEV" & year <= 2025, statnum := 1*vehicles_number*1e6/1000]
-  
-   stations[technology == "FCEV" & year > 2040,  statnum := 1*               ## policy over-reacts to FCEVs number and incentivize the construction of stations
-                                              vehicles_number*  ## in trillion veh
-                                              1e6/              ## in kveh
-                                              1000]             ## in stations
-   stations[technology != "FCEV",  statnum := vehicles_number*  ## in trillion veh
-                                              1e6/              ## in kveh
-                                              1000]             ## in stations
+  purchase_cost = 45000 ## dollars/charger (~25k$ purchase, ~20k$installation)
+  cap = 50 ## kW/charger
+  util_rate = 0.05 ## utilization rate of the charger (Benchmarking Charging Infrastructure Utilization, Wolbertus, 2016)
 
+  cost_ch = purchase_cost*fcr_veh/  ## in $/charger (levelized)
+            cap/                    ## in $/kW
+            (365*24*util_rate)/     ## in $/kWh
+            1000                    ## in $/MWh
 
-   stations[technology == "BEV", statnum := vehicles_number*0.01*1e6/1000]
- }
+  charact_stations[teEs == "te_eselt_pass_sm", cost := cost_ch]
 
- else if (techswitch ==  "Liquids") {
-    ## industry and policymakers don't push BEVs in case the scenario is ConvCase
-    stations[technology == "BEV",  statnum := 0.7*               ## BEV do not take over due to the dispreference
-                                              vehicles_number*  ## in trillion veh
-                                              1e6/              ## in kveh
-                                              1000]             ## in stations
+  ## merge costs with number of stations
+  stations = merge(intensity, charact_stations, by = "teEs")
 
-   stations[technology != "BEV",  statnum := vehicles_number*  ## in trillion veh
-                                              1e6/              ## in kveh
-                                              1000]             ## in stations
- }
- 
- else {
-    stations[,  statnum := vehicles_number*  ## in trillion veh
-                        1e6/              ## in kveh
-                        1000]             ## in stations
- }
+  stations[, cost_st_km := cost/       ## in dollars/kg (or dollars/MWh)
+                           en_int/     ## in dollars/EJ
+                           value*      ## in dollars/million pkm
+                           1e-6]       ## in dollars/km
 
-  stations[, fracst := statnum/sum(statnum), by = c("region", "year")]
-  stations = stations[technology %in% c("BEV", "NG", "FCEV"),]
-
-  stations = approx_dt(stations, seq(2020, 2101, 1),
-                       xcol = "year", ycol = "fracst",
-                       idxcols = c("region", "technology"),
-                       extrapolate=T)
-
-  stations = stations[,.(region, technology, year, fracst)]
-
+  stations = stations[,.(region, year, cost_st_km, teEs)]
   return(list(learntechdem = learntechdem, stations = stations, alltechdem = alltechdem))
 }
