@@ -4,3 +4,4 @@
 ^.*\.zenodo.json$
 ^\.github$
 ^codecov\.yml$
+^\.git$
