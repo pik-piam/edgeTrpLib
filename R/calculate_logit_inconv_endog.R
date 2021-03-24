@@ -171,6 +171,10 @@ calculate_logit_inconv_endog = function(prices,
       ## logit exponent gets higher in time for LDVs and road freight, doubling by 2035
       df[subsector_L1 %in% c("trn_freight_road_tmp_subsector_L1", "trn_pass_road_LDV_4W") & year >=2020, logit.exponent := ifelse(year <= 2035 & year >= 2020, logit.exponent[year==2020] + (2*logit.exponent[year==2020]-logit.exponent[year==2020]) * (year-2020)/(2035-2020), 2*logit.exponent[year==2020]),
          by=c("region", "vehicle_type", "technology")]
+    } else if(techswitch == "BEV_EUR") {
+      ## logit exponent gets higher in time for LDVs and road freight, doubling by 2035 (EUR only)
+      df[region == "EUR" & subsector_L1 %in% c("trn_freight_road_tmp_subsector_L1", "trn_pass_road_LDV_4W") & year >=2020, logit.exponent := ifelse(year <= 2035 & year >= 2020, logit.exponent[year==2020] + (2*logit.exponent[year==2020]-logit.exponent[year==2020]) * (year-2020)/(2035-2020), 2*logit.exponent[year==2020]),
+         by=c("region", "vehicle_type", "technology")]
     }
 
     ## for 4W the value of V->S1 market shares is needed on a yearly basis
@@ -372,7 +376,7 @@ calculate_logit_inconv_endog = function(prices,
                             pmax(prisk[year == 2020]-coeffrisk*weighted_sharessum[year == (t-1)], 0),
                             prisk), by = c("region", "technology", "vehicle_type", "subsector_L1")]
 
-      if (techswitch %in% c("BEV", "FCEV")) {
+      if (techswitch %in% c("BEV", "FCEV", "BEV_EUR")) {
 
         ## the policymaker bans ICEs increasingly more strictly
         if (t >= 2023 & t < 2025) {
@@ -387,16 +391,30 @@ calculate_logit_inconv_endog = function(prices,
           floor = 0
         }
 
-     ## inconvenience cost for liquids is allowed to increase in case they are not the favoured technology
-        tmp[technology == "Liquids", pinco_tot := ifelse(year == t,
-                                   0.5*exp(1)^(weighted_sharessum[year == (t-1)]*bmodelav),
-                                   pinco_tot), by = c("region", "technology", "vehicle_type", "subsector_L1")]
+        ## inconvenience cost for liquids is allowed to increase in case they are not the favoured technology
+        ## For all regions in the default scenarios
+        if(techswitch != "BEV_EUR"){
+            tmp[technology == "Liquids", pinco_tot := ifelse(year == t,
+                                      0.5*exp(1)^(weighted_sharessum[year == (t-1)]*bmodelav),
+                                      pinco_tot), by = c("region", "technology", "vehicle_type", "subsector_L1")]
 
 
-        tmp[technology == "Liquids", pinco_tot := ifelse(year == t,
-                                   pmax(pinco_tot, floor),
-                                   pinco_tot), by = c("region", "technology", "vehicle_type", "subsector_L1")]
+            tmp[technology == "Liquids", pinco_tot := ifelse(year == t,
+                                      pmax(pinco_tot, floor),
+                                      pinco_tot), by = c("region", "technology", "vehicle_type", "subsector_L1")]
+        
+        ## Only for EUR in case of techswitch == "BEV_EUR"
+        } else {
+            tmp[region == "EUR" & technology == "Liquids", pinco_tot := ifelse(year == t,
+                                      0.5*exp(1)^(weighted_sharessum[year == (t-1)]*bmodelav),
+                                      pinco_tot), by = c("region", "technology", "vehicle_type", "subsector_L1")]
 
+
+            tmp[region == "EUR" & technology == "Liquids", pinco_tot := ifelse(year == t,
+                                      pmax(pinco_tot, floor),
+                                      pinco_tot), by = c("region", "technology", "vehicle_type", "subsector_L1")]
+          
+        }
 
       }
 

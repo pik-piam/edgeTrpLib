@@ -17,7 +17,39 @@ createRDS <- function(input_path, data_path, SSP_scenario, EDGE_scenario){
 
   ## function that loads the csv input files and converts them into RDS local files
   csv2RDS = function(pattern, filename, input_path, names_dt){
-    tmp=fread(paste0(input_path, pattern, ".cs4r"), stringsAsFactors = FALSE, col.names = names_dt, skip = 4)[SSPscen == SSP_scenario & EDGEscen == EDGE_scenario][, -c("SSPscen", "EDGEscen")]
+    # Use EDGE_scenario values from ONE scenario if it is not "ElecEraEur" or "ElecEraEurWise" (the default case)
+    if (!(EDGE_scenario %in% c("ElecEraEur", "ElecEraEurWise"))){
+        tmp=fread(paste0(input_path, pattern, ".cs4r"), stringsAsFactors = FALSE, col.names = names_dt, skip = 4)[SSPscen == SSP_scenario & EDGEscen == EDGE_scenario][, -c("SSPscen", "EDGEscen")]
+    
+    # Use "ElecEra" or "ElecEraWise" values for EUR and "ConvCase" values for ROW if EDGE_scenario is "ElecEraEur" or "ElecEraEurWise", respectively
+    } else {
+        # Read ConvCase for all regions
+        tmp=fread(paste0(input_path, pattern, ".cs4r"), stringsAsFactors = FALSE, col.names = names_dt, skip = 4)[SSPscen == SSP_scenario & EDGEscen == "ConvCase"][, -c("SSPscen", "EDGEscen")]
+        
+        # Check if there is a `region` column present
+        if ("region" %in% names(tmp)){
+            # If data is regional, load values from "ElecEraEur" or "ElecEraEurWise" for EUR
+            if (EDGE_scenario == "ElecEraEur"){
+                tmp_EUR=fread(paste0(input_path, pattern, ".cs4r"), stringsAsFactors = FALSE, col.names = names_dt, skip = 4)[SSPscen == SSP_scenario & EDGEscen == "ElecEra"][, -c("SSPscen", "EDGEscen")]
+            } else if (EDGE_scenario == "ElecEraEurWise"){
+                tmp_EUR=fread(paste0(input_path, pattern, ".cs4r"), stringsAsFactors = FALSE, col.names = names_dt, skip = 4)[SSPscen == SSP_scenario & EDGEscen == "ElecEraWise"][, -c("SSPscen", "EDGEscen")]
+            } else {
+                stop("Wrong EDGE_scenario! (Should not happen)")
+            }
+
+            # Overwrite values for EUR with those from "ElecEraEur" or "ElecEraEurWise"
+            tmp <- rbind(
+              tmp[tmp$region         != "EUR",],
+              tmp_EUR[tmp_EUR$region == "EUR",]
+            )
+            rm(tmp_EUR)
+        
+        # If there is no region column present, throw a warning and use ConvCase as the global values (i.e. also for EUR)
+        } else {
+            warning(paste0(paste0(input_path, pattern, ".cs4r"), " does not contain a `region` column. Use ConvCase as global value (i.e. also for EUR)."))
+        }
+    }
+
     tmp[,vehicle_type := gsub("DOT", ".", vehicle_type)]
     tmp_list <- split(tmp,tmp$entry)
 

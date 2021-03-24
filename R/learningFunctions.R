@@ -169,6 +169,16 @@ calc_num_vehicles_stations <- function(norm_dem, ES_demand_all, techswitch, load
    stations[technology != "BEV",  statnum := vehicles_number*  ## in trillion veh
                                               1e6/              ## in kveh
                                               1000]             ## in stations
+ } else if (techswitch ==  "BEV_EUR") {
+    ## industry and policymakers in regions other than EUR don't push BEVs in case the scenario is BEV_EUR
+    stations[(technology == "BEV") & (region != "EUR"),  statnum := 0.7*               ## BEV do not take over due to the dispreference
+                                              vehicles_number*  ## in trillion veh
+                                              1e6/              ## in kveh
+                                              1000]             ## in stations
+
+   stations[(technology != "BEV") | (technology == "BEV" & region=="EUR"),  statnum := vehicles_number*  ## in trillion veh
+                                              1e6/              ## in kveh
+                                              1000]             ## in stations
  }
  
  else {
