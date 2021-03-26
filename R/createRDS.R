@@ -17,22 +17,30 @@ createRDS <- function(input_path, data_path, SSP_scenario, EDGE_scenario){
 
   ## function that loads the csv input files and converts them into RDS local files
   csv2RDS = function(pattern, filename, input_path, names_dt){
-    # Use EDGE_scenario values from ONE scenario if it is not "ElecEraEur" or "ElecEraEurWise" (the default case)
-    if (!(EDGE_scenario %in% c("ElecEraEur", "ElecEraEurWise"))){
+    # Use EDGE_scenario values from ONE scenario if it is not "ElecEraEur",
+    # "ElecEraEurWise" or "ConvCaseEurWise". This is the default option.
+    if (!(EDGE_scenario %in% c("ElecEraEur", "ElecEraEurWise", "ConvCaseEurWise"))){
         tmp=fread(paste0(input_path, pattern, ".cs4r"), stringsAsFactors = FALSE, col.names = names_dt, skip = 4)[SSPscen == SSP_scenario & EDGEscen == EDGE_scenario][, -c("SSPscen", "EDGEscen")]
     
-    # Use "ElecEra" or "ElecEraWise" values for EUR and "ConvCase" values for ROW if EDGE_scenario is "ElecEraEur" or "ElecEraEurWise", respectively
+    # Use "ElecEra", "ElecEraWise" or "ConvCaseWise" values for EUR and 
+    # "ConvCase" values for ROW if EDGE_scenario is "ElecEraEur", 
+    # "ElecEraEurWise" or "ConvCaseEurWise" respectively. These are (so far)
+    # the only regionalized versions of EDGE-T scenarios.
     } else {
         # Read ConvCase for all regions
         tmp=fread(paste0(input_path, pattern, ".cs4r"), stringsAsFactors = FALSE, col.names = names_dt, skip = 4)[SSPscen == SSP_scenario & EDGEscen == "ConvCase"][, -c("SSPscen", "EDGEscen")]
         
         # Check if there is a `region` column present
         if ("region" %in% names(tmp)){
-            # If data is regional, load values from "ElecEraEur" or "ElecEraEurWise" for EUR
+            # If data is regional, load values from "ElecEra",
             if (EDGE_scenario == "ElecEraEur"){
                 tmp_EUR=fread(paste0(input_path, pattern, ".cs4r"), stringsAsFactors = FALSE, col.names = names_dt, skip = 4)[SSPscen == SSP_scenario & EDGEscen == "ElecEra"][, -c("SSPscen", "EDGEscen")]
+            # or from "ElecEraWise"
             } else if (EDGE_scenario == "ElecEraEurWise"){
                 tmp_EUR=fread(paste0(input_path, pattern, ".cs4r"), stringsAsFactors = FALSE, col.names = names_dt, skip = 4)[SSPscen == SSP_scenario & EDGEscen == "ElecEraWise"][, -c("SSPscen", "EDGEscen")]
+            # or from "ConvCaseWise"
+            } else if (EDGE_scenario == "ConvCaseEurWise"){
+                tmp_EUR=fread(paste0(input_path, pattern, ".cs4r"), stringsAsFactors = FALSE, col.names = names_dt, skip = 4)[SSPscen == SSP_scenario & EDGEscen == "ConvCaseWise"][, -c("SSPscen", "EDGEscen")]
             } else {
                 stop("Wrong EDGE_scenario! (Should not happen)")
             }
