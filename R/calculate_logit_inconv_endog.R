@@ -21,7 +21,8 @@ calculate_logit_inconv_endog = function(prices,
                                         price_nonmot,
                                         techswitch,
                                         stations = NULL,
-                                        totveh = NULL) {
+                                        totveh = NULL,
+                                        ban_ICE = 0) {
 
   tot_price <- non_fuel_price <- subsector_L3 <- logit.exponent <- share <- sw <- time_price <- NULL
   tot_VOT_price <- `.` <- fuel_price_pkm <- subsector_L1 <- D <- index_yearly <- pinco <- NULL
@@ -390,6 +391,9 @@ calculate_logit_inconv_endog = function(prices,
         } else {
           floor = 0
         }
+        
+        ## If the ICE phase out scenario is chosen, ICEs are banned even stricter
+        if (ban_ICE == 1) floor = floor * 2
 
         ## inconvenience cost for liquids is allowed to increase in case they are not the favoured technology
         ## For all regions in the default scenarios
