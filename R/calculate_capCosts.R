@@ -37,7 +37,8 @@ calculate_capCosts <-function(base_price, Fdemand_ES, stations,
   ## merge with the stations costs
   data = merge(data, stations, all = TRUE, by = c("teEs", "region", "year"))
   data[is.na(cost_st_km), cost_st_km := 0]
-  data[, non_fuel_price := non_fuel_price + cost_st_km][, cost_st_km := NULL]
+  ## temporarily set to 0 the station costs
+  data[, cost_st_km := NULL]
 
   non_fuel_price = melt(data, id.vars = c("region", "year", "teEs"),
                             measure.vars = c("non_fuel_price"))
