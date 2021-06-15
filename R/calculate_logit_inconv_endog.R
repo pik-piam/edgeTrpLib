@@ -393,7 +393,10 @@ calculate_logit_inconv_endog = function(prices,
         }
         
         ## If the ICE phase out scenario is chosen, ICEs are banned even stricter
-        if (ban_ICE == 1) floor = floor * 2
+        if (ban_ICE == 1) {
+          print("Strong phase out of ICEs (increase inconvenience costs even stronger")
+          floor = floor * 2
+        }
 
         ## inconvenience cost for liquids is allowed to increase in case they are not the favoured technology
         ## For all regions in the default scenarios

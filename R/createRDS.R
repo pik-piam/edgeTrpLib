@@ -45,7 +45,7 @@ createRDS <- function(input_path, data_path, SSP_scenario, EDGE_scenario){
                 stop("Wrong EDGE_scenario! (Should not happen)")
             }
 
-            # Overwrite values for EUR with those from "ElecEraEur" or "ElecEraEurWise"
+            # Overwrite values for EUR with those from "ElecEraEur", "ElecEraEurWise" or "ConvCaseEurWise"
             tmp <- rbind(
               tmp[tmp$region         != "EUR",],
               tmp_EUR[tmp_EUR$region == "EUR",]
