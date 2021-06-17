@@ -20,8 +20,6 @@ calculate_logit_inconv_endog = function(prices,
                                         intensity_data,
                                         price_nonmot,
                                         techswitch,
-                                        stations = NULL,
-                                        totveh = NULL,
                                         ban_ICE = 0,
                                         totveh = NULL) {
 
