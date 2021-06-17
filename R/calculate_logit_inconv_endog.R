@@ -8,8 +8,8 @@
 #' @param intensity_data logit level intensity data
 #' @param price_nonmot price of non-motorized modes in the logit tree
 #' @param techswitch technology that the policymaker wants to promote
-#' @param stations share of stations offering the different fuels
-#' @param totveh total demand for LDVs by tecnology
+#' @param ban_ICE stronger phase out of ICE cars if 1 (0 by default)
+#' @param totveh total demand for LDVs by tecnology, in million veh
 #' @import data.table
 #' @export
 
@@ -22,14 +22,15 @@ calculate_logit_inconv_endog = function(prices,
                                         techswitch,
                                         stations = NULL,
                                         totveh = NULL,
-                                        ban_ICE = 0) {
+                                        ban_ICE = 0,
+                                        totveh = NULL) {
 
   tot_price <- non_fuel_price <- subsector_L3 <- logit.exponent <- share <- sw <- time_price <- NULL
   tot_VOT_price <- `.` <- fuel_price_pkm <- subsector_L1 <- D <- index_yearly <- pinco <- NULL
   shareVS1 <- sw <- region <- vehicle_type <- shareFS1 <- weighted_sharessum <- NULL
   technology <- cluster <- combined_shareEL <- combined_shareLiq <- tail <- NULL
   sector <- subsector_L2 <- MJ_km <- EJ_Mpkm_final <- type <- dpp_nfp <- fuel_price <- value_time <- NULL
-  logit_type <- pchar <- pinco_tot <- pmod_av <- prange <- pref <- prisk <- fracst <- NULL
+  logit_type <- pchar <- pinco_tot <- pmod_av <- prange <- pref <- prisk <- NULL
 
   ## X2Xcalc is used to traverse the logit tree, calculating shares and intensities
   X2Xcalc <- function(prices, pref_data, logit_params, value_time, mj_km_data, level_base, level_next, group_value) {
@@ -107,7 +108,7 @@ calculate_logit_inconv_endog = function(prices,
 
 
 
-  F2Vcalc <- function(prices, pref_data, logit_params, value_time, mj_km_data, group_value, stations, totveh, techswitch) {
+  F2Vcalc <- function(prices, pref_data, logit_params, value_time, mj_km_data, group_value, totveh, techswitch) {
     vehicles_number <- NULL
     final_prefFV <- pref_data[["FV_final_pref"]]
     final_prefVS1 <- pref_data[["VS1_final_pref"]]
@@ -197,30 +198,6 @@ calculate_logit_inconv_endog = function(prices,
     Ddt[, D := 1-((index_yearly-0.5)/paux)^4]
     Ddt[, D := ifelse(D<0,0,D)]
 
-
-    if (is.null(stations)) {
-      stations = CJ(region =unique(df[, region]), year = unique(df[, year]), technology = c("BEV", "NG", "FCEV"))
-      stations[, fracst := 1]
-      ## attribute a very low value to current available refuelling stations with alternative fuels
-      stations[year == 2020, fracst := 0.01]
-
-      if (techswitch == "FCEV") {
-       ## policymaker plans many hydrogen refuelling points: all stations have H2 available by 2050
-       yearconv = 2050
-       stations[year <= yearconv & technology == "FCEV", fracst := (fracst[year == 2020]-fracst[year == yearconv])/(2020-yearconv)*(year-2020)+fracst[year==2020], by = c("region", "technology")]
-       ## policymaker plans to install few electricity rechargers: in 2100 only 10% of stations have them
-       stations[year <= 2100 & technology == "BEV", fracst := (fracst[year == 2020]-0.1)/(2020-2100)*(year-2020)+fracst[year==2020], by = c("region", "technology")]
-       stations[year >= 2100 & technology == "BEV", fracst := 0.1]
-
-       ## NG stations are converging to 1 in 2100
-       stations[year <= 2100 & technology == "NG", fracst := (fracst[year == 2020]-fracst[year == 2100])/(2020-2100)*(year-2020)+fracst[year==2020], by = c("region", "technology")]
-
-       } else {
-        ## stations converge to 1 in 2100
-        stations[year <= 2100, fracst := (fracst[year == 2020]-fracst[year == 2100])/(2020-2100)*(year-2020)+fracst[year==2020], by = c("region", "technology")]
-      }
-    }
-
     ## in case the total vehicle number is not provided, 1 is attributed
     if (is.null(totveh)) {
       totveh = CJ(region =unique(df[, region]), year = seq(2020, 2100, 1))
@@ -305,22 +282,21 @@ calculate_logit_inconv_endog = function(prices,
       bmodelav = -12   ## value based on Greene 2001
       coeffrisk = 3800 ## value based on Pettifor 2017
 
-      ## merge with fraction of stations offering fuel
-      tmp = merge(tmp, stations, by = c("region", "year", "technology"), all.x = TRUE)
-      tmp[is.na(fracst), fracst := 0]
-      ## Calculate trend of inconvenience costs components
-      tmp[, pref := ifelse(year == t,
-                            pref[year == 2020]*exp(1)^(fracst[year == (t-1)]*bfuelav),
-                            pref), by = c("region", "technology", "vehicle_type", "subsector_L1")]
 
       ## Hotfix: CHN has very low costs for NG, which leads to unstable NG behavior. Temporarily constrained to 2020 values
       tmp[technology == "NG", pref := ifelse(year == t,
-							  pmax(0.8*pref[year == 2020], pref[year == 2020]*exp(1)^(fracst[year == (t-1)]*bfuelav)),
+							  pmax(0.8*pref[year == 2020], pref[year == 2020]*exp(1)^(weighted_sharessum[year == (t-1)]*bfuelav)),
 							  pref), by = c("region", "technology", "vehicle_type", "subsector_L1")]
 
+      ## range anxiety for BEVs
       tmp[, prange := ifelse(year == t,
-                           prange[year == 2020]*exp(1)^(fracst[year == (t-1)]*bfuelav),
-                           prange), by = c("region", "technology", "vehicle_type", "subsector_L1")]
+                             prange[year == 2020]*exp(1)^(weighted_sharessum[year == (t-1)]*bfuelav),
+                             prange), by = c("region", "technology", "vehicle_type", "subsector_L1")]
+
+      ## Calculate trend of refuelling availability costs component
+      tmp[, pref := ifelse(year == t,
+                           pref[year == 2020]*exp(1)^(weighted_sharessum[year == (t-1)]*bfuelav),
+                           pref), by = c("region", "technology", "vehicle_type", "subsector_L1")]
 
       ## the phase-in of BEVs should not be too abrupt
       if (t <= 2033) {
@@ -340,42 +316,6 @@ calculate_logit_inconv_endog = function(prices,
                                                  prange), by = c("region", "technology", "vehicle_type", "subsector_L1")]
 
       }
-
-      if (techswitch == "FCEV") {
-        ## the policymaker pushes carmakers and car retailers to provide FCEVs models, resulting in a decrease in model availability cost for H2 vehicles
-        if (t >= 2025 & t<=2026) {
-        mult = 0.9
-        } else if (t > 2026 & t <=2027) {
-        mult = 0.7
-        } else if (t > 2027 & t <=2030) {
-        mult = 0.6
-        } else if (t >2030 & t <= 2035) {
-        mult = 0.5
-        } else if (t > 2035 & t <= 2040){
-        mult = 0.7
-        } else {
-        mult = 1
-        }
-
-        tmp[technology == "FCEV", pmod_av := ifelse(year == t,
-                                mult*pmod_av[year == 2020]*exp(1)^(weighted_sharessum[year == (t-1)]*bmodelav),
-                                pmod_av), by = c("region", "technology", "vehicle_type", "subsector_L1")]
-
-
-        ## for all other vehicles, the model availability cost is the same as in the input
-        tmp[technology != "FCEV", pmod_av := ifelse(year == t,
-                                pmod_av[year == 2020]*exp(1)^(weighted_sharessum[year == (t-1)]*bmodelav),
-                                pmod_av), by = c("region", "technology", "vehicle_type", "subsector_L1")]
-
-     } else {
-        tmp[, pmod_av := ifelse(year == t,
-                                pmod_av[year == 2020]*exp(1)^(weighted_sharessum[year == (t-1)]*bmodelav),
-                                pmod_av), by = c("region", "technology", "vehicle_type", "subsector_L1")]
-     }
-
-      tmp[, prisk := ifelse(year == t,
-                            pmax(prisk[year == 2020]-coeffrisk*weighted_sharessum[year == (t-1)], 0),
-                            prisk), by = c("region", "technology", "vehicle_type", "subsector_L1")]
 
       if (techswitch %in% c("BEV", "FCEV", "BEV_EUR")) {
 
@@ -398,12 +338,27 @@ calculate_logit_inconv_endog = function(prices,
           floor = floor * 2
         }
 
-        ## inconvenience cost for liquids is allowed to increase in case they are not the favoured technology
-        ## For all regions in the default scenarios
-        if(techswitch != "BEV_EUR"){
-            tmp[technology == "Liquids", pinco_tot := ifelse(year == t,
-                                      0.5*exp(1)^(weighted_sharessum[year == (t-1)]*bmodelav),
-                                      pinco_tot), by = c("region", "technology", "vehicle_type", "subsector_L1")]
+      } else {
+        ## the policymaker bans ICEs increasingly more strictly
+        if (t >= 2023 & t < 2025) {
+          floor = 0.02
+        } else if (t >= 2025 & t < 2027) {
+          floor = 0.05
+        } else if (t >= 2027 & t <=2030) {
+          floor = 0.07
+        } else if (t > 2030) {
+          floor = 0.1
+        } else {
+          floor = 0
+        }
+      }
+
+      ## inconvenience cost for liquids is allowed to increase
+      ## For all regions in the default scenarios
+      if(techswitch != "BEV_EUR"){
+        tmp[technology == "Liquids", pinco_tot := ifelse(year == t,
+                                   0.5*exp(1)^(weighted_sharessum[year == (t-1)]*bmodelav),
+                                   pinco_tot), by = c("region", "technology", "vehicle_type", "subsector_L1")]
 
 
             tmp[technology == "Liquids", pinco_tot := ifelse(year == t,
@@ -411,7 +366,7 @@ calculate_logit_inconv_endog = function(prices,
                                       pinco_tot), by = c("region", "technology", "vehicle_type", "subsector_L1")]
         
         ## Only for EUR in case of techswitch == "BEV_EUR"
-        } else {
+      } else {
             tmp[region == "EUR" & technology == "Liquids", pinco_tot := ifelse(year == t,
                                       0.5*exp(1)^(weighted_sharessum[year == (t-1)]*bmodelav),
                                       pinco_tot), by = c("region", "technology", "vehicle_type", "subsector_L1")]
@@ -420,9 +375,6 @@ calculate_logit_inconv_endog = function(prices,
             tmp[region == "EUR" & technology == "Liquids", pinco_tot := ifelse(year == t,
                                       pmax(pinco_tot, floor),
                                       pinco_tot), by = c("region", "technology", "vehicle_type", "subsector_L1")]
-          
-        }
-
       }
 
       ## hybrid electric inconvenience cost cannot decrease below 50% of 2020 value
@@ -430,20 +382,13 @@ calculate_logit_inconv_endog = function(prices,
                                pmax(pmod_av, 0.5*pmod_av[year == 2020]),
                                pmod_av), by = c("region", "technology", "vehicle_type", "subsector_L1")]
 
-      tmp[technology %in% c("Hybrid Liquids"), pmod_av := ifelse(year == t,
-                               pmax(pmod_av, 0.8*pmod_av[year == 2020]),
-                               pmod_av), by = c("region", "technology", "vehicle_type", "subsector_L1")]
-
-
-
-
       ## annual sales, needed for reporting purposes
       if (t == 2101) {
         annual_sales = tmp[year<=2100, c("region", "year", "technology", "shareFS1", "vehicle_type", "subsector_L1", "share")]
       }
 
       ## remove "temporary" columns
-      tmp[, c("shareFS1","D",  "weighted_sharessum", "index_yearly", "fracst") := NULL]
+      tmp[, c("shareFS1","D",  "weighted_sharessum", "index_yearly") := NULL]
 
       if (t<tail(futyears_all,1)) {
         tmp1 = copy(tmp)
@@ -569,7 +514,6 @@ calculate_logit_inconv_endog = function(prices,
                     mj_km_data = mj_km_data,
                     group_value = "vehicle_type",
                     techswitch = techswitch,
-                    stations = stations,
                     totveh = totveh)
 
   FV <- FV_all[["df"]]

@@ -95,7 +95,6 @@ shares_intensity_and_demand <- function(logit_shares,
     demandF = rbind(demandFPIH[,MJ_km := NULL], demandF[technology != "Hybrid Electric"][,MJ_km := NULL])
     demandF = demandF[,.(demand_EJ = sum(demand_EJ), demand_F = sum(demand_F)),
             by = c("year","region", "sector", "subsector_L3", "subsector_L2","subsector_L1", "vehicle_type", "technology")]
-    ## demandF_plot_pkm = rbind(demandNM, demandF[,c("demand_F", "year","region", "sector", "subsector_L3", "subsector_L2","subsector_L1", "vehicle_type", "technology")])
     demandF_plot_EJ = copy(demandF)
 
     ## first I need to merge with a mapping that represents how the entries match to the CES
