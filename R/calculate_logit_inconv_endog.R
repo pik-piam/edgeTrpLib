@@ -294,13 +294,13 @@ calculate_logit_inconv_endog = function(prices,
       if (t <= 2033) {
 
         if (t <= 2025) {
-          mult = 0.8
-        } else if (t > 2025 & t < 2028) {
           mult = 0.6
+        } else if (t > 2025 & t < 2028) {
+          mult = 0.5
         } else if (t >= 2028 & t <=2030) {
-          mult = 0.4
-        } else if (t >2030 & t <= 2033) {
           mult = 0.2
+        } else if (t >2030 & t <= 2033) {
+          mult = 0.1
         }
 
         tmp[technology == "BEV", prange :=ifelse(year == t,
@@ -315,10 +315,8 @@ calculate_logit_inconv_endog = function(prices,
         if (t >= 2023 & t < 2025) {
           floor = 0.05
         } else if (t >= 2025 & t < 2027) {
-          floor = 0.1
-        } else if (t >= 2027 & t <=2030) {
           floor = 0.15
-        } else if (t > 2030) {
+        } else if (t >=2027) {
           floor = 0.2
         } else {
           floor = 0
@@ -327,12 +325,10 @@ calculate_logit_inconv_endog = function(prices,
       } else {
         ## the policymaker bans ICEs increasingly more strictly
         if (t >= 2023 & t < 2025) {
-          floor = 0.02
+          floor = 0.03
         } else if (t >= 2025 & t < 2027) {
-          floor = 0.05
-        } else if (t >= 2027 & t <=2030) {
           floor = 0.07
-        } else if (t > 2030) {
+        } else if (t >=2027) {
           floor = 0.1
         } else {
           floor = 0
