@@ -17,24 +17,6 @@ calcVint <- function(shares, totdem_regr, prices, mj_km_data, years){
   index <- value <- shareVS1 <- shareFV <- shareFVVS1 <- variable <- demVintEachYear <- NULL
   vintdem <- sharetech <- sharetech_vint <- sharetech_new <- relative_share <- NULL
   non_fuel_price <- non_fuel_price_vint <- tot_price <- fuel_price_pkm <- MJ_km <- MJ_km_vint <- NULL
-  ## function that allows to calculate , given the depreciation trend for the capacity built before 2010
-  find2010cap = function(percentage, dem, cap, Ddt){
-    Cap_2010x = copy(dem)
-    Cap_2010x = Cap_2010x[, totdem := percentage*totdem]
-    setnames(Cap_2010x, old = "totdem", new = "C_2010x")
-    ## apply the starting value to all time steps
-    Cap_2010x[, C_2010x := C_2010x[year == baseyear], by = c("region", "subsector_L1", "sector")]
-    ## apply depreciation and clean up data
-    Cap_2010x = merge(Cap_2010x, Ddt_2010_new[, year:= tall], by = "year")
-    Cap_2010x = Cap_2010x[, C_2010x := C_2010x*D]
-    Cap_2010x = Cap_2010x[, c("region", "sector", "subsector_L1", "year", "C_2010x")]
-    Cap_2010x = merge(Cap_2010x, Ddt_2010_new[, year:= tall], by = "year")
-    Cap_2010x = Cap_2010x[, C_2010x := C_2010x*D]
-    Cap_2010x[, c("index", "D"):= NULL]
-    setnames(Cap_2010x, old = "C_2010x", new =paste0("C_2010", cap))
-    return(Cap_2010x)
-  }
-
   ## vintages all equal time steps, equal to 1 year
   tall = seq(2010, 2100,1)
   ## last historical year
@@ -56,42 +38,70 @@ calcVint <- function(shares, totdem_regr, prices, mj_km_data, years){
   dem = totdem_regr[sector %in% c("trn_pass", "trn_freight")]
   dem = merge(dem, shares_vt, by = c("region", "year", "sector"))
   dem[, totdem := demand*share][, c("demand", "share") := NULL]
-
   dem = approx_dt(dt = dem, xdata = tall,                       ## extrapolate to the whole time frame
                       xcol="year", ycol="totdem",
                       idxcols = c("region", "subsector_L1", "sector"),
                       extrapolate=T)
 
-  paux = 15   ## approximate lifetime of a car
+  paux = data.table(subsector_L1 = c("trn_pass_road_LDV_4W",
+                                     "Bus_tmp_subsector_L1",
+                                     "trn_freight_road_tmp_subsector_L1"),
+                    lifetime = c(15, 10, 10))   ## approximate lifetime of each vehicle
   Ddt = data.table(index_yearly = seq(1,length(tall)-1,1))
-  Ddt[, D := 1-((index_yearly-0.5)/paux)^4]
-  Ddt[, D := ifelse(D<0,0,D)]
+  Ddt = CJ(index_yearly= Ddt$index_yearly, subsector_L1 = unique(paux$subsector_L1))
+  Ddt = merge(Ddt, paux, by = "subsector_L1")
 
+  Ddt[, D := 1-((index_yearly-0.5)/lifetime)^4, by = "subsector_L1"]
+  Ddt[, D := ifelse(D<0,0,D)]
+  Ddt[, lifetime := NULL]
   ## first time step has no depreciation
-  Ddt = rbind(data.table(index_yearly = 0, D = 1), Ddt)
+  Ddt = rbind(data.table(index_yearly = 0, D = 1, subsector_L1 = unique(paux$subsector_L1)), Ddt)
 
   ## composition of 2010 is from equal contributions from the 14 years before, +1 (2010 itself)
-  sum_dep = sum(Ddt[, D]) ## each year has same weight (new additions each year are constant)
+  sum_dep = Ddt[, sum_dep := sum(D), by = subsector_L1] ## each year has same weight (new additions each year are constant)
+  sum_dep = unique(sum_dep[,c("subsector_L1", "sum_dep")])
   Cap_eachyear = dem[year == 2010][, year:=NULL]
+  Cap_eachyear = merge(sum_dep, Cap_eachyear, by = "subsector_L1")
   Cap_eachyear[, totdem := totdem/sum_dep]
-  years_past = data.table(index_yearly = seq(0,15,1))
-  ## all the yearly additions (from 1995) depreciate at the same pace, each starting at its original year
-  Cap_eachyear = setkey(Cap_eachyear[, c(k=1,.SD)], k)[years_past[, c(k=1, .SD)], allow.cartesian=TRUE][, k := NULL]
-  Cap_2010 = merge(Cap_eachyear, Ddt, all.x=TRUE)
+  Cap_eachyear[, sum_dep:=NULL]
+  lf_LDV = 15
+  lf_bus = 10
+  lf_truck = 10
+  years_past = data.table(subsector_L1 = c(rep("trn_pass_road_LDV_4W", lf_LDV +1),
+                                        rep("Bus_tmp_subsector_L1", lf_bus +1),
+                                        rep("trn_freight_road_tmp_subsector_L1", lf_truck + 1)),
+                          index_yearly = c(seq(0,lf_LDV,1), seq(0,lf_bus,1), seq(0,lf_truck,1)))
+  ## all the yearly additions (from the year before the lifetime, e.g. 1995 if 15 years lf) depreciate at the same pace, each starting at its original year
+  Cap_eachyear = merge(Cap_eachyear, years_past, by = "subsector_L1", allow.cartesian=TRUE)
+  Cap_eachyear[, sum_dep:=NULL]
+  Cap_2010 = merge(Cap_eachyear, Ddt, all.x=TRUE, by = c("subsector_L1", "index_yearly"))
   Cap_2010[, totdem := totdem*D]
   ## attribute an year of origin to all the initial capacities
-  years_origin = data.table(years_origin=seq(1995,2010,1)) ##oldest non 0 value is 1995, since it all previous vehicles depreciated to 0
-  Cap_2010 = setkey(Cap_2010[, c(k=1, .SD)], k)[years_origin[, c(k=1,.SD)], allow.cartesian=TRUE][, k := NULL]
+  years_originLDV = CJ(years_origin=seq(2010-paux[subsector_L1=="trn_pass_road_LDV_4W", lifetime],2010,1),index_yearly = c(seq(0,15,1))) ##oldest non 0 value is 1995, since it all previous vehicles depreciated to 0
+  years_originBus = CJ(years_origin=seq(2010-paux[subsector_L1=="Bus_tmp_subsector_L1", lifetime],2010,1),index_yearly = c(seq(0,10,1))) ##oldest non 0 value is 1995, since it all previous vehicles depreciated to 0
+  years_originTruck = CJ(years_origin=seq(2010-paux[subsector_L1=="trn_freight_road_tmp_subsector_L1", lifetime],2010,1),index_yearly = c(seq(0,10,1))) ##oldest non 0 value is 1995, since it all previous vehicles depreciated to 0
+
+  Cap_2010_LDV = merge(Cap_2010[subsector_L1=="trn_pass_road_LDV_4W"], years_originLDV, by = c("index_yearly"), allow.cartesian=T)
+  Cap_2010_Bus = merge(Cap_2010[subsector_L1=="Bus_tmp_subsector_L1"], years_originBus, by = c("index_yearly"), allow.cartesian=T)
+  Cap_2010_Truck = merge(Cap_2010[subsector_L1=="trn_freight_road_tmp_subsector_L1"], years_originTruck, by = c("index_yearly"), allow.cartesian=T)
+  Cap_2010=rbind(Cap_2010_LDV,Cap_2010_Bus,Cap_2010_Truck)
+
   ## what survives in every year depends on when the sales were done and the years the car is old
   Cap_2010[, year := years_origin + index_yearly]
   Cap_2010 = Cap_2010[year>=2010, .(C_2010=sum(totdem)), by = c("region","year","subsector_L1", "sector")]
+  Cap_2010 = rbind(Cap_2010,
+                   Cap_2010[year>=(2010+lf_LDV-lf_Bus)&year<=(2010+lf_LDV) & subsector_L1=="trn_pass_road_LDV_4W"][, c("subsector_L1", "C_2010"):=list("Bus_tmp_subsector_L1", 0)],
+                   Cap_2010[year>=(2010+lf_LDV-lf_truck)&year<=(2010+lf_LDV) & subsector_L1=="trn_pass_road_LDV_4W"][, c("subsector_L1", "sector", "C_2010"):=list("trn_freight_road_tmp_subsector_L1", "trn_freight", 0)])
   ## after the last year when 2010 sales disappear from the fleet, all values should be 0
   tmp = CJ(
-    year = seq(2026,2100,1),
+    year = seq(lf_LDV + 1,2100,1),
     region = unique(Cap_2010$region),
     subsector_L1 = unique(Cap_2010$subsector_L1),
     sector = unique(Cap_2010$sector),
     C_2010 = 0)
+
+  tmp = tmp[subsector_L1 %in% c("trn_pass_road_LDV_4W", "Bus_tmp_subsector_L1") & sector == "trn_pass" | subsector_L1 == "trn_freight_road_tmp_subsector_L1" & sector == "trn_freight"]
+
   Cap_2010 = rbind(Cap_2010, tmp)
 
   Vint = Cap_2010[year > baseyear]
@@ -103,6 +113,7 @@ calcVint <- function(shares, totdem_regr, prices, mj_km_data, years){
 
   ## create tmp structure that is used in the for loop
   tmp = CJ(year = tall, region = unique(Cap_2010$region), subsector_L1 = unique(Cap_2010$subsector_L1), sector = unique(Cap_2010$sector))
+  tmp = tmp[subsector_L1 %in% c("trn_pass_road_LDV_4W", "Bus_tmp_subsector_L1") & sector == "trn_pass" | subsector_L1 == "trn_freight_road_tmp_subsector_L1" & sector == "trn_freight"]
 
   for (i in seq(1,length(tall)-1,1)) {
     ## time step that is considered in the current iteration
@@ -123,7 +134,10 @@ calcVint <- function(shares, totdem_regr, prices, mj_km_data, years){
     Cval_t = Cval_t[,.(C_t, region, subsector_L1, sector)]
     Cap_t = merge(Cval_t, tmp, by = c("region", "subsector_L1", "sector"))
     ## merge with depreciation (the 1st year is the current one, so there is no depreciation)
-    Cap_t = merge(Cap_t, Ddt[index %in% c(seq(0,length(index)-i-1,1))][, year:= tall[tall>=y]], by = "year") ## smaller than length(index)-i-1
+    Ddt2merge = Ddt[index %in% c(seq(0,length(Ddt[subsector_L1=="trn_pass_road_LDV_4W",index])-i-1,1))]
+    val_purchessia = cbind(index=unique(Ddt2merge$index), year =  tall[tall>=y])
+    Ddt2merge = merge(Ddt2merge, val_purchessia, by = "index")
+    Cap_t = merge(Cap_t, Ddt2merge, by = c("year", "subsector_L1"), allow.cartesian=TRUE) ## smaller than length(index)-i-1
     ## depreciated capacity
     Cap_t = Cap_t[, C_t := C_t*D]
     ## only relevant columns
