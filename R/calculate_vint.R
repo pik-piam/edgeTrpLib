@@ -17,6 +17,7 @@ calcVint <- function(shares, totdem_regr, prices, mj_km_data, years){
   index <- value <- shareVS1 <- shareFV <- shareFVVS1 <- variable <- demVintEachYear <- NULL
   vintdem <- sharetech <- sharetech_vint <- sharetech_new <- relative_share <- NULL
   non_fuel_price <- non_fuel_price_vint <- tot_price <- fuel_price_pkm <- MJ_km <- MJ_km_vint <- NULL
+  lifetime <- years_origin <-NULL
   ## vintages all equal time steps, equal to 1 year
   tall = seq(2010, 2100,1)
   ## last historical year
@@ -90,7 +91,7 @@ calcVint <- function(shares, totdem_regr, prices, mj_km_data, years){
   Cap_2010[, year := years_origin + index_yearly]
   Cap_2010 = Cap_2010[year>=2010, .(C_2010=sum(totdem)), by = c("region","year","subsector_L1", "sector")]
   Cap_2010 = rbind(Cap_2010,
-                   Cap_2010[year>=(2010+lf_LDV-lf_Bus)&year<=(2010+lf_LDV) & subsector_L1=="trn_pass_road_LDV_4W"][, c("subsector_L1", "C_2010"):=list("Bus_tmp_subsector_L1", 0)],
+                   Cap_2010[year>=(2010+lf_LDV-lf_bus)&year<=(2010+lf_LDV) & subsector_L1=="trn_pass_road_LDV_4W"][, c("subsector_L1", "C_2010"):=list("Bus_tmp_subsector_L1", 0)],
                    Cap_2010[year>=(2010+lf_LDV-lf_truck)&year<=(2010+lf_LDV) & subsector_L1=="trn_pass_road_LDV_4W"][, c("subsector_L1", "sector", "C_2010"):=list("trn_freight_road_tmp_subsector_L1", "trn_freight", 0)])
   ## after the last year when 2010 sales disappear from the fleet, all values should be 0
   tmp = CJ(
