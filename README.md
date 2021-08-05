@@ -38,8 +38,7 @@ In case of questions / problems please contact Alois Dirnaichner <dirnaichner@pi
 
 To cite package **edgeTrpLib** in publications use:
 
-Dirnaichner A, Rottoli M (2021). _edgeTrpLib: Helper functions for EDGE
-transport calculations_. R package version 0.1.41.
+Dirnaichner A, Rottoli M (2021). _edgeTrpLib: Helper functions for EDGEtransport calculations_. R package version 0.1.41.
 
 A BibTeX entry for LaTeX users is
 
