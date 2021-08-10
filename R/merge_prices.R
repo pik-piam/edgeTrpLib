@@ -95,13 +95,13 @@ merge_prices <- function(gdx, REMINDmapping, REMINDyears,
     tmp <- mbind(tmp, magclass::setNames(lowpass(lowpass(febal.m[, , "feh2t"]))/(budget.m + 1e-10) * tdptwyr2dpgj, "H2 enduse"))
 
     tmp <- mbind(tmp, magclass::setNames((dimSums(lowpass(febal.m[, , "fedie"] + febal.m[, , "fepet"]), dim=3))/(2*budget.m + 1e-10) * tdptwyr2dpgj, "refined liquids enduse"))
-
     tmp <- magpie2dt(tmp, regioncol = "region", yearcol = "year", datacols = "sector_fuel")
-    test <- tmp[year > 2005 & value <= 0]
+    test <- tmp[year > 2005 & value <= 1]
+
     if(nrow(test)){
-        print(paste("Zero Fuel Prices found. Regions:", unique(test$region)))
+        print(paste("Fuel prices lower than 1$/GJ found. Regions:", unique(test$region)))
         print("The weighted averages of non-zero regions of the corresponding fuel will be used.")
-        tmp[, value := ifelse(value <= 0, mean(value[value>0]), value), by = c("year", "sector_fuel")]
+        tmp[, value := ifelse(value <= 1, mean(value[value>1]), value), by = c("year", "sector_fuel")]
     }
 
     ## define plug in hybrid as consuming 60% liquids and 40% electricity
