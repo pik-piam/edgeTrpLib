@@ -2,7 +2,7 @@
 
 R package **edgeTrpLib**, version **0.1.45**
 
-[![CRAN status](https://www.r-pkg.org/badges/version/edgeTrpLib)](https://cran.r-project.org/package=edgeTrpLib)   [![R build status](https://github.com/pik-piam/edgeTrpLib/workflows/check/badge.svg)](https://github.com/pik-piam/edgeTrpLib/actions) [![codecov](https://codecov.io/gh/pik-piam/edgeTrpLib/branch/master/graph/badge.svg)](https://codecov.io/gh/pik-piam/edgeTrpLib) ![r-universe](https://pik-piam.r-universe.dev/badges/edgeTrpLib)
+[![CRAN status](https://www.r-pkg.org/badges/version/edgeTrpLib)](https://cran.r-project.org/package=edgeTrpLib)   [![R build status](https://github.com/pfuehrlich-pik/edgeTrpLib/workflows/check/badge.svg)](https://github.com/pfuehrlich-pik/edgeTrpLib/actions) [![codecov](https://codecov.io/gh/pfuehrlich-pik/edgeTrpLib/branch/master/graph/badge.svg)](https://codecov.io/gh/pfuehrlich-pik/edgeTrpLib) ![r-universe](https://pik-piam.r-universe.dev/badges/edgeTrpLib)
 
 ## Purpose and Functionality
 
