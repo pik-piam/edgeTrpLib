@@ -309,41 +309,52 @@ calculate_logit_inconv_endog = function(prices,
 
       }
 
+      ## inconvenience for ICEs
       if (techswitch %in% c("BEV", "FCEV")) {
-
-        ## the policymaker bans ICEs increasingly more strictly
-        if (t >= 2023 & t < 2025) {
-          floor = 0.05
-        } else if (t >= 2025 & t < 2027) {
-          floor = 0.15
-        } else if (t >=2027) {
-          floor = 0.2
-        } else {
+        if (t >= 2020 & t <= 2027) {
+          floor = 0.2/7*(t-2020)
+        }
+        else if (t<2020) {
           floor = 0
         }
+        else if (t>2027) {
+          floor = 0.2
+        }
+      }
 
-      } else {
-        ## the policymaker bans ICEs increasingly more strictly
-        if (t >= 2023 & t < 2025) {
-          floor = 0.03
-        } else if (t >= 2025 & t < 2027) {
-          floor = 0.07
-        } else if (t >=2027) {
-          floor = 0.1
-        } else {
+      if (techswitch == "Liq_El") {
+        if (t >= 2020 & t <= 2027) {
+          floor = 0.2/7*(t-2020)
+        }
+        else if (t<2020) {
           floor = 0
+        }
+        else if (t>2027) {
+          floor = 0.2
+        }
+      }
+
+      if (techswitch == "Liquids") {
+        if (t >= 2020 & t <= 2027) {
+           floor = 0.1/7*(t-2020)
+         }
+        else if (t<2020) {
+           floor = 0
+        }
+        else if (t>2027) {
+          floor = 0.1
         }
       }
 
      ## inconvenience cost for liquids is allowed to increase
-        tmp[technology == "Liquids", pinco_tot := ifelse(year == t,
-                                   0.5*exp(1)^(weighted_sharessum[year == (t-1)]*bmodelav),
-                                   pinco_tot), by = c("region", "technology", "vehicle_type", "subsector_L1")]
+     tmp[technology == "Liquids", pinco_tot := ifelse(year == t,
+                                  0.5*exp(1)^(weighted_sharessum[year == (t-1)]*bmodelav),
+                                  pinco_tot), by = c("region", "technology", "vehicle_type", "subsector_L1")]
 
 
-        tmp[technology == "Liquids", pinco_tot := ifelse(year == t,
-                                   pmax(pinco_tot, floor),
-                                   pinco_tot), by = c("region", "technology", "vehicle_type", "subsector_L1")]
+     tmp[technology == "Liquids", pinco_tot := ifelse(year == t,
+                                  pmax(pinco_tot, floor),
+                                  pinco_tot), by = c("region", "technology", "vehicle_type", "subsector_L1")]
 
 
 
