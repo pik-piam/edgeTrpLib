@@ -41,13 +41,10 @@ calculate_logit_inconv_endog = function(prices,
     ## joins the df containing the prices with the df containing the logit exponents
     df <- merge(prices, logit_exponent,
                 by=intersect(names(prices), names(logit_exponent)), all.x = TRUE)
-
     ## joins the previous df with gathe df containing the inconvenience costs
     df <- merge(df, final_pref, by=intersect( names(df),names(final_pref)), all.y=TRUE)
     ## delete entries have tot_price NA (e.g. 1900 BEV)
     df <- df[ !(is.na(tot_price))]
-    ## entries that are not present in the mix have non_fuel_price == 0, but also Walk and Cycle: delete all the not-present in the mix options
-    df <- df[(non_fuel_price>0)|(non_fuel_price==0 & subsector_L3 %in% c("Walk", "Cycle"))]
     ## needs random lambdas for the sectors that are not explicitly calculated
     df <- df[ is.na(logit.exponent), logit.exponent := -10]
 
@@ -134,7 +131,7 @@ calculate_logit_inconv_endog = function(prices,
     ## delete entries have tot_price NA (e.g. 1900 BEV)
     df <- df[ !(is.na(tot_price))]
     ## entries that are not present in the mix have non_fuel_price == 0, but also Walk and Cycle: delete all the not-present in the mix options
-    df <- df[(non_fuel_price>0)|(non_fuel_price==0 & subsector_L3 %in% c("Walk", "Cycle"))]
+    df <- df[(non_fuel_price>0)|(non_fuel_price==0 & subsector_L1 %in% c("Walk", "Cycle"))]
     ## needs random lambdas for the sectors that are not explicitly calculated
     df <- df[ is.na(logit.exponent), logit.exponent := -10]
 
