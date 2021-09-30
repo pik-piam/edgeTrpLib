@@ -7,7 +7,7 @@
 #' @param logit_params contains logit exponents
 #' @param intensity_data logit level intensity data
 #' @param price_nonmot price of non-motorized modes in the logit tree
-#' @param techswitch technology that the policymaker wants to promote
+#' @param tech_scen technology that the policymaker wants to promote
 #' @param totveh total demand for LDVs by tecnology, in million veh
 #' @import data.table
 #' @export
@@ -18,7 +18,7 @@ calculate_logit_inconv_endog = function(prices,
                                         logit_params,
                                         intensity_data,
                                         price_nonmot,
-                                        techswitch,
+                                        tech_scen,
                                         totveh = NULL) {
 
   tot_price <- non_fuel_price <- subsector_L3 <- logit.exponent <- share <- sw <- time_price <- NULL
@@ -104,7 +104,7 @@ calculate_logit_inconv_endog = function(prices,
 
 
 
-  F2Vcalc <- function(prices, pref_data, logit_params, value_time, mj_km_data, group_value, totveh, techswitch) {
+  F2Vcalc <- function(prices, pref_data, logit_params, value_time, mj_km_data, group_value, totveh, tech_scen) {
     vehicles_number <- NULL
     final_prefFV <- pref_data[["FV_final_pref"]]
     final_prefVS1 <- pref_data[["VS1_final_pref"]]
@@ -165,7 +165,7 @@ calculate_logit_inconv_endog = function(prices,
     ## apply the same logit exponent to all the years
     df[, logit.exponent := as.double(logit.exponent)]
     df[, logit.exponent := ifelse(is.na(logit.exponent), mean(logit.exponent, na.rm = TRUE), logit.exponent), by = c("vehicle_type")]
-    if(techswitch %in% c("BEV", "FCEV")) {
+    if(tech_scen %in% c("ElecEra", "HydrHype")) {
       ## logit exponent gets higher in time for LDVs and road freight, doubling by 2035
       df[subsector_L1 %in% c("trn_freight_road_tmp_subsector_L1", "trn_pass_road_LDV_4W") & year >=2020, logit.exponent := ifelse(year <= 2035 & year >= 2020, logit.exponent[year==2020] + (2*logit.exponent[year==2020]-logit.exponent[year==2020]) * (year-2020)/(2035-2020), 2*logit.exponent[year==2020]),
          by=c("region", "vehicle_type", "technology")]
@@ -309,7 +309,7 @@ calculate_logit_inconv_endog = function(prices,
 
       }
 
-      if (techswitch %in% c("BEV", "FCEV")) {
+      if (tech_scen %in% c("ElecEra", "HydrHype")) {
 
         ## the policymaker bans ICEs increasingly more strictly
         if (t >= 2023 & t < 2025) {
@@ -484,7 +484,7 @@ calculate_logit_inconv_endog = function(prices,
                     value_time = value_time,
                     mj_km_data = mj_km_data,
                     group_value = "vehicle_type",
-                    techswitch = techswitch,
+                    tech_scen = tech_scen,
                     totveh = totveh)
 
   FV <- FV_all[["df"]]
