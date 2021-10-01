@@ -6,14 +6,12 @@
 #' @param non_fuel_costs total non fuel costs
 #' @param capcost4W purchase prices of 4W on which learning is applied
 #' @param demand_learntmp the demand for vehicles from the previous iteration
-#' @param rebates_febatesBEV option rebates for BEVs
-#' @param rebates_febatesFCEV option rebates for FCEVs
 #' @param ES_demand the ES demand of the current iteration
 #'
 #' @import data.table
 #' @export
 
-applylearning <- function(non_fuel_costs, capcost4W, gdx, EDGE2teESmap, demand_learntmp, ES_demandpr, ES_demand, rebates_febatesBEV, rebates_febatesFCEV){
+applylearning <- function(non_fuel_costs, capcost4W, gdx, EDGE2teESmap, demand_learntmp, ES_demandpr, ES_demand){
   `.` <- ratio <- demandpr <- vehicles_number <- cumul <- technology <- subsector_L1 <- non_fuel_price <- b <- initialyear <- NULL
   Capital_costs_purchase <- totalNE_cost <- price_component <- NULL
   ## find the estimated number of cars
@@ -51,18 +49,9 @@ applylearning <- function(non_fuel_costs, capcost4W, gdx, EDGE2teESmap, demand_l
   nonfuel_costslearn[, non_fuel_price := totalNE_cost - Capital_costs_purchase]
   nonfuel_costslearn[, c("Capital_costs_purchase", "price_component", "totalNE_cost") := list(NULL, "remainingprice", NULL)]
 
-  if (rebates_febatesBEV) {
-    ## after 2035, the "original" price of 2020 (before the rebates) is used
-    capcost4W[technology == "BEV", non_fuel_price := ifelse(year > 2035, non_fuel_price[year == 2020], non_fuel_price), by = c("region", "vehicle_type", "technology")]
-    capcost4W[technology == "FCEV" & year >= 2020, non_fuel_price := non_fuel_price[year == 2020], by = c("region", "vehicle_type", "technology")]
-  } else if (rebates_febatesFCEV){
-    ## after 2035, the "original" price of 2020 (before the rebates) is used
-    capcost4W[technology == "FCEV", non_fuel_price := ifelse(year > 2035, non_fuel_price[year == 2020], non_fuel_price), by = c("region", "vehicle_type", "technology")]
-    capcost4W[technology == "BEV" & year >= 2020, non_fuel_price := non_fuel_price[year == 2020], by = c("region", "vehicle_type", "technology")]
-  } else {
-    ## in case of no rebates, the price of 2020 applies to all time steps
-    capcost4W[year >= 2020, non_fuel_price := non_fuel_price[year == 2020], by = c("region", "vehicle_type", "technology")]
-  }
+  ## capcost for 4wheelers of 2020 is to be applied to all time steps
+  capcost4W[year >= 2020, non_fuel_price := non_fuel_price[year == 2020], by = c("region", "vehicle_type", "technology")]
+
   capcost4W = merge(demand, capcost4W, all.x = TRUE, by = c("year", "technology"))
   ## powertrain represents ~20% of the total purchase price
   batterycomponent = 0.2 ##
