@@ -5,3 +5,4 @@
 ^\.github$
 ^codecov\.yml$
 ^\.git$
+^\.pre-commit-config\.yaml$

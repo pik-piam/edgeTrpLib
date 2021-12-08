@@ -10,15 +10,16 @@
 #' @importFrom rmndt disaggregate_dt magpie2dt
 #' @importFrom gdx readGDX
 #' @importFrom magclass time_interpolate lowpass dimSums mbind
+#' @importFrom magrittr `%>%`
 #' @export
 
 merge_prices <- function(gdx, REMINDmapping, REMINDyears,
                          intensity_data,
                          nonfuel_costs,
                          module="edge_esm") {
-    sector_fuel <- pih <- value <- fuel_price <- fuel_price_pkm <- EJ_Mpkm_final <- NULL
+    sector_fuel <- ttot <- value <- fuel_price <- fuel_price_pkm <- EJ_Mpkm_final <- NULL
     non_fuel_price <- technology <- GDP_cap <- region <- `.` <- weight <- POP_val <- NULL
-    GDP <- yearconv <- time <- year_at_yearconv <- non_fuel_price_conv <- non_fuel_price_trend <- NULL
+    GDP <- `elect_td_trn` <- time <- `Liquids-Electricity` <- `refined liquids enduse` <- NULL
     vehicle_type <- subsector_L3 <- subsector_L2 <- subsector_L1 <- sector <- tot_price <- NULL
     ## report prices from REMIND gdx in 2005$/MJ
 
