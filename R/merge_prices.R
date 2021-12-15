@@ -9,7 +9,7 @@
 #' @import data.table
 #' @importFrom rmndt disaggregate_dt magpie2dt
 #' @importFrom gdx readGDX
-#' @importFrom magclass time_interpolate lowpass dimSums mbind
+#' @importFrom magclass time_interpolate lowpass dimSums mbind getYears
 #' @importFrom magrittr `%>%`
 #' @export
 
