@@ -9,7 +9,7 @@
 #' @import data.table
 #' @importFrom rmndt disaggregate_dt magpie2dt
 #' @importFrom gdx readGDX
-#' @importFrom magclass time_interpolate lowpass dimSums mbind
+#' @importFrom magclass time_interpolate lowpass dimSums mbind getYears
 #' @importFrom magrittr `%>%`
 #' @export
 
@@ -25,12 +25,12 @@ merge_prices <- function(gdx, REMINDmapping, REMINDyears,
 
     tdptwyr2dpgj <- 31.71  #TerraDollar per TWyear to Dollar per GJ
     CONV_2005USD_1990USD <- 0.67
-    startyear <- 2020
-    years <- REMINDyears[REMINDyears >= startyear]
     ## load entries from the gdx, values below 2020 do not make sense
-    pfe <- readGDX(gdx, "pm_FEPrice", format = "first_found", restore_zeros = FALSE)[, years, "trans.ES", pmatch=TRUE]
+    pfe <- readGDX(gdx, "pm_FEPrice", format = "first_found", restore_zeros = FALSE)[,, "trans.ES", pmatch=TRUE]
+    startyear <- getYears(pfe, as.integer=TRUE)[1]
+    years <- REMINDyears[REMINDyears >= startyear]
     ## smooth prices
-    pfe <- pfe %>% lowpass() %>% magpie2dt()
+    pfe <- pfe[, years] %>% lowpass() %>% magpie2dt()
     pfe[
       , year := as.numeric(ttot)][
       , value := value * tdptwyr2dpgj][ # 2005$ per GJ

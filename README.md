@@ -1,6 +1,6 @@
 # Helper functions for EDGE transport calculations
 
-R package **edgeTrpLib**, version **0.2.0**
+R package **edgeTrpLib**, version **0.2.1**
 
 [![CRAN status](https://www.r-pkg.org/badges/version/edgeTrpLib)](https://cran.r-project.org/package=edgeTrpLib)  [![R build status](https://gitlab.pik-potsdam.de/REMIND/edgetrplib/workflows/check/badge.svg)](https://gitlab.pik-potsdam.de/REMIND/edgetrplib/actions) [![codecov](https://codecov.io/gh/REMIND/edgetrplib/branch/master/graph/badge.svg)](https://codecov.io/gh/REMIND/edgetrplib) [![r-universe](https://pik-piam.r-universe.dev/badges/edgeTrpLib)](https://pik-piam.r-universe.dev/ui#builds)
 
@@ -38,7 +38,7 @@ In case of questions / problems please contact Alois Dirnaichner <dirnaichner@pi
 
 To cite package **edgeTrpLib** in publications use:
 
-Dirnaichner A, Rottoli M (2021). _edgeTrpLib: Helper functions for EDGE transport calculations_. R package version 0.2.0.
+Dirnaichner A, Rottoli M (2021). _edgeTrpLib: Helper functions for EDGE transport calculations_. R package version 0.2.1.
 
 A BibTeX entry for LaTeX users is
 
@@ -47,6 +47,6 @@ A BibTeX entry for LaTeX users is
   title = {edgeTrpLib: Helper functions for EDGE transport calculations},
   author = {Alois Dirnaichner and Marianna Rottoli},
   year = {2021},
-  note = {R package version 0.2.0},
+  note = {R package version 0.2.1},
 }
 ```
