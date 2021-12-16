@@ -28,6 +28,9 @@ merge_prices <- function(gdx, REMINDmapping, REMINDyears,
     ## load entries from the gdx, values below 2020 do not make sense
     pfe <- readGDX(gdx, "pm_FEPrice", format = "first_found", restore_zeros = FALSE)[,, "trans.ES", pmatch=TRUE]
     startyear <- getYears(pfe, as.integer=TRUE)[1]
+    if(startyear < 2020){
+        startyear <- 2020
+    }
     years <- REMINDyears[REMINDyears >= startyear]
     ## smooth prices
     pfe <- pfe[, years] %>% lowpass() %>% magpie2dt()
