@@ -277,8 +277,8 @@ calculate_logit_inconv_endog = function(prices,
 
       ## Hotfix: CHN has very low costs for NG, which leads to unstable NG behavior. Temporarily constrained to 2020 values
       tmp[technology == "NG", pref := ifelse(year == t,
-							  pmax(0.8*pref[year == 2020], pref[year == 2020]*exp(1)^(weighted_sharessum[year == (t-1)]*bfuelav)),
-							  pref), by = c("region", "technology", "vehicle_type", "subsector_L1")]
+                                                          pmax(0.8*pref[year == 2020], pref[year == 2020]*exp(1)^(weighted_sharessum[year == (t-1)]*bfuelav)),
+                                                          pref), by = c("region", "technology", "vehicle_type", "subsector_L1")]
 
       ## range anxiety for BEVs
       tmp[, prange := ifelse(year == t,
@@ -291,49 +291,72 @@ calculate_logit_inconv_endog = function(prices,
                            pref), by = c("region", "technology", "vehicle_type", "subsector_L1")]
 
       ## the phase-in of BEVs should not be too abrupt
-      if (t <= 2033) {
 
-        if (t <= 2025) {
-          mult = 0.6
-        } else if (t > 2025 & t < 2028) {
-          mult = 0.5
-        } else if (t >= 2028 & t <=2030) {
-          mult = 0.2
-        } else if (t >2030 & t <= 2033) {
-          mult = 0.1
-        }
-
-        tmp[technology == "BEV", prange :=ifelse(year == t,
-                                                 pmax(mult*prange[year == 2020], prange),
-                                                 prange), by = c("region", "technology", "vehicle_type", "subsector_L1")]
-
+      linDecrease <- function(x, x0, y0, x1, y1){
+        return(min(y0, max(y1, (y1 - y0)/(x1 - x0) * (x - x0) + y0)))
       }
 
-      if (tech_scen %in% c("ElecEra", "HydrHype")) {
-
-        ## the policymaker bans ICEs increasingly more strictly
-        if (t >= 2023 & t < 2025) {
-          floor = 0.05
-        } else if (t >= 2025 & t < 2027) {
-          floor = 0.15
-        } else if (t >=2027) {
-          floor = 0.2
-        } else {
-          floor = 0
+      switch(
+        tech_scen,
+        "ConvCase" = {
+          mult <- linDecrease(t, 2025, 0.8, 2035, 0.1)
+        },
+        "ElecEra" = {
+          mult <- linDecrease(t, 2025, 0.6, 2035, 0.)
+        },
+        "HydrHype" = {
+          mult <- linDecrease(t, 2025, 0.7, 2035, 0.)
+        },
+        "Mix4" = {
+          mult <- linDecrease(t, 2025, 0.6, 2035, 0.)
+        },
+        "Mix3" = {
+          mult <- linDecrease(t, 2025, 0.7, 2035, 0.1)
+        },
+        "Mix2" = {
+          mult <- linDecrease(t, 2025, 0.8, 2035, 0.15)
+        },
+        "Mix1" = {
+          mult <- linDecrease(t, 2025, 0.9, 2035, 0.2)
         }
+      )
 
-      } else {
-        ## the policymaker bans ICEs increasingly more strictly
-        if (t >= 2023 & t < 2025) {
-          floor = 0.03
-        } else if (t >= 2025 & t < 2027) {
-          floor = 0.07
-        } else if (t >=2027) {
-          floor = 0.1
-        } else {
-          floor = 0
-        }
+      tmp[technology == "BEV", prange :=ifelse(year == t,
+                                               pmax(mult*prange[year == 2020], prange),
+                                               prange), by = c("region", "technology", "vehicle_type", "subsector_L1")]
+
+      
+
+      linIncrease <- function(x, x0, y0, x1, y1){
+        return(min(y1, max(y0, (y1 - y0)/(x1 - x0) * (x - x0) + y0)))
       }
+
+      switch(
+        tech_scen,
+        "ConvCase" = {
+          ## the policymaker bans ICEs increasingly more strictly
+          floor <- linIncrease(t, 2020, 0.0, 2027, 0.1)
+        },
+        "ElecEra" = {
+          floor <- linIncrease(t, 2020, 0.0, 2027, 0.2)
+        },
+        "HydrHype" = {
+          floor <- linIncrease(t, 2020, 0.0, 2027, 0.2)
+        },
+        "Mix4" = {
+          floor <- linIncrease(t, 2020, 0.0, 2027, 0.2)
+        },
+        "Mix3" = {
+          floor <- linIncrease(t, 2020, 0.0, 2027, 0.1)
+        },
+        "Mix2" = {
+          floor <- linIncrease(t, 2020, 0.0, 2027, 0.05)
+        },
+        "Mix1" = {
+          floor <- 0
+        }
+      )
+
 
      ## inconvenience cost for liquids is allowed to increase
         tmp[technology == "Liquids", pinco_tot := ifelse(year == t,
