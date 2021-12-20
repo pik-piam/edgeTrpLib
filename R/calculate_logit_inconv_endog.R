@@ -308,7 +308,7 @@ calculate_logit_inconv_endog = function(prices,
           mult <- linDecrease(t, 2025, 0.7, 2035, 0.)
         },
         "Mix" = {
-          mult <- linDecrease(t, 2025, 0.7, 2035, 0.1)
+          mult <- linDecrease(t, 2025, 0.6, 2035, 0.)
         },
         "Mix4" = {
           mult <- linDecrease(t, 2025, 0.6, 2035, 0.)
