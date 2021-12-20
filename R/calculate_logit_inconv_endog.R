@@ -307,6 +307,9 @@ calculate_logit_inconv_endog = function(prices,
         "HydrHype" = {
           mult <- linDecrease(t, 2025, 0.7, 2035, 0.)
         },
+        "Mix" = {
+          mult <- linDecrease(t, 2025, 0.7, 2035, 0.1)
+        },
         "Mix4" = {
           mult <- linDecrease(t, 2025, 0.6, 2035, 0.)
         },
@@ -342,6 +345,9 @@ calculate_logit_inconv_endog = function(prices,
         },
         "HydrHype" = {
           floor <- linIncrease(t, 2020, 0.0, 2027, 0.2)
+        },
+        "Mix" = {
+          floor <- linIncrease(t, 2020, 0.0, 2027, 0.1)
         },
         "Mix4" = {
           floor <- linIncrease(t, 2020, 0.0, 2027, 0.2)
