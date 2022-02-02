@@ -17,7 +17,10 @@ createRDS <- function(input_path, data_path, SSP_scenario, EDGE_scenario){
 
   ## function that loads the csv input files and converts them into RDS local files
   csv2RDS = function(pattern, filename, input_path, names_dt){
-    tmp=fread(paste0(input_path, pattern, ".cs4r"), stringsAsFactors = FALSE, col.names = names_dt, skip = 4)[SSPscen == SSP_scenario & EDGEscen == EDGE_scenario][, -c("SSPscen", "EDGEscen")]
+    tmp <- fread(
+      paste0(input_path, pattern, ".cs4r"),
+      col.names = names_dt, skip="gdp_"
+    )[SSPscen == SSP_scenario & EDGEscen == EDGE_scenario][, -c("SSPscen", "EDGEscen")]
     tmp[,vehicle_type := gsub("DOT", ".", vehicle_type)]
     tmp_list <- split(tmp,tmp$entry)
 
