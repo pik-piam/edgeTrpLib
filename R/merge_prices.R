@@ -24,7 +24,7 @@ merge_prices <- function(gdx, REMINDmapping, REMINDyears,
     ## report prices from REMIND gdx in 2005$/MJ
 
     tdptwyr2dpgj <- 31.71  #TerraDollar per TWyear to Dollar per GJ
-    CONV_2005USD_1990USD <- 0.67
+
     ## load entries from the gdx, values below 2020 do not make sense
     pfe <- readGDX(gdx, "pm_FEPrice", format = "first_found", restore_zeros = FALSE)[,, "trans.ES", pmatch=TRUE]
     startyear <- getYears(pfe, as.integer=TRUE)[1]
@@ -68,10 +68,10 @@ feh2t,H2 enduse
 
     setnames(pfe, old = c("value"), new = c("fuel_price"))
 
-    ## fuel price in 2005USD/GJ -> 1990USD/EJ
-    pfe[, fuel_price := fuel_price * CONV_2005USD_1990USD * 1e9]
+    ## fuel price in 2005USD/GJ -> 2005USD/EJ
+    pfe[, fuel_price := fuel_price * 1e9]
 
-    ## join with vehicle intensity and load factor to get the 1990USD/pkm
+    ## join with vehicle intensity and load factor to get 2005USD/pkm
     fuel_price_REMIND <- merge(pfe, intensity_data, by = c("region",
         "year", "sector_fuel"), all.y = TRUE)
 

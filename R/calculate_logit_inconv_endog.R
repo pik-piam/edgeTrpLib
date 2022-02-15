@@ -51,16 +51,17 @@ calculate_logit_inconv_endog = function(prices,
     ## needs random lambdas for the sectors that are not explicitly calculated
     df <- df[ is.na(logit.exponent), logit.exponent := -10]
 
-    ## calculate the shares given prices, lambda and inco
-    df <- df[, share := sw*tot_price^logit.exponent/(sum(sw*tot_price^logit.exponent)),
-             by = c(group_value, "region", "year")]
-
     ## merge value of time for the selected level and assign 0 to the entries that don't have it
     df <- merge(df, value_time, by=intersect(names(df),names(value_time)), all.x=TRUE)
 
     df <- df[is.na(time_price), time_price := 0]
     df <- df[, tot_VOT_price := time_price + tot_VOT_price]
-    df <- df[, tot_price := tot_price + time_price]
+    df <- df[, tot_price := tot_price + time_price]    
+    
+    ## calculate the shares given prices, lambda and inco
+
+    df <- df[, share := sw*tot_price^logit.exponent/(sum(sw*tot_price^logit.exponent)),
+             by = c(group_value, "region", "year")]
 
     MJ_km <- merge(df, mj_km_data, by=intersect(names(df),names(mj_km_data)),all = FALSE)
 
