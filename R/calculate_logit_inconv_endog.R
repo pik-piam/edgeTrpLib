@@ -32,7 +32,7 @@ calculate_logit_inconv_endog = function(prices,
   X2Xcalc <- function(prices, pref_data, logit_params, value_time, mj_km_data, level_base, level_next, group_value) {
     final_pref <- pref_data[[paste0(level_next, "_final_pref")]]
     logit_exponent <- logit_params[[paste0("logit_exponent_", level_next)]]
-
+    
     ## data contains all the prices in the beginning
     all_subsectors <- c("technology", "vehicle_type", "subsector_L1", "subsector_L2",
                         "subsector_L3", "sector")
@@ -59,10 +59,11 @@ calculate_logit_inconv_endog = function(prices,
     df <- df[, tot_price := tot_price + time_price]    
     
     ## calculate the shares given prices, lambda and inco
-
+    browser()
     df <- df[, share := sw*tot_price^logit.exponent/(sum(sw*tot_price^logit.exponent)),
              by = c(group_value, "region", "year")]
-
+    #When shareweight is zero, NAs are generated if all options have a zero shareweight
+    #df[is.na(share),share:=0]
     MJ_km <- merge(df, mj_km_data, by=intersect(names(df),names(mj_km_data)),all = FALSE)
 
     MJ_km <- MJ_km[, .(MJ_km = sum(share * MJ_km)),
@@ -121,6 +122,7 @@ calculate_logit_inconv_endog = function(prices,
     final_prefFV[, pmod_av := ifelse(is.na(pmod_av), 0, pmod_av)]
     final_prefFV[, prisk := ifelse(is.na(prisk), 0, prisk)]
 
+ 
     ## data contains all the prices in the beginning
     all_subsectors <- c("technology", "vehicle_type", "subsector_L1", "subsector_L2",
                         "subsector_L3", "sector")
@@ -408,13 +410,13 @@ calculate_logit_inconv_endog = function(prices,
                  by = c("vehicle_type", "year", "region")]
 
     ## merge with prices
-    tmp1 = merge(tmp1[year %in% unique(dfother$year)], dfprices4W, all.x = TRUE, by = intersect(names(tmp1), names(dfprices4W)))
+    tmp1 <- merge(tmp1[year %in% unique(dfother$year)], dfprices4W, all.x = TRUE, by = intersect(names(tmp1), names(dfprices4W)))
 
+    ## values after 2100 are set to be equal to 2100
+    tmp1 <- rbind(tmp1, tmp1[year==2100][,year:=2110], tmp1[year==2100][,year:=2130],tmp1[year==2100][,year:=2150])
     ## copy of tmp1 is needed to create the updated version of preferences trend
     inconv = copy(tmp1[,.(year, region, sector, subsector_L3, subsector_L2, subsector_L1, vehicle_type, technology, pinco_tot, prange, pref, pmod_av, prisk, pchar)])
-    ## values after 2100 are set to be equal to 2100
-    inconv = rbind(inconv, inconv[year==2100][,year:=2110], inconv[year==2100][,year:=2130],inconv[year==2100][,year:=2150])
-    ## inconv and final_prefFV need the same structure as pref_data[["FV_final_pref"]]
+     ## inconv and final_prefFV need the same structure as pref_data[["FV_final_pref"]]
     inconv = melt(inconv, id.vars = c("year", "region", "sector", "subsector_L3", "subsector_L2", "subsector_L1", "vehicle_type", "technology"))
     setnames(inconv, old = "variable", new = "logit_type")
     final_prefFV = melt(final_prefFV, id.vars = c("year", "region", "sector", "subsector_L3", "subsector_L2", "subsector_L1", "vehicle_type", "technology"))
@@ -440,12 +442,6 @@ calculate_logit_inconv_endog = function(prices,
     df <- rbind(dfother[, .(region, year, share, technology, vehicle_type, subsector_L1, subsector_L2, subsector_L3, sector, fuel_price_pkm, non_fuel_price, tot_price)],
                 tmp1[, .(region, year, share, technology, vehicle_type, subsector_L1, subsector_L2, subsector_L3, sector, fuel_price_pkm, non_fuel_price, tot_price)])
 
-    ## merge value of time for the selected level and assign 0 to the entries that don't have it
-    df <- merge(df, value_time, by=intersect(names(df),names(value_time)), all.x=TRUE)
-    df <- df[is.na(time_price), time_price := 0]
-    df <- df[, tot_VOT_price := time_price]
-    df <- df[, tot_price := tot_price + time_price]
-
     ## merge energy intensity
     MJ_km <- merge(df, mj_km_data, by=intersect(names(df),names(mj_km_data)),all = FALSE)
     MJ_km <- MJ_km[, .(MJ_km = sum(share * MJ_km)),
@@ -453,6 +449,7 @@ calculate_logit_inconv_endog = function(prices,
 
     ## save complete dt at this level
     df_shares <- copy(df)
+    df_shares <- df_shares[,tot_VOT_price:=0]
     ## get rid of the ( misleading afterwards) columns
     df_shares <- df_shares[
       , c("share", "region", "year",
@@ -463,6 +460,12 @@ calculate_logit_inconv_endog = function(prices,
           "fuel_price_pkm",
           "non_fuel_price",
           "tot_price"), with = FALSE]
+    
+     ## merge value of time for the selected level and assign 0 to the entries that don't have it
+    df <- merge(df, value_time, by=intersect(names(df),names(value_time)), all.x=TRUE)
+    df <- df[is.na(time_price), time_price := 0]
+    df <- df[, tot_VOT_price := time_price]
+    df <- df[, tot_price := tot_price + time_price]
 
     ## calculate 'one level up' database with the useful columns only
     df <- df[
@@ -516,13 +519,11 @@ calculate_logit_inconv_endog = function(prices,
                     group_value = "vehicle_type",
                     tech_scen = tech_scen,
                     totveh = totveh)
-
   FV <- FV_all[["df"]]
   MJ_km_FV <- FV_all[["MJ_km"]]
   FV_shares <- FV_all[["df_shares"]]
   pref_data <- FV_all[["pref_data"]]
   annual_sales <- FV_all[["annual_sales"]]
-
   # VS1
   VS1_all <- X2Xcalc(prices = FV,
                      pref_data = pref_data,
