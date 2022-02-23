@@ -23,13 +23,14 @@
 #' @importFrom rmndt approx_dt readMIF writeMIF
 #' @importFrom gdxdt readgdx
 #' @importFrom data.table fread fwrite rbindlist copy CJ
-#' @importFrom remind toolRegionSubsets
+#' @importFrom remind2 toolRegionSubsets
+#' @importFrom quitte as.quitte
 #' @export
 
-reportEDGETransport <- function(output_folder=".", sub_folder = "EDGE-T/",
+reportEDGETransport <- function(output_folder = ".", sub_folder = "EDGE-T/",
                                 loadmif = TRUE , extendedReporting=FALSE,
                                 scenario_title=NULL, model_name="EDGE-Transport",
-                                name_mif=NULL, gdx=NULL) {
+                                gdx=NULL) {
   
 
   ## NULL Definitons for codeCheck compliance
@@ -327,13 +328,6 @@ reportEDGETransport <- function(output_folder=".", sub_folder = "EDGE-T/",
   demand_vkm <- merge(demand_km, load_factor, by=c("year", "region", "vehicle_type"))
   demand_vkm[, value := value/loadFactor]} ## billion vkm
 
-
-  if (loadmif == TRUE){
-  name_mif = list.files(output_folder, pattern = "REMIND_generic", full.names = F)
-  name_mif = file.path(output_folder, name_mif[!grepl("withoutPlu", name_mif)])
-
-  stopifnot(typeof(name_mif) == "character")
-  miffile <- readMIF(name_mif)}
  
   repFE <- reporting(
     demand_ej,
@@ -739,9 +733,6 @@ reportEDGETransport <- function(output_folder=".", sub_folder = "EDGE-T/",
  
   toMIF <- data.table::dcast(toMIF, ... ~ period, value.var="value")
   setnames(toMIF, colnames(toMIF)[1:5], c("Model", "Scenario", "Region", "Variable", "Unit"))
-  toMIF <- as.data.frame(toMIF)
-
-  writeMIF(toMIF, file.path(output_folder,"/",name_mif), append=T)
-  deletePlus(file.path(output_folder,"/",name_mif), writemif=T)
+  return(as.quitte(toMIF))
   
 }
