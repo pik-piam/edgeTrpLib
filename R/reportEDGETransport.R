@@ -298,7 +298,7 @@ reportEDGETransport <- function(output_folder=".", sub_folder = "EDGE-T/",
 
 
   #load Mapping for Aggregation
-  Aggrdata <- read.csv(system.file("extdata", "EDGETdataAggregation.csv", package = "remind2"),header = TRUE, sep = ",") 
+  Aggrdata <- fread(system.file("extdata", "EDGETdataAggregation.csv", package = "edgeTrpLib"),header = TRUE) 
 
   ## load input data from last EDGE run
   ## Data manipulation shouldnt be necessary
