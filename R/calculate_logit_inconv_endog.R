@@ -59,11 +59,14 @@ calculate_logit_inconv_endog = function(prices,
     df <- df[, tot_price := tot_price + time_price]    
     
     ## calculate the shares given prices, lambda and inco
-    browser()
     df <- df[, share := sw*tot_price^logit.exponent/(sum(sw*tot_price^logit.exponent)),
              by = c(group_value, "region", "year")]
-    #When shareweight is zero, NAs are generated if all options have a zero shareweight
-    #df[is.na(share),share:=0]
+
+    nas <- df[is.na(share)]
+    if(nrow(nas) > 0){
+      print("NAs found in SWs.")
+      browser()
+    }
     MJ_km <- merge(df, mj_km_data, by=intersect(names(df),names(mj_km_data)),all = FALSE)
 
     MJ_km <- MJ_km[, .(MJ_km = sum(share * MJ_km)),
@@ -524,6 +527,12 @@ calculate_logit_inconv_endog = function(prices,
   FV_shares <- FV_all[["df_shares"]]
   pref_data <- FV_all[["pref_data"]]
   annual_sales <- FV_all[["annual_sales"]]
+  nas <- FV_shares[is.na(share)]
+  if(nrow(nas) > 0){
+    print("NAs found in FV shares.")
+    nas
+    browser()
+  }
   # VS1
   VS1_all <- X2Xcalc(prices = FV,
                      pref_data = pref_data,
