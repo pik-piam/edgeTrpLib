@@ -11,7 +11,13 @@
 #' Region subsets are obtained from fulldata.gdx
 #'
 #' @param output_folder path to the output folder, default is current folder.
-#' @param remind_root path to the REMIND root directory, defaults to two levels up from output_folder.
+#' @param sub_folder subfolder with EDGE-T output files (level_2 for standalone, EDGE-T for coupled runs)
+#' @param loadmif shall we try to load a REMIND MIF file from the output folder to append the variables?
+#' @param extendedReporting report a larger set of variables
+#' @param scenario_title a scenario title string
+#' @param model_name a model name string
+#' @param name_mif the name of the MIF file to store the variables to. Not compatible with loadmif.
+#' @param gdx path to the GDX file used for the run.
 #' @author Alois Dirnaichner Marianna Rottoli
 #'
 #' @importFrom rmndt approx_dt readMIF writeMIF
@@ -21,7 +27,9 @@
 #' @export
 
 reportEDGETransport <- function(output_folder=".", sub_folder = "EDGE-T/",
-                                 loadmif = TRUE , extendedReporting=FALSE, scenario_title=NULL,model_name=NULL, name_mif=NULL) {
+                                loadmif = TRUE , extendedReporting=FALSE,
+                                scenario_title=NULL, model_name="EDGE-Transport",
+                                name_mif=NULL, gdx=NULL) {
   
 
   ## NULL Definitons for codeCheck compliance
@@ -281,11 +289,6 @@ reportEDGETransport <- function(output_folder=".", sub_folder = "EDGE-T/",
     return(datatable)
   } 
   
-  gdx <- list.files(output_folder, ".*fulldata.*.gdx", full.names = T)
-
-  if (length(gdx) > 1)
-    warning(paste0("There are more available fulldata.gdx files than just one:",gdx[1],"is chosen."))
- 
   ## check the regional aggregation
   regionSubsetList <- toolRegionSubsets(gdx) 
   
@@ -298,7 +301,8 @@ reportEDGETransport <- function(output_folder=".", sub_folder = "EDGE-T/",
 
 
   #load Mapping for Aggregation
-  Aggrdata <- read.csv(system.file("extdata", "EDGETdataAggregation.csv", package = "remind2"),header = TRUE, sep = ",") 
+  ## Aggrdata <- read.csv(system.file("extdata", "EDGETdataAggregation.csv", package = "remind2"),header = TRUE, sep = ",") 
+  Aggrdata <- read.csv("~/git/edgeTrpLib/inst/extdata/EDGETdataAggregation.csv", header = TRUE, sep = ",") 
 
   ## load input data from last EDGE run
   ## Data manipulation shouldnt be necessary
