@@ -729,10 +729,8 @@ reportEDGETransport <- function(output_folder = ".", sub_folder = "EDGE-T/",
   }
 
   toMIF <- toMIF[!duplicated(toMIF)]
-  toMIF <- toMIF[, c("model","scenario","region","variable","unit","period","value")]
+  toMIF <- toMIF[, c("model", "scenario", "region", "variable", "unit", "period", "value")]
  
-  toMIF <- data.table::dcast(toMIF, ... ~ period, value.var="value")
-  setnames(toMIF, colnames(toMIF)[1:5], c("Model", "Scenario", "Region", "Variable", "Unit"))
   return(as.quitte(toMIF))
   
 }
