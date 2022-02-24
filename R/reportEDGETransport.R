@@ -622,13 +622,15 @@ reportEDGETransport <- function(output_folder = ".", sub_folder = "EDGE-T/",
     logit_exp_VS1 <- logit_exp$logit_exponent_FV
     setkey(logit_exp_VS1, NULL)
     
-    Prices_FV <- LogitCostplotdata_FV(priceData = Prices_FV,prefData = Pref_FV,logitExp = logit_exp_VS1)
-    Pref_FV <- Pref_FV[logit_type == "sw"]
-    Pref_FV[, variable := paste0("Shareweight|F|", gsub("_tmp_vehicletype", "", vehicle_type), "|", technology)][, unit := "-"][, scenario := scenario_title][, model := model_name]
-    setnames(Pref_FV, c("year"), c("period"))
-    Pref_FV <- Pref_FV[, .(region, period, scenario, variable, value, unit, model)]
-      
-    Price_data <- rbind(Prices_FV, Prices_VS1, Prices_VS1_aggr, Prices_S1S2)
+    Prices_FV <- LogitCostplotdata_FV(priceData=Prices_FV,prefData=Pref_FV,logitExp=logit_exp_VS1)
+    Pref_FV <- Pref_FV[logit_type=="sw"]
+    Pref_FV[, variable:=paste0("Shareweight|F|",gsub("_tmp_vehicletype","",vehicle_type),"|",technology)][,unit:="-"][,scenario:=scenario_title][,model:=model_name]
+    setnames(Pref_FV,c("year"),c("period"))
+    Pref_FV <- Pref_FV[,.(region,period,scenario,variable,value,unit,model)] 
+   
+    
+    Price_data <- rbind(Prices_FV,Prices_VS1,Prices_VS1_aggr,Prices_S1S2,Prices_S3S)
+    Pref_data <- rbind(Pref_FV,Pref_VS1,Pref_VS1_aggr,Pref_S1S2,Pref_S3S)
      
     #Calculate Vehicle Size Shares LDV
      vars <- c(
@@ -699,8 +701,9 @@ reportEDGETransport <- function(output_folder = ".", sub_folder = "EDGE-T/",
     ES_shares_Freight_wobunk <- Calc_shares(toMIF[variable %in% vars], "Share w/o bunkers")
     
     #Aggregate data
-    #
-    toMIF <- rbind(toMIF,ES_shares_Pass,ES_shares_Freight,ES_shares_Pass_wobunk,ES_shares_Freight_wobunk,ES_shares_LDVsize,ES_shares_Trucksize,Price_data)
+    
+    
+    toMIF <- rbind(toMIF,ES_shares_Pass,ES_shares_Freight,ES_shares_Pass_wobunk,ES_shares_Freight_wobunk,ES_shares_LDVsize,ES_shares_Trucksize,Price_data,Pref_data)
   }
   
   ## Make sure there are no duplicates!
