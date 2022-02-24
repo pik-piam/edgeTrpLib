@@ -1,0 +1,12 @@
+# Costs 
+
+# Total cost in logit
+## S3s
+## S2S3
+## S1S2
+## VS1
+## FV
+
+# Equivalent inconvenience costs for shareweight trends
+
+# Shareweight trends

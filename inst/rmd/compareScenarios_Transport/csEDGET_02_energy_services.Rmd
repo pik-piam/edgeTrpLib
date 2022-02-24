@@ -1,0 +1,45 @@
+# Energy Services and Intensity
+
+## Energy Service bar and area plots
+### Passenger by transport mode
+
+```{r}
+items <- c(
+  )
+showAreaAndBarPlots(data, items, tot)(data, items)  
+```
+
+### Passenger LDV 4-Wheelers by vehicle size
+
+### Passenger LDV 4-Wheelers by vehicle technology
+
+### Passenger LDV 2-Wheelers by technology
+
+### Freight by vehicle type
+
+### Freight Trucks by vehicle size
+
+### Freight Trucks by technology
+
+## Energy Service line plots
+### Passenger
+### Freight
+
+## Energy Service Shares by transport mode
+### Passenger
+### Freight
+
+
+## Energy Services Passenger per Capita
+## Energy Services Passenger per GDP
+
+## Energy Intensity 
+### Passenger LDV|BEV
+### Passenger LDV|FCEV
+### Passenger LDV|Liquids
+### Passenger Bus|BEV
+### Passenger Bus|FCEV
+### Passenger Bus|Liquids
+### Freight Trucks|BEV
+### Freight Trucks|FCEV
+### Freight Trucks|Liquids
