@@ -13,7 +13,7 @@ output:
     number_sections: yes
 geometry: "a4paper,landscape,left=0.5cm,right=0.5cm,top=0.5cm,bottom=0.5cm,footnotesep=0.0cm,footskip=0.1cm"
 params:
-  mifScen: "C:/Users/johannah/Documents/EDGE-Transport/Output/SSP2-Mix2_2022-02-20_21.28.25/EDGE-T_SA.mif"
+  mifScen: "C:/Users/johannah/Documents/EDGE-Transport/Output/SSP2-Mix2_2022-02-24_15.53.27/EDGE-T_SA.mif"
   mifScenNames: null
   mifHist: "C:/Users/johannah/Documents/EDGE-Transport/HistoricalData/historical.mif"
   yearsScen: !r c(seq(2005, 2060, 5), seq(2070, 2100, 10))
