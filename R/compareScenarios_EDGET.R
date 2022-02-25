@@ -39,8 +39,7 @@
 #'     \code{character(n)}.
 #'     Default: \code{"all"}.
 #'     Names of sections to include. A subset of
-#'     \code{c("01_summary", "02_macro", "03_emissions", "04_energy_supply",
-#'     "05_energy_demand", "06_energy_services", "07_climate", "08_sdp")}
+#'     \code{c("EDGET_01_energy_demand", "EDGET_02_energy_services", "EDGET_03_stock_and_sales", "EDGET_04_costs_and_shareweight_trends")}
 #'     or \code{"all"} for all available sections.}
 #'   \item{\code{userSectionPath}}{
 #'     \code{NULL} or \code{character(n)}.
@@ -101,7 +100,7 @@ compareScenarios_EDGET <- function(
     return(.compareScenarios2Rmd(yamlParams, outputDir, outputFile))
   }
   rmarkdown::render(
-    system.file("markdown/compareScenarios2/cs2_main.Rmd", package = "remind2"),
+    system.file("rmd/compareScenarios_Transport/csEDGET_main.Rmd", package = "edgeTrpLib"),
     intermediates_dir = outputDir,
     output_dir = outputDir,
     output_file = outputFile,
@@ -113,7 +112,7 @@ compareScenarios_EDGET <- function(
 # Copies the CompareScenarios2-Rmds to the specified location and modifies
 # their YAML header according to \code{yamlParams}.
 .compareScenarios2Rmd <- function(yamlParams, outputDir, outputFile) {
-  pathMain <- system.file("markdown/compareScenarios2/cs2_main.Rmd", package = "remind2")
+  pathMain <- system.file("rmd/compareScenarios_Transport/csEDGET_main.Rmd", package = "edgeTrpLib")
   linesMain <- readLines(pathMain)
   delimiters <- grep("^(---|\\.\\.\\.)\\s*$", linesMain)
   headerMain <- linesMain[(delimiters[1]):(delimiters[2])]
@@ -133,18 +132,18 @@ compareScenarios_EDGET <- function(
   pathDir <- file.path(outputDir, paste0(outputFile, "_Rmd"))
   if (!dir.exists(pathDir)) dir.create(pathDir)
   dirFiles <- dir(
-    system.file("rmd/compareScenarios", package = "remind2"),
+    system.file("rmd/compareScenarios_Transport", package = "edgeTrpLib"),
     full.names = TRUE)
   rmdDirFiles <- grep(
     dirFiles,
-    pattern = "cs2_main\\.Rmd$",
+    pattern = "csEDGET_main\\.Rmd$",
     invert = TRUE, value = TRUE)
   file.copy(rmdDirFiles, pathDir)
   ymlthis::use_rmarkdown(
     newYaml,
     path = file.path(pathDir, "cs2_main.Rmd"),
     template = system.file(
-      "markdown/compareScenarios2/cs2_main.Rmd",
-      package = "remind2"),
+      "rmd/compareScenarios_Transport/csEDGET_main.Rmd",
+      package = "edgeTrpLib"),
     include_yaml = FALSE)
 }
