@@ -404,7 +404,7 @@ reportEDGETransport <- function(output_folder = ".", sub_folder = "EDGE-T/",
   if (extendedReporting) {
 
     LogitCostplotdata <- function(priceData, prefData, logitExp, groupValue){
-
+      
       yrs_costs <-c(seq(2005, 2060, 5), seq(2070, 2100, 10)) 
       priceData[, scenario := scenario_title]
       prefData[, scenario := scenario_title]
@@ -456,7 +456,6 @@ reportEDGETransport <- function(output_folder = ".", sub_folder = "EDGE-T/",
     LogitCostplotdata_FV <- function(priceData,prefData,logitExp){
       #Calcualte equivalent inconvenience cost and 
       yrs_costs <-c(seq(2005, 2060, 5), seq(2070, 2100, 10)) 
-      
       priceData[, scenario := scenario_title]
       prefData[, scenario := scenario_title]
       logitExp[, scenario := scenario_title]
@@ -465,7 +464,7 @@ reportEDGETransport <- function(output_folder = ".", sub_folder = "EDGE-T/",
       setnames(priceData, c("year"), c("period"))
       setnames(prefData, c("year"), c("period"))
       
-      prefData <- prefData[period %in% yrs_costs]
+      prefData <- prefData[period %in% yrs_costs & !technology %in% c("Cycle_tmp_technology","Walk_tmp_technology")]
       priceData<-  priceData[period %in% yrs_costs]
       
       # Calculate Inconvenience Cost from share Weight
@@ -549,7 +548,7 @@ reportEDGETransport <- function(output_folder = ".", sub_folder = "EDGE-T/",
     Prices_S3S[, variable := paste0("Logit cost|S3S|", subsector_L3, "|", variable)]
     Prices_S3S <- Prices_S3S[, .(region,period, scenario, variable,value, unit, model)]
     Pref_S3S[, variable := paste0("Shareweight|S3|", subsector_L3)][, unit := "-"][,scenario := scenario_title][, model := model_name]
-    setnames(Pref_S3S, "year", "period")
+    setnames(Pref_S3S,c("year", "sw"),c("period", "value"))
     Pref_S3S <- Pref_S3S[,.(region, period, scenario, variable, value, unit, model)]
 
     #Prices S2S3
@@ -594,16 +593,19 @@ reportEDGETransport <- function(output_folder = ".", sub_folder = "EDGE-T/",
     Prices_VS1 <- merge(Prices_VS1, unique(Pref_VS1[, c("subsector_L2", "subsector_L3", "sector", "vehicle_type")]), by = "vehicle_type", all.x = TRUE)
     Prices_VS1 <- LogitCostplotdata(priceData=Prices_VS1, prefData = Pref_VS1,logitExp = logit_exp_VS1, groupValue = "vehicle_type")
     Prices_VS1 <- Prices_VS1[, c("region", "period", "unit", "model", "scenario", "vehicle_type", "value", "variable")]
-
+    
     #Before prices are finally structured, vehicles are aggregated 
     Aggrdata_veh <- as.data.table(Aggrdata[, c("vehicle_type", "det_veh")])
     Aggrdata_veh <- unique(Aggrdata_veh[!is.na(det_veh)])[, det_veh := gsub("Freight\\|Road\\||Pass\\|Road\\|", "", det_veh)]
+    
+    #Exclude those wihout aggregation
+    Aggrdata_veh <- Aggrdata_veh[!vehicle_type==det_veh]
     
     #ES pkm are used as weights for data aggregation
     weight_pkm <- copy(demand_km)
     setnames(weight_pkm, c("value","year"), c("weight","period"))
     weight_pkm_VS1 <- weight_pkm[,.(weight = sum(weight)), by = c("region", "vehicle_type", "period")]
-    
+
     Prices_VS1_aggr <- aggregate_dt(Prices_VS1[vehicle_type %in% Aggrdata_veh$vehicle_type], Aggrdata_veh , fewcol = "det_veh", manycol = "vehicle_type", yearcol = "period", weights = weight_pkm_VS1[vehicle_type %in% Aggrdata_veh$vehicle_type], datacols = c("region","unit","model","scenario","variable"))
     setnames(Prices_VS1_aggr, "det_veh", "vehicle_type")
     Prices_VS1_aggr[, variable:=paste0("Logit cost|VS1|", vehicle_type, "|", variable)][, vehicle_type := NULL]
@@ -628,9 +630,8 @@ reportEDGETransport <- function(output_folder = ".", sub_folder = "EDGE-T/",
     setnames(Pref_FV,c("year"),c("period"))
     Pref_FV <- Pref_FV[,.(region,period,scenario,variable,value,unit,model)] 
    
-    
-    Price_data <- rbind(Prices_FV,Prices_VS1,Prices_VS1_aggr,Prices_S1S2,Prices_S3S)
-    Pref_data <- rbind(Pref_FV,Pref_VS1,Pref_VS1_aggr,Pref_S1S2,Pref_S3S)
+    Price_data <- rbind(Prices_FV,Prices_VS1,Prices_VS1_aggr,Prices_S1S2,Prices_S2S3,Prices_S3S)
+    Pref_data <- rbind(Pref_FV,Pref_VS1,Pref_S1S2,Pref_S2S3,Pref_S3S)
      
     #Calculate Vehicle Size Shares LDV
      vars <- c(
@@ -702,7 +703,7 @@ reportEDGETransport <- function(output_folder = ".", sub_folder = "EDGE-T/",
     
     #Aggregate data
     
-    
+
     toMIF <- rbind(toMIF,ES_shares_Pass,ES_shares_Freight,ES_shares_Pass_wobunk,ES_shares_Freight_wobunk,ES_shares_LDVsize,ES_shares_Trucksize,Price_data,Pref_data)
   }
   
@@ -712,7 +713,7 @@ reportEDGETransport <- function(output_folder = ".", sub_folder = "EDGE-T/",
     warning(paste0("Duplicates found in EDGE-T reporting output:",
                    capture.output(toMIF[idx]), collapse="\n"))
   }
-
+  
   toMIF <- toMIF[!duplicated(toMIF)]
   toMIF <- toMIF[, c("model", "scenario", "region", "variable", "unit", "period", "value")]
  
