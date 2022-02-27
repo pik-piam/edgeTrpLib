@@ -1,0 +1,146 @@
+# Final Energy Demand
+
+
+## Final Energy by carrier
+
+### Total
+
+```{r}
+tot <- "FE|Transport"
+items <- c(
+  "FE|Transport|Electricity",
+  "FE|Transport|Gases",
+  "FE|Transport|Liquids",
+  "FE|Transport|Hydrogen")
+showAreaAndBarPlots(data, items, tot)
+showAreaAndBarPlots(data, items, tot, fill=TRUE)
+showLinePlots(data, tot)
+walk(items, showLinePlots, data=data)
+```
+
+### w/o Bunkers
+
+```{r}
+tot <- "FE|Transport|w/o Bunkers"
+items <- c(
+  "FE|Transport|w/o Bunkers|Electricity",
+  "FE|Transport|w/o Bunkers|Gases",
+  "FE|Transport|w/o Bunkers|Liquids",
+  "FE|Transport|w/o Bunkers|Hydrogen")
+showAreaAndBarPlots(data, items, tot)
+showLinePlots(data, tot)
+walk(items, showLinePlots, data=data)
+```
+
+### Per type
+
+```{r}
+tot <- "FE|Transport"
+items <- c(
+  "FE|Transport|LDV|Liquids",
+  "FE|Transport|LDV|Gases",
+  "FE|Transport|LDV|Electricity",
+  "FE|Transport|LDV|Hydrogen",
+  "FE|Transport|non-LDV|Liquids",
+  "FE|Transport|non-LDV|Gases",
+  "FE|Transport|non-LDV|Electricity",
+  "FE|Transport|non-LDV|Hydrogen")
+showAreaAndBarPlots(data, items, tot)
+```
+
+### Bunkers
+
+```{r}
+tot <- "FE|Transport"
+items <- c(
+  "FE|Transport|Bunkers",
+  "FE|Transport|w/o Bunkers")
+showAreaAndBarPlots(data, items, tot)
+```
+
+### Passenger
+
+```{r}
+tot <- "FE|Transport"
+items <- c()
+  
+showAreaAndBarPlots(data, items, tot)
+```
+
+### Freight
+
+```{r}
+tot <- "FE|Transport"
+items <- c()
+  
+showAreaAndBarPlots(data, items, tot)
+```
+
+### LDV
+
+```{r}
+tot <- "FE|Transport"
+items <- c()
+  
+showAreaAndBarPlots(data, items, tot)
+```
+
+### Trucks
+
+```{r}
+tot <- "FE|Transport"
+items <- c()
+  
+showAreaAndBarPlots(data, items, tot)
+```
+
+## Final Energy by transport modes
+
+```{r}
+tot <- "FE|Transport"
+items <- c()
+  
+showAreaAndBarPlots(data, items, tot)
+```
+
+
+## Final Energy line plots 
+### Passenger
+
+```{r plot industry subsector production}
+items <- c(
+  "FE|Transport",
+  "FE|Transport|Pass",
+  "FE|Transport|Pass|Rail",
+  "FE|Transport|Pass|Road|Bus",
+  "FE|Transport|Pass|Road|LDV",
+  "FE|Transport|Pass|Navigation"
+  )
+
+showLinePlots(data, items)
+
+```
+
+### Freight
+
+```{r }
+items <- c(
+  "FE|Transport|Freight",
+  "FE|Transport|Freight|Rail",
+  "FE|Transport|Freight|Navigation",
+  "FE|Transport|Freight|Shipping international",
+  "FE|Transport|Freight|Road"
+  )
+
+showLinePlots(data, items)
+
+```
+
+
+## Useful Energy Demand
+### Total
+### Passenger
+### Passenger LDV
+### Passenger non-LDV
+### Freight
+### Freight Trucks

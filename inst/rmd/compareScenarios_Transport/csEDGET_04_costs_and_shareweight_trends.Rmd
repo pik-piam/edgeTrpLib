@@ -1,0 +1,169 @@
+# Prices and shareweight trends
+
+```{r convert data to data table}
+#convert to dplyr when time
+data <- as.data.table(data)
+
+```
+
+## Prices S3S
+```{r Prices S3S}
+
+  scen <- unique(data$scenario)
+
+for (reg0 in params$reg) {
+  plotdata <- data[grepl("Logit cost\\|S3S\\|(Walk|Cycle|trn_pass_road|Domestic Aviation|Passenger Rail|HSR)",variable)]
+  plotdata <- plotdata[region==reg0][,region:=NULL]
+  plotdata <- plotdata[, variable := gsub("Logit cost\\|S3S\\|","",variable)][period %in% params$yearsBarPlot]
+  setnames(plotdata, "scenario","region")
+  plotdata <- plotdata[, scenario:=gsub("\\|Eq inconvenience cost|\\|tot_VOT_price|\\|fuel_price_pkm|\\|non_fuel_price","",variable)]
+  plotdata <- plotdata[, variable:=gsub("Walk\\||Cycle\\||trn_pass_road\\||Domestic Aviation\\||Passenger Rail\\||HSR\\|","",variable)]
+  plotdata[, factor(variable, levels = c("Eq inconvenience cost","tot_VOT_price","fuel_price_pkm","non_fuel_price"))]
+  
+  p2 <- mipBarYearData(plotdata, ylab = "Prices logit S3S [USD2005/pkm]", title = paste0("Prices logit S3S ",reg0) )
+  p2 <- p2 + theme_mip(size = 18)
+  print(p2)}
+
+```
+
+## Prices S2S3
+```{r Prices S2S3}
+
+for (reg0 in params$reg) {
+  plotdata <- data[grepl("Logit cost\\|S2S3\\|(Bus|trn_pass_road_LDV)",variable)]
+  plotdata <- plotdata[region==reg0][, region:=NULL]
+  plotdata <- plotdata[, variable := gsub("Logit cost\\|S2S3\\|", "",variable)][period %in% params$yearsBarPlot]
+  setnames(plotdata, "scenario","region")
+  plotdata <- plotdata[, scenario := gsub("\\|Eq inconvenience cost|\\|tot_VOT_price|\\|fuel_price_pkm|\\|non_fuel_price", "", variable)]
+  plotdata <- plotdata[, variable := gsub("Bus\\||trn_pass_road_LDV\\|","", variable)]
+  plotdata[, variable := factor(variable, levels = c("Eq inconvenience cost","tot_VOT_price","fuel_price_pkm","non_fuel_price"))]
+
+  p2 <- mipBarYearData(plotdata, ylab = "Prices logit S2S3 [USD2005/pkm]", title = paste0("Prices logit S2S3 ",reg0))
+  p2 <- p2 + theme_mip(size = 18)
+  print(p2)}
+
+```
+
+## Prices S1S2
+```{r Prices S1S2}
+
+for (reg0 in params$reg) {
+  plotdata <- data[grepl("Logit cost\\|S1S2\\|(trn_pass_road_LDV_4W|trn_pass_road_LDV_2W)",variable)]
+  plotdata <- plotdata[region==reg0][,region:=NULL]
+  plotdata <- plotdata[, variable := gsub("Logit cost\\|S1S2\\|", "",variable)][period %in% params$yearsBarPlot]  
+  setnames(plotdata, "scenario","region")
+  plotdata <- plotdata[, scenario := gsub("\\|Eq inconvenience cost|\\|tot_VOT_price|\\|fuel_price_pkm|\\|non_fuel_price", "", variable)]
+  plotdata <- plotdata[, variable := gsub("trn_pass_road_LDV_4W\\||trn_pass_road_LDV_2W\\|", "", variable)]
+  plotdata[, variable := factor(variable, levels = c("Eq inconvenience cost","tot_VOT_price","fuel_price_pkm","non_fuel_price"))]
+  
+
+  p2 <- mipBarYearData(plotdata, ylab = "Prices logit S1S2 [USD2005/pkm]", title = paste0("Prices logit S1S2 ",reg0))
+  p2 <- p2 + theme_mip(size = 18)
+  print(p2)}
+
+```
+
+## Prices VS1
+```{r Prices VS1}
+
+for (reg0 in params$reg) {
+  plotdata <- data[grepl("Logit cost\\|VS1\\|LDV\\|(Mini|Medium|Large|SUV|Van|Small)",variable)]
+  plotdata <- plotdata[region==reg0][,region:=NULL]
+  plotdata <- plotdata[, variable := gsub("Logit cost\\|VS1\\|LDV\\|", "",variable)][period %in% params$yearsBarPlot]  
+  setnames(plotdata, "scenario","region")
+  plotdata <- plotdata[, scenario := gsub("\\|Eq inconvenience cost|\\|tot_VOT_price|\\|fuel_price_pkm|\\|non_fuel_price", "", variable)]
+  plotdata <- plotdata[, variable := gsub("Mini\\||Large\\||SUV\\||Van\\||Small\\||Medium\\|", "", variable)]
+  plotdata[, variable := factor(variable, levels = c("Eq inconvenience cost","tot_VOT_price","fuel_price_pkm","non_fuel_price"))]
+  
+  p2 <- mipBarYearData(plotdata[period %in% params$yearsBarPlot],ylab="Prices logit VS1 [USD2005/pkm]", title = paste0("Prices logit VS1 ",reg0))
+  p2 <- p2 + theme_mip(size = 18)
+  print(p2)}
+
+```
+
+## Prices VS1 region comparison
+```{r Prices VS1 region comparison}
+
+vars <- c("Mini","Medium","Large","SUV","Van","Small")
+
+for (var0 in vars) {
+  
+  plotdata <- data[grepl(paste0("Logit cost\\|VS1\\|LDV\\|",var0),variable)]
+  plotdata <- plotdata[region %in% params$reg]
+  plotdata <- plotdata[, variable := gsub("Logit cost\\|VS1\\|LDV\\|", "",variable)][period %in% params$yearsBarPlot]
+  
+  plotdata <- plotdata[, variable := gsub("Mini\\||Large\\||SUV\\||Van\\||Small\\||Medium\\|", "", variable)]
+  plotdata[, variable := factor(variable, levels = c("Eq inconvenience cost","tot_VOT_price","fuel_price_pkm","non_fuel_price"))]
+  if (nrow(plotdata)>1){
+    p2 <- mipBarYearDataMod(plotdata[period %in% params$yearsBarPlot],ylab = "Prices logit     VS1 [USD2005/pkm]", title = paste0("Prices logit VS1 ",var0))
+    p2 <- p2 + theme_mip(size = 18) 
+    print(p2)}}
+
+```
+
+## Average LDV non fuel prices
+```{r Average LDV non fuel prices}
+
+  plotdata <- data[grepl("Logit cost\\|S1S2\\|trn_pass_road_LDV_4W\\|non_fuel_price",variable) & period %in% params$yearsScen & region %in% params$reg]
+  plotdata <- plotdata[, variable := gsub("Logit cost\\|S1S2\\|", "",variable)][, variable := NULL]
+  
+  # Extra plotting functions
+ 
+  p=ggplot(plotdata, aes(x = as.character(period), y = value, group = region, color = region))+
+      geom_line(size = 0.5)+
+      facet_wrap(~scenario, nrow = 4, scales = "free")+
+      scale_x_discrete(breaks = c(2010,2030,2050,2100))+
+      labs(x = "", y = paste0("Average LDV 4W non fuel prices","[", unique(data$unit),"]"), title = paste0("Average LDV 4W non fuel prices"))
+
+  print(p)
+
+
+```
+
+## Average LDV total price
+```{r Average LDV total price}
+
+  plotdata <- data[grepl("Logit cost\\|S1S2\\|trn_pass_road_LDV_4W\\|",variable) & period %in% params$yearsScen & region %in% params$reg]
+  plotdata <- plotdata[, variable := gsub("Logit cost\\|S1S2\\|trn_pass_road_LDV_4W\\|", "",variable)]
+  plotdata <- plotdata[, .(value = sum(value)), by = c("region","scenario","period","unit")]
+  
+  # Extra plotting functions
+ 
+  p=ggplot(plotdata, aes(x = as.character(period), y = value, group = region, color = region))+
+      geom_line(size = 0.5)+
+      facet_wrap(~scenario, nrow = 4, scales = "free")+
+      scale_x_discrete(breaks = c(2010,2030,2050,2100))+
+      labs(x = "", y = paste0("Total LDV 4W logit costs","[", unique(data$unit),"]"), title = paste0("Total LDV 4W logit costs"))
+
+  print(p)
+
+
+```
+
+## Shareweight trends
+```{r Shareweight trends}
+
+
+for (reg0 in params$reg) {
+
+  plotdata <- data[grepl("Shareweight\\|S3\\|(Walk|Cycle|trn_pass_road|Domestic Aviation|Passenger Rail|HSR)",variable) & region == reg0]
+  plotdata <- plotdata[, variable := gsub("Shareweight\\|S3\\|", "",variable)]
+
+  p <- lineplot(varname = paste0("Shareweight trend S3 ", reg0), data = plotdata)
+  print(p)
+
+  plotdata <- data[grepl("Shareweight\\|S2\\|(Bus|trn_pass_road_LDV)",variable) & region == reg0]
+  plotdata <- plotdata[, variable := gsub("Shareweight\\|S2\\|", "",variable)]
+  
+  p <- lineplot(varname = paste0("Shareweight trend S2 ", reg0), data = plotdata)
+  print(p)
+
+  plotdata <- data[grepl("Shareweight\\|S1\\|(trn_pass_road_LDV_2W|trn_pass_road_LDV_4W)",variable) & region == reg0]
+  plotdata <- plotdata[, variable := gsub("Shareweight\\|S1\\|", "", variable)]
+  
+  p <- lineplot(varname = paste0("Shareweight trend S1 ", reg0), data = plotdata)
+  print(p)}
+
+
+```
+
