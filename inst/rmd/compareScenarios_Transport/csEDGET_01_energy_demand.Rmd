@@ -123,7 +123,7 @@ showLinePlots(data, items)
 
 ### Freight
 
-```{r plot industry subsector production}
+```{r }
 items <- c(
   "FE|Transport|Freight",
   "FE|Transport|Freight|Rail",

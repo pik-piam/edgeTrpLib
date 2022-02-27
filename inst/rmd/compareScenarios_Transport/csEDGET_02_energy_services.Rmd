@@ -1,16 +1,73 @@
 # Energy Services and Intensity
 
-## Energy Service bar and area plots
-### Passenger by transport mode
-
+## Energy Service Shares
+### Passenger
+#### Transport mode w/o bunkers
 ```{r}
 items <- c(
+    "ES|Transport|Pass|Aviation|Domestic|Share w/o bunkers",
+    "ES|Transport|Pass|Rail|non-HSR|Share w/o bunkers",
+    "ES|Transport|Pass|Rail|HSR|Share w/o bunkers",
+    "ES|Transport|Pass|Road|Bus|Share w/o bunkers",
+    "ES|Transport|Pass|Road|LDV|Share w/o bunkers",
+    "ES|Transport|Pass|Road|Non-Motorized|Walking|Share w/o bunkers",
+    "ES|Transport|Pass|Road|Non-Motorized|Cycling|Share w/o bunkers"
   )
-showAreaAndBarPlots(data, items, tot)(data, items)  
+
+showAreaAndBarPlots(data, items)
 ```
 
-### Passenger LDV 4-Wheelers by vehicle size
+#### Transport mode with bunkers
+```{r}
+items <- c(
+    "ES|Transport|Pass|Aviation|International|Share",
+    "ES|Transport|Pass|Aviation|Domestic|Share",
+    "ES|Transport|Pass|Rail|non-HSR|Share",
+    "ES|Transport|Pass|Rail|HSR|Share",
+    "ES|Transport|Pass|Road|Bus|Share",
+    "ES|Transport|Pass|Road|LDV|Share",
+    "ES|Transport|Pass|Road|Non-Motorized|Walking|Share",
+    "ES|Transport|Pass|Road|Non-Motorized|Cycling|Share"
+  )
 
+showAreaAndBarPlots(data, items)
+```
+
+#### LDV 4-Wheelers by vehicle size
+```{r}
+items <- c(
+       "ES|Transport|Pass|Road|LDV|Large|Share",
+       "ES|Transport|Pass|Road|LDV|Medium|Share",
+       "ES|Transport|Pass|Road|LDV|SUV|Share",
+       "ES|Transport|Pass|Road|LDV|Mini|Share",
+       "ES|Transport|Pass|Road|LDV|Small|Share",
+       "ES|Transport|Pass|Road|LDV|Van|Share"
+  )
+
+showAreaAndBarPlots(data, items)
+```
+
+### Freight
+#### Transport mode w/o bunkers
+```{r}
+items <- c(
+       "ES|Transport|Freight|Road|Share w/o bunkers",
+       "ES|Transport|Freight|Rail|Share w/o bunkers",
+       "ES|Transport|Freight|Navigation|Share w/o bunkers"
+  )
+
+showAreaAndBarPlots(data, items)
+```
+#### Transport mode with bunkers
+```{r}
+items <- c(
+       "ES|Transport|Freight|Road|Share w/o bunkers",
+       "ES|Transport|Freight|Rail|Share w/o bunkers",
+       "ES|Transport|Freight|Navigation|Share w/o bunkers"
+  )
+
+showAreaAndBarPlots(data, items)
+```
 ### Passenger LDV 4-Wheelers by vehicle technology
 
 ### Passenger LDV 2-Wheelers by technology

@@ -1,11 +1,13 @@
 ---
-title: "Compare Scenarios 2"
+title: "Edge Transport Compare Scenarios"
 date: "`r format(Sys.Date())`"
 output:
   pdf_document:
     toc: yes
     number_sections: yes
-    toc_depth: 3
+    toc_depth: 6
+    includes: 
+      in_header: cs_pdf_header_include.tex
   html_document:
     toc: yes
     toc_float: yes
@@ -13,14 +15,14 @@ output:
     number_sections: yes
 geometry: "a4paper,landscape,left=0.5cm,right=0.5cm,top=0.5cm,bottom=0.5cm,footnotesep=0.0cm,footskip=0.1cm"
 params:
-  mifScen: "C:/Users/johannah/Documents/EDGE-Transport/Output/SSP2-Mix2_2022-02-24_15.53.27/EDGE-T_SA.mif"
+  mifScen: "C:/Users/johannah/Documents/EDGE-Transport/Output/SSP2-Mix2_2022-02-25_15.10.44/EDGE-T_SA.mif"
   mifScenNames: null
   mifHist: "C:/Users/johannah/Documents/EDGE-Transport/HistoricalData/historical.mif"
   yearsScen: !r c(seq(2005, 2060, 5), seq(2070, 2100, 10))
   yearsHist: !r c(seq(2010, 2020, 1), seq(2025, 2100, 5))
   yearsBarPlot: !r c(2010, 2030, 2050, 2100)
-  reg: null
-  sections: "all"
+  reg: !r c("CHA","USA","IND","JPN","DEU","CAZ")
+  sections: "04_costs_and_shareweight_trends"
   userSectionPath: null
   mainReg: "DEU"
   figWidth: 15 
@@ -70,6 +72,7 @@ options(tidyverse.quiet = TRUE)
 library(tidyverse)
 library(quitte)
 library(mip)
+library(data.table)
 ```
 
 
@@ -269,7 +272,7 @@ if (length(params$sections) == 1 && params$sections == "all") {
     sectionPaths
 } else {
   if (length(params$sections) > 0) {
-    sectionPaths <- paste0("cs", params$sections, ".Rmd")
+    sectionPaths <- paste0("csEDGET_", params$sections, ".Rmd")
   } else {
     sectionPaths <- character(0)
   }

@@ -39,7 +39,7 @@
 #'     \code{character(n)}.
 #'     Default: \code{"all"}.
 #'     Names of sections to include. A subset of
-#'     \code{c("EDGET_01_energy_demand", "EDGET_02_energy_services", "EDGET_03_stock_and_sales", "EDGET_04_costs_and_shareweight_trends")}
+#'     \code{c("01_energy_demand", "02_energy_services", "03_stock_and_sales", "04_costs_and_shareweight_trends")}
 #'     or \code{"all"} for all available sections.}
 #'   \item{\code{userSectionPath}}{
 #'     \code{NULL} or \code{character(n)}.
