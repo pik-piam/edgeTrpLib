@@ -13,21 +13,21 @@ output:
     toc_float: yes
     toc_depth: 6
     number_sections: yes
-geometry: "a4paper,landscape,left=0.5cm,right=0.5cm,top=0.5cm,bottom=0.5cm,footnotesep=0.0cm,footskip=0.1cm"
+geometry: "a4paper,landscape,left=0.5cm,right=0.5cm,top=1.5cm,bottom=0.5cm,footnotesep=0.0cm,footskip=0.1cm"
 params:
-  mifScen: "C:/Users/johannah/Documents/EDGE-Transport/Output/SSP2-Mix2_2022-02-25_15.10.44/EDGE-T_SA.mif"
+  mifScen: "C:/Users/johannah/Documents/EDGE-Transport/Output/SSP2-Mix2_2022-03-01_14.20.06/EDGE-T_SA.mif"
   mifScenNames: null
-  mifHist: "C:/Users/johannah/Documents/EDGE-Transport/HistoricalData/historical.mif"
+  mifHist: "C:/Users/johannah/Documents/EDGE-Transport/Validation/historical_eu.mif"
   yearsScen: !r c(seq(2005, 2060, 5), seq(2070, 2100, 10))
   yearsHist: !r c(seq(2010, 2020, 1), seq(2025, 2100, 5))
   yearsBarPlot: !r c(2010, 2030, 2050, 2100)
-  reg: !r c("CHA","USA","IND","JPN","DEU","CAZ")
+  reg: !r c("CHA","USA","IND","JPN","DEU","CAZ","SSA")
   sections: "04_costs_and_shareweight_trends"
   userSectionPath: null
-  mainReg: "DEU"
-  figWidth: 15 
-  figHeight: 10
-  warning: yes
+  mainReg: "CHA"
+  figWidth: 14 
+  figHeight: 8
+  warning: no
 ---
 
 ```{r setup, include=FALSE}
@@ -70,8 +70,10 @@ if (interactive()) {
 library(gridExtra)
 options(tidyverse.quiet = TRUE)
 library(tidyverse)
+library(kableExtra)
 library(quitte)
-library(mip)
+library(devtools)
+load_all("C:/Users/johannah/Documents/Git_repos/mip")
 library(data.table)
 ```
 
@@ -139,6 +141,14 @@ bind_rows(
       unit = "billion US$2005/yr",
       value = value / 1000)) ->
   data
+# Change bn pkm/yr or bn tkm/yr to km/yr to bn km/yr .
+# Relevant for historical ETP data
+bind_rows(
+  data %>% filter(unit != "bn pkm/yr" & unit != "bn tkm/yr"),
+  data %>% 
+    filter(unit == "bn pkm/yr" | unit == "bn tkm/yr" ) %>% 
+    mutate(unit = "bn km/yr")) ->
+  data
 ```
 
 
@@ -160,17 +170,19 @@ histRefModel <- c(
 pCapVariables <- tribble(
   ~variable, ~newUnit, ~conversionFactor,
   "GDP|PPP", "kUS$2005", 1e6,
-  "FE", "GJ/yr", 1e9,
-  "FE|CDR", "GJ/yr", 1e9,
-  "FE|Transport", "GJ/yr", 1e9,
-  "FE|Buildings", "GJ/yr", 1e9,
-  "FE|Industry", "GJ/yr", 1e9,
-  "FE|Buildings|Heating", "GJ/yr", 1e9,
-  "FE|Buildings|Appliances and Light", "GJ/yr", 1e9,
-  "FE|Buildings|Cooking and Water", "GJ/yr", 1e9,
-  "FE|Buildings|Space Cooling", "GJ/yr", 1e9,
-  "FE|Buildings|Space Heating", "GJ/yr", 1e9,
-  "ES|Transport|Pass", "km/yr", 1e9,
+  "ES|Transport|Pass|w/o bunkers", "km/yr", 1e9,
+  "ES|Transport|Pass|Aviation|International", "km/yr", 1e9,
+  "ES|Transport|Pass|Aviation|Domestic", "km/yr", 1e9,
+  "ES|Transport|Pass|Road|Bus", "km/yr", 1e9,
+  "ES|Transport|Pass|Road|Non-Motorized|Walking", "km/yr", 1e9,
+  "ES|Transport|Pass|Road|Non-Motorized|Cycling", "km/yr", 1e9,
+  "ES|Transport|Pass|Rail|non-HSR", "km/yr", 1e9,
+  "ES|Transport|Pass|Rail|HSR", "km/yr", 1e9,
+  "ES|Transport|Freight|w/o bunkers", "tkm/yr", 1e9,
+  "ES|Transport|Freight|International Shipping", "tkm/yr", 1e9,
+  "ES|Transport|Freight|Road", "tkm/yr", 1e9,
+  "ES|Transport|Freight|Navigation", "tkm/yr", 1e9,
+  "ES|Transport|Freight|Rail pCap", "tkm/yr", 1e9,
   "ES|Transport|Pass|Road|LDV", "km/yr", 1e9,
   "ES|Transport|Pass|non-LDV", "km/yr", 1e9,
   "ES|Transport|Pass|Road|LDV|BEV", "km/yr", 1e9,
@@ -179,10 +191,10 @@ pCapVariables <- tribble(
   "ES|Transport|Pass|Road|LDV|Hybrid Electric", "km/yr", 1e9,
   "ES|Transport|Pass|Road|LDV|Liquids", "km/yr", 1e9,
   "ES|Transport|Freight", "tkm/yr", 1e9,
-  "ES|Transport|Freight|Road|Electric", "tkm/yr", 1e9,
-  "ES|Transport|Freight|Road|FCEV", "tkm/yr", 1e9,
-  "ES|Transport|Freight|Road|Gases", "tkm/yr", 1e9,
-  "ES|Transport|Freight|Road|Liquids", "tkm/yr", 1e9)
+  "ES|Transport|Freight|Road|Electric", "km/yr", 1e9,
+  "ES|Transport|Freight|Road|FCEV", "km/yr", 1e9,
+  "ES|Transport|Freight|Road|Gases", "km/yr", 1e9,
+  "ES|Transport|Freight|Road|Liquids", "km/yr", 1e9)
 
 data %>% 
   filter(variable == "Population") %>%
@@ -249,15 +261,16 @@ data %>%
   data
 ```
 
-
-```{r global variables}
-# Define some global variables for use in plotting. 
-variables <- unique(data$variable)
-regions <- unique(data$region)
-mainReg <- params$mainReg
-yearsBarPlot <- params$yearsBarPlot
+```{r quitte}
+data <- as.quitte(data)
 ```
 
+```{r global variables}
+# Set global variables for use in plotting.
+options(mip.mainReg = params$mainReg)
+options(mip.yearsBarPlot = params$yearsBarPlot)
+options(mip.histRefModel = histRefModel)
+```
 
 ```{r define plot functions}
 source("cs2_plot_functions.R", local=TRUE)

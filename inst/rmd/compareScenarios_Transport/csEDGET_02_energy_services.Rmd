@@ -1,102 +1,161 @@
-# Energy Services and Intensity
-
-## Energy Service Shares
-### Passenger
-#### Transport mode w/o bunkers
+# Energy Services
+## Passenger
 ```{r}
+tot_wbunk <- "ES|Transport|Pass"
+tot_wobunk <- "ES|Transport|Pass|w/o bunkers"
 items <- c(
-    "ES|Transport|Pass|Aviation|Domestic|Share w/o bunkers",
-    "ES|Transport|Pass|Rail|non-HSR|Share w/o bunkers",
-    "ES|Transport|Pass|Rail|HSR|Share w/o bunkers",
-    "ES|Transport|Pass|Road|Bus|Share w/o bunkers",
-    "ES|Transport|Pass|Road|LDV|Share w/o bunkers",
-    "ES|Transport|Pass|Road|Non-Motorized|Walking|Share w/o bunkers",
-    "ES|Transport|Pass|Road|Non-Motorized|Cycling|Share w/o bunkers"
+    "ES|Transport|Pass|Aviation|International",
+    "ES|Transport|Pass|Aviation|Domestic",
+    "ES|Transport|Pass|Rail|non-HSR",
+    "ES|Transport|Pass|Rail|HSR",
+    "ES|Transport|Pass|Road|Bus",
+    "ES|Transport|Pass|Road|LDV",
+    "ES|Transport|Pass|Road|Non-Motorized|Walking",
+    "ES|Transport|Pass|Road|Non-Motorized|Cycling"
   )
-
-showAreaAndBarPlots(data, items)
+showAreaAndBarPlots(data, items, tot_wbunk)
+showAreaAndBarPlots(data, items[2:8], tot_wobunk)
+showAreaAndBarPlots(data, items, tot_wbunk, fill=TRUE)
+showAreaAndBarPlots(data, items[2:8], tot_wobunk, fill=TRUE)
+showLinePlots(data, tot_wbunk)
+walk(items, showLinePlots, data=data)
 ```
 
-#### Transport mode with bunkers
+## Passenger per Capita
 ```{r}
-items <- c(
-    "ES|Transport|Pass|Aviation|International|Share",
-    "ES|Transport|Pass|Aviation|Domestic|Share",
-    "ES|Transport|Pass|Rail|non-HSR|Share",
-    "ES|Transport|Pass|Rail|HSR|Share",
-    "ES|Transport|Pass|Road|Bus|Share",
-    "ES|Transport|Pass|Road|LDV|Share",
-    "ES|Transport|Pass|Road|Non-Motorized|Walking|Share",
-    "ES|Transport|Pass|Road|Non-Motorized|Cycling|Share"
-  )
 
-showAreaAndBarPlots(data, items)
+items <- c(
+    "ES|Transport|Pass|w/o bunkers pCap",
+    "ES|Transport|Pass|Aviation|International pCap",
+    "ES|Transport|Pass|Aviation|Domestic pCap",
+    "ES|Transport|Pass|Rail|non-HSR pCap",
+    "ES|Transport|Pass|Rail|HSR pCap",
+    "ES|Transport|Pass|Road|Bus pCap",
+    "ES|Transport|Pass|Road|LDV pCap",
+    "ES|Transport|Pass|Road|Non-Motorized|Walking pCap",
+    "ES|Transport|Pass|Road|Non-Motorized|Cycling pCap")
+showMultiLinePlots(data, items)    
+showMultiLinePlotsByVariable(data, items, "GDP|PPP pCap")
 ```
 
-#### LDV 4-Wheelers by vehicle size
+## LDV 4-Wheelers 
+
+### By vehicle size
 ```{r}
+tot <- "ES|Transport|Pass|Road|LDV|4-Wheelers"
 items <- c(
-       "ES|Transport|Pass|Road|LDV|Large|Share",
-       "ES|Transport|Pass|Road|LDV|Medium|Share",
-       "ES|Transport|Pass|Road|LDV|SUV|Share",
-       "ES|Transport|Pass|Road|LDV|Mini|Share",
-       "ES|Transport|Pass|Road|LDV|Small|Share",
-       "ES|Transport|Pass|Road|LDV|Van|Share"
+       "ES|Transport|Pass|Road|LDV|Large",
+       "ES|Transport|Pass|Road|LDV|Medium",
+       "ES|Transport|Pass|Road|LDV|SUV",
+       "ES|Transport|Pass|Road|LDV|Mini",
+       "ES|Transport|Pass|Road|LDV|Small",
+       "ES|Transport|Pass|Road|LDV|Van"
   )
 
-showAreaAndBarPlots(data, items)
+showAreaAndBarPlots(data, items, tot)
+showAreaAndBarPlots(data, items, tot, fill=TRUE)
 ```
 
-### Freight
-#### Transport mode w/o bunkers
+### By technology
 ```{r}
+tot <- "ES|Transport|Pass|Road|LDV|4-Wheelers"
 items <- c(
-       "ES|Transport|Freight|Road|Share w/o bunkers",
-       "ES|Transport|Freight|Rail|Share w/o bunkers",
-       "ES|Transport|Freight|Navigation|Share w/o bunkers"
+       "ES|Transport|Pass|Road|LDV|4-Wheelers|BEV",
+       "ES|Transport|Pass|Road|LDV|4-Wheelers|FCEV",
+       "ES|Transport|Pass|Road|LDV|4-Wheelers|Hybrid Electric",
+       "ES|Transport|Pass|Road|LDV|4-Wheelers|Gases",
+       "ES|Transport|Pass|Road|LDV|4-Wheelers|Liquids"
   )
 
-showAreaAndBarPlots(data, items)
+showAreaAndBarPlots(data, items, tot)
+showAreaAndBarPlots(data, items, tot, fill=TRUE)
 ```
-#### Transport mode with bunkers
+
+## LDV 2-Wheelers by technology
 ```{r}
+tot <- "ES|Transport|Pass|Road|LDV|Two-Wheelers"
 items <- c(
-       "ES|Transport|Freight|Road|Share w/o bunkers",
-       "ES|Transport|Freight|Rail|Share w/o bunkers",
-       "ES|Transport|Freight|Navigation|Share w/o bunkers"
+     "ES|Transport|Pass|Road|LDV|Two-Wheelers|BEV",
+     "ES|Transport|Pass|Road|LDV|Two-Wheelers|Liquids" 
   )
 
-showAreaAndBarPlots(data, items)
+showAreaAndBarPlots(data, items, tot)
+showAreaAndBarPlots(data, items, tot, fill=TRUE)
 ```
-### Passenger LDV 4-Wheelers by vehicle technology
 
-### Passenger LDV 2-Wheelers by technology
+## Busses by technology
+```{r}
+tot <- "ES|Transport|Pass|Road|Bus"
+items <- c(
+       "ES|Transport|Pass|Road|Bus|Electric",
+       "ES|Transport|Pass|Road|Bus|FCEV",
+       "ES|Transport|Pass|Road|Bus|Gases",
+       "ES|Transport|Pass|Road|Bus|Liquids" 
+  )
 
-### Freight by vehicle type
+showAreaAndBarPlots(data, items, tot)
+showAreaAndBarPlots(data, items, tot, fill=TRUE)
+```
 
-### Freight Trucks by vehicle size
+## Freight
+```{r}
+tot_wbunk <- "ES|Transport|Freight"
+tot_wobunk <- "ES|Transport|Freight|w/o bunkers"
+items <- c(
+      "ES|Transport|Freight|International Shipping",
+      "ES|Transport|Freight|Road",
+      "ES|Transport|Freight|Rail",
+      "ES|Transport|Freight|Navigation"
+  )
+showAreaAndBarPlots(data, items, tot_wbunk)
+showAreaAndBarPlots(data, items[2:4], tot_wobunk)
+showAreaAndBarPlots(data, items, tot_wbunk, fill=TRUE)
+showAreaAndBarPlots(data, items[2:4], tot_wobunk, fill=TRUE)
+showLinePlots(data, tot_wbunk)
+walk(items, showLinePlots, data=data)
+```
 
-### Freight Trucks by technology
+## Freight per Capita
+```{r}
 
-## Energy Service line plots
-### Passenger
-### Freight
+items <- c(
+      "ES|Transport|Freight|w/o bunkers pCap",
+      "ES|Transport|Freight|International Shipping pCap",
+      "ES|Transport|Freight|Road pCap",
+      "ES|Transport|Freight|Rail pCap",
+      "ES|Transport|Freight|Navigation pCap"
+    )
+showMultiLinePlots(data, items)    
+showMultiLinePlotsByVariable(data, items, "GDP|PPP pCap")
+```
 
-## Energy Service Shares by transport mode
-### Passenger
-### Freight
+## Trucks
 
+### By vehicle size
+```{r}
+tot <- "ES|Transport|Freight|Road"
+items <- c(
+       "ES|Transport|Freight|Road|Truck (0-3.5t)",
+       "ES|Transport|Freight|Road|Truck (7.5t)",
+       "ES|Transport|Freight|Road|Truck (18t)",
+       "ES|Transport|Freight|Road|Truck (26t)",
+       "ES|Transport|Freight|Road|Truck (40t)"
+  )
 
-## Energy Services Passenger per Capita
-## Energy Services Passenger per GDP
+showAreaAndBarPlots(data, items, tot)
+showAreaAndBarPlots(data, items, tot, fill=TRUE)
+```
 
-## Energy Intensity 
-### Passenger LDV|BEV
-### Passenger LDV|FCEV
-### Passenger LDV|Liquids
-### Passenger Bus|BEV
-### Passenger Bus|FCEV
-### Passenger Bus|Liquids
-### Freight Trucks|BEV
-### Freight Trucks|FCEV
-### Freight Trucks|Liquids
+### By technology
+```{r}
+tot <-  "ES|Transport|Freight|Road"
+items <- c(
+       "ES|Transport|Freight|Road|Electric",
+       "ES|Transport|Freight|Road|FCEV",
+       "ES|Transport|Freight|Road|Gases",
+       "ES|Transport|Freight|Road|Liquids"
+  )
+
+showAreaAndBarPlots(data, items, tot)
+showAreaAndBarPlots(data, items, tot, fill=TRUE)
+```

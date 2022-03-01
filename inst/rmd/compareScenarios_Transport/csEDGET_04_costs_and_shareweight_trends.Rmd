@@ -1,4 +1,4 @@
-# Prices and shareweight trends
+# Prices 
 
 ```{r convert data to data table}
 #convert to dplyr when time
@@ -18,7 +18,7 @@ for (reg0 in params$reg) {
   setnames(plotdata, "scenario","region")
   plotdata <- plotdata[, scenario:=gsub("\\|Eq inconvenience cost|\\|tot_VOT_price|\\|fuel_price_pkm|\\|non_fuel_price","",variable)]
   plotdata <- plotdata[, variable:=gsub("Walk\\||Cycle\\||trn_pass_road\\||Domestic Aviation\\||Passenger Rail\\||HSR\\|","",variable)]
-  plotdata[, factor(variable, levels = c("Eq inconvenience cost","tot_VOT_price","fuel_price_pkm","non_fuel_price"))]
+  plotdata[, variable := factor(variable, levels = c("Eq inconvenience cost","tot_VOT_price","fuel_price_pkm","non_fuel_price"))]
   
   p2 <- mipBarYearData(plotdata, ylab = "Prices logit S3S [USD2005/pkm]", title = paste0("Prices logit S3S ",reg0) )
   p2 <- p2 + theme_mip(size = 18)
@@ -68,14 +68,15 @@ for (reg0 in params$reg) {
 
 for (reg0 in params$reg) {
   plotdata <- data[grepl("Logit cost\\|VS1\\|LDV\\|(Mini|Medium|Large|SUV|Van|Small)",variable)]
+  plotdata <- plotdata[!grepl("Eq inconvenience cost",variable)]
   plotdata <- plotdata[region==reg0][,region:=NULL]
   plotdata <- plotdata[, variable := gsub("Logit cost\\|VS1\\|LDV\\|", "",variable)][period %in% params$yearsBarPlot]  
   setnames(plotdata, "scenario","region")
   plotdata <- plotdata[, scenario := gsub("\\|Eq inconvenience cost|\\|tot_VOT_price|\\|fuel_price_pkm|\\|non_fuel_price", "", variable)]
   plotdata <- plotdata[, variable := gsub("Mini\\||Large\\||SUV\\||Van\\||Small\\||Medium\\|", "", variable)]
-  plotdata[, variable := factor(variable, levels = c("Eq inconvenience cost","tot_VOT_price","fuel_price_pkm","non_fuel_price"))]
+  plotdata[, variable := factor(variable, levels = c("tot_VOT_price","fuel_price_pkm","non_fuel_price"))]
   
-  p2 <- mipBarYearData(plotdata[period %in% params$yearsBarPlot],ylab="Prices logit VS1 [USD2005/pkm]", title = paste0("Prices logit VS1 ",reg0))
+  p2 <- mipBarYearData(plotdata[period %in% params$yearsBarPlot],ylab="Prices logit VS1 without eq inconvenience costs [USD2005/pkm]", title = paste0("Prices logit VS1 ",reg0))
   p2 <- p2 + theme_mip(size = 18)
   print(p2)}
 
@@ -89,13 +90,15 @@ vars <- c("Mini","Medium","Large","SUV","Van","Small")
 for (var0 in vars) {
   
   plotdata <- data[grepl(paste0("Logit cost\\|VS1\\|LDV\\|",var0),variable)]
+  plotdata <- plotdata[!grepl("Eq inconvenience cost",variable)]
   plotdata <- plotdata[region %in% params$reg]
+  plotdata <- droplevels(plotdata, data$regions %in% params$reg)
   plotdata <- plotdata[, variable := gsub("Logit cost\\|VS1\\|LDV\\|", "",variable)][period %in% params$yearsBarPlot]
   
   plotdata <- plotdata[, variable := gsub("Mini\\||Large\\||SUV\\||Van\\||Small\\||Medium\\|", "", variable)]
-  plotdata[, variable := factor(variable, levels = c("Eq inconvenience cost","tot_VOT_price","fuel_price_pkm","non_fuel_price"))]
+  plotdata[, variable := factor(variable, levels = c("tot_VOT_price","fuel_price_pkm","non_fuel_price"))]
   if (nrow(plotdata)>1){
-    p2 <- mipBarYearDataMod(plotdata[period %in% params$yearsBarPlot],ylab = "Prices logit     VS1 [USD2005/pkm]", title = paste0("Prices logit VS1 ",var0))
+    p2 <- mipBarYearDataMod(plotdata[period %in% params$yearsBarPlot],ylab = "Prices logit VS1 without eq inconvenience costs [USD2005/pkm]", title = paste0("Prices logit VS1 ",var0))
     p2 <- p2 + theme_mip(size = 18) 
     print(p2)}}
 
@@ -120,6 +123,26 @@ for (var0 in vars) {
 
 ```
 
+## Average LDV non fuel prices 
+```{r Average LDV non fuel prices}
+
+  plotdata <- data[grepl("Logit cost\\|FV\\|trn_pass_road_LDV_4W\\|non_fuel_price",variable) & period %in% params$yearsScen & region %in% params$reg]
+  plotdata <- plotdata[, variable := gsub("Logit cost\\|S1S2\\|", "",variable)][, variable := NULL]
+  
+  # Extra plotting functions
+ 
+  p=ggplot(plotdata, aes(x = as.character(period), y = value, group = region, color = region))+
+      geom_line(size = 0.5)+
+      facet_wrap(~scenario, nrow = 4, scales = "free")+
+      scale_x_discrete(breaks = c(2010,2030,2050,2100))+
+      labs(x = "", y = paste0("Average LDV 4W non fuel prices","[", unique(data$unit),"]"), title = paste0("Average LDV 4W non fuel prices"))
+
+  print(p)
+
+
+```
+
+
 ## Average LDV total price
 ```{r Average LDV total price}
 
@@ -140,7 +163,7 @@ for (var0 in vars) {
 
 ```
 
-## Shareweight trends
+# Shareweight trends
 ```{r Shareweight trends}
 
 
