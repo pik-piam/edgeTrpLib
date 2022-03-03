@@ -508,10 +508,13 @@ reportEDGETransport <- function(output_folder = ".", sub_folder = "EDGE-T/",
       priceData_aggr <- aggregate_dt(priceData[vehicle_type %in% Aggrdata_veh$vehicle_type], Aggrdata_veh , fewcol = "det_veh", manycol = "vehicle_type", yearcol = "period", weights = weight_pkm_FV[vehicle_type %in% Aggrdata_veh$vehicle_type], datacols = c("region","scenario","variable","technology"))
       setnames(priceData_aggr, "det_veh", "vehicle_type")
       priceData_aggr <- priceData_aggr[, variable := paste0("Logit cost|FV|", gsub("_tmp_vehicletype", "", vehicle_type), "|", technology, "|", variable)][, c("region", "period", "scenario", "variable", "value")]
+
       #Aggregate average vehicle
-      Aggrdata_avveh <- as.data.table(Aggrdata[, c("vehicle_type")])
+      Aggrdata_avveh <- as.data.table(Aggrdata)
+      Aggrdata_avveh <- Aggrdata_avveh[subsector_L1 == "trn_pass_road_LDV_4W"]
+      Aggrdata_avveh <- unique(Aggrdata_avveh[, c("vehicle_type")])
       Aggrdata_avveh[, av_veh := "Average veh"]
-      priceData_av <- aggregate_dt(priceData_av[vehicle_type %in% Aggrdata_avveh$vehicle_type], Aggrdata_avveh , fewcol = "av_veh", manycol = "vehicle_type", yearcol = "period", weights = weight_pkm_FV[vehicle_type %in% Aggrdata_avveh$vehicle_type], datacols = c("region","scenario","variable","technology"))
+      priceData_av <- aggregate_dt(priceData[vehicle_type %in% Aggrdata_avveh$vehicle_type], Aggrdata_avveh , fewcol = "av_veh", manycol = "vehicle_type", yearcol = "period", weights = weight_pkm_FV[vehicle_type %in% Aggrdata_avveh$vehicle_type], datacols = c("region","scenario","variable","technology"))
       priceData_av <- priceData_av[, variable := paste0("Logit cost|FV|", technology, "|", variable)][, c("region", "period", "scenario", "variable", "value")]
       priceData <- priceData[, variable := paste0("Logit cost|FV|", gsub("_tmp_vehicletype", "", vehicle_type), "|", technology, "|", variable)][, c("region", "period", "scenario", "variable", "value")]
               
