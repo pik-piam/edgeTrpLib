@@ -68,10 +68,10 @@ feh2t,H2 enduse
 
     setnames(pfe, old = c("value"), new = c("fuel_price"))
 
-    ## fuel price in 2005USD/GJ -> 1990USD/EJ
-    pfe[, fuel_price := fuel_price * CONV_2005USD_1990USD * 1e9]
+    ## fuel price in 2005USD/GJ -> 2005USD/EJ
+    pfe[, fuel_price := fuel_price * 1e9]
 
-    ## join with vehicle intensity and load factor to get the 1990USD/pkm
+    ## join with vehicle intensity and load factor to get the 2005USD/pkm
     fuel_price_REMIND <- merge(pfe, intensity_data, by = c("region",
         "year", "sector_fuel"), all.y = TRUE)
 
