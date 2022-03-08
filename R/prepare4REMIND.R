@@ -16,7 +16,6 @@ prepare4REMIND <- function(demByTech, intensity, capCost,
 
     ## load conversion factor
     EJ_2_Twa <- 31.71e-03 ## TWa is the unit expected in REMIND for the final energy values
-    conv_2005USD_1990USD=0.67 ## 2005USD=0.67*1990USD
     ## energy intensity
     intensity=merge(intensity, EDGE2teESmap[,c("CES_node","teEs")],
                     by="CES_node",all.x=TRUE)
@@ -43,8 +42,6 @@ prepare4REMIND <- function(demByTech, intensity, capCost,
                      idxcols=c("all_regi", "all_teEs"),
                      extrapolate=T)
 
-    budget[,value:=value ## in 1990USD/pkm
-                   /conv_2005USD_1990USD] ## in [2005USD/pkm]
     setcolorder(budget, c("tall", "all_regi", "all_teEs", "value"))
 
     ## demand by technology
