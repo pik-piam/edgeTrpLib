@@ -4,7 +4,6 @@
 ## Final Energy by carrier
 
 ### Total
-
 ```{r}
 tot <- "FE|Transport"
 items <- c(
@@ -18,129 +17,222 @@ showLinePlots(data, tot)
 walk(items, showLinePlots, data=data)
 ```
 
-### w/o Bunkers
-
+### Total w/o bunkers
 ```{r}
-tot <- "FE|Transport|w/o Bunkers"
+tot <- "FE|Transport|w/o bunkers"
 items <- c(
-  "FE|Transport|w/o Bunkers|Electricity",
-  "FE|Transport|w/o Bunkers|Gases",
-  "FE|Transport|w/o Bunkers|Liquids",
-  "FE|Transport|w/o Bunkers|Hydrogen")
+  "FE|Transport|w/o bunkers|Electricity",
+  "FE|Transport|w/o bunkers|Gases",
+  "FE|Transport|w/o bunkers|Liquids",
+  "FE|Transport|w/o bunkers|Hydrogen")
 showAreaAndBarPlots(data, items, tot)
+showAreaAndBarPlots(data, items, tot, fill=TRUE)
 showLinePlots(data, tot)
 walk(items, showLinePlots, data=data)
 ```
 
-### Per type
-
-```{r}
-tot <- "FE|Transport"
-items <- c(
-  "FE|Transport|LDV|Liquids",
-  "FE|Transport|LDV|Gases",
-  "FE|Transport|LDV|Electricity",
-  "FE|Transport|LDV|Hydrogen",
-  "FE|Transport|non-LDV|Liquids",
-  "FE|Transport|non-LDV|Gases",
-  "FE|Transport|non-LDV|Electricity",
-  "FE|Transport|non-LDV|Hydrogen")
-showAreaAndBarPlots(data, items, tot)
-```
-
-### Bunkers
-
-```{r}
-tot <- "FE|Transport"
-items <- c(
-  "FE|Transport|Bunkers",
-  "FE|Transport|w/o Bunkers")
-showAreaAndBarPlots(data, items, tot)
-```
-
 ### Passenger
-
 ```{r}
-tot <- "FE|Transport"
-items <- c()
-  
+tot <- "FE|Transport|Pass"
+items <- c(
+  "FE|Transport|Pass|Electricity",
+  "FE|Transport|Pass|Gases",
+  "FE|Transport|Pass|Liquids",
+  "FE|Transport|Pass|Hydrogen")
 showAreaAndBarPlots(data, items, tot)
+showAreaAndBarPlots(data, items, tot, fill=TRUE)
+showLinePlots(data, tot)
+walk(items, showLinePlots, data=data)
+```
+
+### Passenger w/o bunkers
+```{r}
+tot <- "FE|Transport|Pass|w/o bunkers"
+items <- c(
+  "FE|Transport|Pass|w/o bunkers|Electricity",
+  "FE|Transport|Pass|w/o bunkers|Gases",
+  "FE|Transport|Pass|w/o bunkers|Liquids",
+  "FE|Transport|Pass|w/o bunkers|Hydrogen")
+showAreaAndBarPlots(data, items, tot)
+showAreaAndBarPlots(data, items, tot, fill=TRUE)
+showLinePlots(data, tot)
+walk(items, showLinePlots, data=data)
+```
+
+### Passenger LDV 4-Wheelers
+```{r}
+tot <- "FE|Transport|Pass|LDV|4-Wheelers"
+items <- c(
+  "FE|Transport|Pass|Road|LDV|4-Wheelers|Electricity",
+  "FE|Transport|Pass|Road|LDV|4-Wheelers|Gases",
+  "FE|Transport|Pass|Road|LDV|4-Wheelers|Liquids",
+  "FE|Transport|Pass|Road|LDV|4-Wheelers|Hydrogen")
+showAreaAndBarPlots(data, items, tot)
+showAreaAndBarPlots(data, items, tot, fill=TRUE)
+showLinePlots(data, tot)
+walk(items, showLinePlots, data=data)
+```
+
+### Passenger LDV 2-Wheelers
+```{r}
+tot <- "FE|Transport|Pass|LDV|Two-Wheelers"
+items <- c(
+  "FE|Transport|Pass|Road|LDV|Two-Wheelers|Electricity",
+  "FE|Transport|Pass|Road|LDV|Two-Wheelers|Gases",
+  "FE|Transport|Pass|Road|LDV|Two-Wheelers|Liquids",
+  "FE|Transport|Pass|Road|LDV|Two-Wheelers|Hydrogen")
+showAreaAndBarPlots(data, items, tot)
+showAreaAndBarPlots(data, items, tot, fill=TRUE)
+showLinePlots(data, tot)
+walk(items, showLinePlots, data=data)
+```
+
+### Passenger Bus
+```{r}
+tot <- "FE|Transport|Pass|Road|Bus"
+items <- c(
+  "FE|Transport|Pass|Road|Bus|Electricity",
+  "FE|Transport|Pass|Road|Bus|Gases",
+  "FE|Transport|Pass|Road|Bus|Liquids",
+  "FE|Transport|Pass|Road|Bus|Hydrogen")
+showAreaAndBarPlots(data, items, tot)
+showAreaAndBarPlots(data, items, tot, fill=TRUE)
+showLinePlots(data, tot)
+walk(items, showLinePlots, data=data)
+```
+
+### Passenger Rail (non-HSR)
+```{r}
+tot <- "FE|Transport|Pass|Rail|non-HSR"
+items <- c(
+  "FE|Transport|Pass|Rail|non-HSR|Electricity",
+  "FE|Transport|Pass|Rail|non-HSR|Liquids")
+showAreaAndBarPlots(data, items, tot)
+showAreaAndBarPlots(data, items, tot, fill=TRUE)
+showLinePlots(data, tot)
+walk(items, showLinePlots, data=data)
 ```
 
 ### Freight
-
 ```{r}
-tot <- "FE|Transport"
-items <- c()
-  
+tot <- "FE|Transport|Freight"
+items <- c(
+  "FE|Transport|Freight|Electricity",
+  "FE|Transport|Freight|Gases",
+  "FE|Transport|Freight|Liquids",
+  "FE|Transport|Freight|Hydrogen")
 showAreaAndBarPlots(data, items, tot)
+showAreaAndBarPlots(data, items, tot, fill=TRUE)
+showLinePlots(data, tot)
+walk(items, showLinePlots, data=data)
 ```
 
-### LDV
-
+### Freight w/o bunkers
 ```{r}
-tot <- "FE|Transport"
-items <- c()
-  
+tot <- "FE|Transport|Freight|w/o bunkers"
+items <- c(
+  "FE|Transport|Freight|w/o bunkers|Electricity",
+  "FE|Transport|Freight|w/o bunkers|Gases",
+  "FE|Transport|Freight|w/o bunkers|Liquids",
+  "FE|Transport|Freight|w/o bunkers|Hydrogen")
 showAreaAndBarPlots(data, items, tot)
+showAreaAndBarPlots(data, items, tot, fill=TRUE)
+showLinePlots(data, tot)
+walk(items, showLinePlots, data=data)
 ```
 
-### Trucks
-
+### Freight Trucks
 ```{r}
-tot <- "FE|Transport"
-items <- c()
-  
+tot <- "FE|Transport|Freight|Road"
+items <- c(
+  "FE|Transport|Freight|Road|Electricity",
+  "FE|Transport|Freight|Road|Gases",
+  "FE|Transport|Freight|Road|Liquids",
+  "FE|Transport|Freight|Road|Hydrogen")
 showAreaAndBarPlots(data, items, tot)
+showAreaAndBarPlots(data, items, tot, fill=TRUE)
+showLinePlots(data, tot)
+walk(items, showLinePlots, data=data)
+```
+
+### Freight Rail 
+```{r}
+tot <- "FE|Transport|Freight|Rail"
+items <- c(
+  "FE|Transport|Freight|Rail|Electricity",
+  "FE|Transport|Freight|Rail|Gases",
+  "FE|Transport|Freight|Rail|Liquids",
+  "FE|Transport|Freight|Rail|Hydrogen")
+showAreaAndBarPlots(data, items, tot)
+showAreaAndBarPlots(data, items, tot, fill=TRUE)
+showLinePlots(data, tot)
+walk(items, showLinePlots, data=data)
+```
+
+### Freight Navigation
+```{r}
+tot <- "FE|Transport|Freight|Navigation"
+items <- c(
+  "FE|Transport|Freight|Navigation|Electricity",
+  "FE|Transport|Freight|Navigation|Gases",
+  "FE|Transport|Freight|Navigation|Liquids",
+  "FE|Transport|Freight|Navigation|Hydrogen")
+showAreaAndBarPlots(data, items, tot)
+showAreaAndBarPlots(data, items, tot, fill=TRUE)
+showLinePlots(data, tot)
+walk(items, showLinePlots, data=data)
+```
+
+### Freight Shipping International
+```{r}
+tot <- "FE|Transport|Freight|International Shipping"
+items <- c(
+  "FE|Transport|Freight|International Shipping|Electricity",
+  "FE|Transport|Freight|International Shipping|Gases",
+  "FE|Transport|Freight|International Shipping|Liquids",
+  "FE|Transport|Freight|International Shipping|Hydrogen")
+showAreaAndBarPlots(data, items, tot)
+showAreaAndBarPlots(data, items, tot, fill=TRUE)
+showLinePlots(data, tot)
+walk(items, showLinePlots, data=data)
 ```
 
 ## Final Energy by transport modes
 
+### Passenger
 ```{r}
-tot <- "FE|Transport"
-items <- c()
-  
-showAreaAndBarPlots(data, items, tot)
-```
-
-
-## Final Energy line plots 
-### Passenger
-
-```{r plot industry subsector production}
+tot_wbunk <- "FE|Transport|Pass"
+tot_wobunk <- "FE|Transport|Pass|w/o bunkers"
 items <- c(
-  "FE|Transport",
-  "FE|Transport|Pass",
-  "FE|Transport|Pass|Rail",
-  "FE|Transport|Pass|Road|Bus",
-  "FE|Transport|Pass|Road|LDV",
-  "FE|Transport|Pass|Navigation"
+    "FE|Transport|Pass|Aviation|International",
+    "FE|Transport|Pass|Aviation|Domestic",
+    "FE|Transport|Pass|Rail|non-HSR",
+    "FE|Transport|Pass|Rail|HSR",
+    "FE|Transport|Pass|Road|Bus",
+    "FE|Transport|Pass|Road|LDV",
   )
-
-showLinePlots(data, items)
-
+showAreaAndBarPlots(data, items, tot_wbunk)
+showAreaAndBarPlots(data, items[2:6], tot_wobunk)
+showAreaAndBarPlots(data, items, tot_wbunk, fill=TRUE)
+showAreaAndBarPlots(data, items[2:6], tot_wobunk, fill=TRUE)
+showLinePlots(data, tot_wbunk)
+walk(items, showLinePlots, data=data)
 ```
 
 ### Freight
-
-```{r }
+```{r}
+tot_wbunk <- "FE|Transport|Freight"
+tot_wobunk <- "FE|Transport|Freight|w/o bunkers"
 items <- c(
-  "FE|Transport|Freight",
-  "FE|Transport|Freight|Rail",
-  "FE|Transport|Freight|Navigation",
-  "FE|Transport|Freight|Shipping international",
-  "FE|Transport|Freight|Road"
+      "FE|Transport|Freight|International Shipping",
+      "FE|Transport|Freight|Road",
+      "FE|Transport|Freight|Rail",
+      "FE|Transport|Freight|Navigation"
   )
-
-showLinePlots(data, items)
-
+showAreaAndBarPlots(data, items, tot_wbunk)
+showAreaAndBarPlots(data, items[2:4], tot_wobunk)
+showAreaAndBarPlots(data, items, tot_wbunk, fill=TRUE)
+showAreaAndBarPlots(data, items[2:4], tot_wobunk, fill=TRUE)
+showLinePlots(data, tot_wbunk)
+walk(items, showLinePlots, data=data)
 ```
-
-
-## Useful Energy Demand
-### Total
-### Passenger
-### Passenger LDV
-### Passenger non-LDV
-### Freight
-### Freight Trucks
