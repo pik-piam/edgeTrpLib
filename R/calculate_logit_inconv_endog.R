@@ -9,6 +9,7 @@
 #' @param price_nonmot price of non-motorized modes in the logit tree
 #' @param tech_scen technology that the policymaker wants to promote
 #' @param totveh total demand for LDVs by tecnology, in million veh
+#' @param SSP_scen SSP or SDP scenario
 #' @import data.table
 #' @export
 
@@ -19,6 +20,8 @@ calculate_logit_inconv_endog = function(prices,
                                         intensity_data,
                                         price_nonmot,
                                         tech_scen,
+                                        SSP_scen,
+                                        preftab4W,
                                         totveh = NULL) {
 
   tot_price <- non_fuel_price <- subsector_L3 <- logit.exponent <- share <- sw <- time_price <- NULL
@@ -32,7 +35,7 @@ calculate_logit_inconv_endog = function(prices,
   X2Xcalc <- function(prices, pref_data, logit_params, value_time, mj_km_data, level_base, level_next, group_value) {
     final_pref <- pref_data[[paste0(level_next, "_final_pref")]]
     logit_exponent <- logit_params[[paste0("logit_exponent_", level_next)]]
-    
+
     ## data contains all the prices in the beginning
     all_subsectors <- c("technology", "vehicle_type", "subsector_L1", "subsector_L2",
                         "subsector_L3", "sector")
@@ -56,8 +59,8 @@ calculate_logit_inconv_endog = function(prices,
 
     df <- df[is.na(time_price), time_price := 0]
     df <- df[, tot_VOT_price := time_price + tot_VOT_price]
-    df <- df[, tot_price := tot_price + time_price]    
-    
+    df <- df[, tot_price := tot_price + time_price]
+
     ## calculate the shares given prices, lambda and inco
     df <- df[, share := sw*tot_price^logit.exponent/(sum(sw*tot_price^logit.exponent)),
              by = c(group_value, "region", "year")]
@@ -125,7 +128,7 @@ calculate_logit_inconv_endog = function(prices,
     final_prefFV[, pmod_av := ifelse(is.na(pmod_av), 0, pmod_av)]
     final_prefFV[, prisk := ifelse(is.na(prisk), 0, prisk)]
 
- 
+
     ## data contains all the prices in the beginning
     all_subsectors <- c("technology", "vehicle_type", "subsector_L1", "subsector_L2",
                         "subsector_L3", "sector")
@@ -296,96 +299,48 @@ calculate_logit_inconv_endog = function(prices,
                            pref[year == 2020]*exp(1)^(weighted_sharessum[year == (t-1)]*bfuelav),
                            pref), by = c("region", "technology", "vehicle_type", "subsector_L1")]
 
-      ## the phase-in of BEVs should not be too abrupt
 
+      ## load inconvenience factor table
+      if(is.null(preftab4W)){
+        preftab4W <- system.file("extdata", "inconv_factor.csv", package = "edgeTransport")
+      }
+      ptab <- fread(preftab4W, header=T)[techscen == tech_scen & SSPscen == SSP_scen]
+
+      ## the phase-in of BEVs should not be too abrupt
       linDecrease <- function(x, x0, y0, x1, y1){
         return(min(y0, max(y1, (y1 - y0)/(x1 - x0) * (x - x0) + y0)))
       }
 
-      switch(
-        tech_scen,
-        "ConvCase" = {
-          mult <- linDecrease(t, 2025, 0.8, 2035, 0.1)
-        },
-        "ElecEra" = {
-          mult <- linDecrease(t, 2025, 0.6, 2035, 0.)
-        },
-        "HydrHype" = {
-          mult <- linDecrease(t, 2025, 0.7, 2035, 0.)
-        },
-        "Mix" = {
-          mult <- linDecrease(t, 2025, 0.6, 2035, 0.)
-        },
-        "Mix4" = {
-          mult <- linDecrease(t, 2025, 0.6, 2035, 0.)
-        },
-        "Mix3" = {
-          mult <- linDecrease(t, 2025, 0.7, 2035, 0.1)
-        },
-        "Mix2" = {
-          mult <- linDecrease(t, 2025, 0.8, 2035, 0.15)
-        },
-        "Mix1" = {
-          mult <- linDecrease(t, 2025, 0.9, 2035, 0.2)
-        }
-      )
+      mult <- linDecrease(t, ptab[param == "startYeBEV", value], ptab[param == "startValBEV", value], ptab[param == "targetYeBEV", value], ptab[param == "targetValBEV", value])
+
 
       tmp[technology == "BEV", prange :=ifelse(year == t,
                                                pmax(mult*prange[year == 2020], prange),
                                                prange), by = c("region", "technology", "vehicle_type", "subsector_L1")]
 
-      
 
+      ## the policymaker bans ICEs increasingly more strictly
       linIncrease <- function(x, x0, y0, x1, y1){
         return(min(y1, max(y0, (y1 - y0)/(x1 - x0) * (x - x0) + y0)))
       }
 
-      switch(
-        tech_scen,
-        "ConvCase" = {
-          ## the policymaker bans ICEs increasingly more strictly
-          floor <- linIncrease(t, 2020, 0.0, 2027, 0.1)
-        },
-        "ElecEra" = {
-          floor <- linIncrease(t, 2020, 0.0, 2027, 0.2)
-        },
-        "HydrHype" = {
-          floor <- linIncrease(t, 2020, 0.0, 2027, 0.2)
-        },
-        "Mix" = {
-          floor <- linIncrease(t, 2020, 0.0, 2027, 0.1)
-        },
-        "Mix4" = {
-          floor <- linIncrease(t, 2020, 0.0, 2027, 0.2)
-        },
-        "Mix3" = {
-          floor <- linIncrease(t, 2020, 0.0, 2027, 0.1)
-        },
-        "Mix2" = {
-          floor <- linIncrease(t, 2020, 0.0, 2027, 0.05)
-        },
-        "Mix1" = {
-          floor <- 0
-        }
-      )
+      floor <- linIncrease(t, ptab[param == "startYeICE", value], 0.0, ptab[param == "targetYeICE", value], ptab[param == "targetValICE", value])
 
-
-     ## inconvenience cost for liquids is allowed to increase
-        tmp[technology == "Liquids", pinco_tot := ifelse(year == t,
+       ## inconvenience cost for liquids is allowed to increase
+      tmp[technology == "Liquids", pinco_tot := ifelse(year == t,
                                    0.5*exp(1)^(weighted_sharessum[year == (t-1)]*bmodelav),
                                    pinco_tot), by = c("region", "technology", "vehicle_type", "subsector_L1")]
 
 
-        tmp[technology == "Liquids", pinco_tot := ifelse(year == t,
+      tmp[technology == "Liquids", pinco_tot := ifelse(year == t,
                                    pmax(pinco_tot, floor),
                                    pinco_tot), by = c("region", "technology", "vehicle_type", "subsector_L1")]
 
 
-
-
       ## hybrid electric inconvenience cost cannot decrease below 50% of 2020 value
+      ratioPHEV = ptab[param == "ratioPHEV", value]
       tmp[technology %in% c("Hybrid Electric"), pmod_av := ifelse(year == t,
-                               pmax(pmod_av, 0.5*pmod_av[year == 2020]),
+                               pmax(pmod_av, ratioPHEV*pmod_av[year == 2020]),
                                pmod_av), by = c("region", "technology", "vehicle_type", "subsector_L1")]
 
       ## annual sales, needed for reporting purposes
@@ -463,7 +418,7 @@ calculate_logit_inconv_endog = function(prices,
           "fuel_price_pkm",
           "non_fuel_price",
           "tot_price"), with = FALSE]
-    
+
      ## merge value of time for the selected level and assign 0 to the entries that don't have it
     df <- merge(df, value_time, by=intersect(names(df),names(value_time)), all.x=TRUE)
     df <- df[is.na(time_price), time_price := 0]
