@@ -15,7 +15,7 @@ output:
     number_sections: yes
 geometry: "a4paper,landscape,left=0.5cm,right=0.5cm,top=1.5cm,bottom=0.5cm,footnotesep=0.0cm,footskip=0.1cm"
 params:
-  mifScen: "C:/Users/johannah/Documents/EDGE-Transport/Output/SSP2-Mix1_2022-03-15_13.15.23/EDGE-T_SA.mif"
+  mifScen: "C:/Users/johannah/Documents/EDGE-Transport/Output/SSP2-Mix1_2022-03-16_16.00.06/EDGE-T_SA.mif"
   mifScenNames: null
   mifHist: "C:/Users/johannah/Documents/EDGE-Transport/Validation/historical_eu.mif"
   yearsScen: !r c(seq(2005, 2060, 5), seq(2070, 2100, 10))
@@ -75,6 +75,8 @@ library(quitte)
 library(devtools)
 load_all("C:/Users/johannah/Documents/Git_repos/mip")
 library(data.table)
+library(mrremind)
+setConfig(forcecache = T) 
 ```
 
 

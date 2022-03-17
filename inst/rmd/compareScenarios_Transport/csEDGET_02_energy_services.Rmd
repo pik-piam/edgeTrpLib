@@ -35,7 +35,7 @@ items <- c(
     "ES|Transport|Pass|Road|Non-Motorized|Walking pCap",
     "ES|Transport|Pass|Road|Non-Motorized|Cycling pCap")
 showMultiLinePlots(data, items)    
-showMultiLinePlotsByVariable(data, items, "GDP|PPP pCap")
+showMultiLinePlotsByVariable_orig_ETP(data, items, "GDP|PPP pCap", showETPorig = TRUE)
 ```
 
 ## LDV 4-Wheelers 

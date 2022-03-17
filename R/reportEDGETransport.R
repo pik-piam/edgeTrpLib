@@ -862,6 +862,21 @@ reportEDGETransport <- function(output_folder = ".", sub_folder = "EDGE-T/",
       GDP[, model:= model_name][, scenario:= scenario_title][, variable := "GDP|PPP"][, unit := "kUS$2005"]
       setnames(GDP,c("year","weight"),c("period","value"))
       setnames(POP,"year","period")
+
+      if (!is.null(regionSubsetList)){
+        toMIF <- rbindlist(list(
+          toMIF, 
+          POP[region %in% regionSubsetList[["EUR"]], .(value = sum(value), region = "EUR"), by = .(model, scenario, variable, unit, period)],
+          POP[region %in% regionSubsetList[["NEU"]], .(value = sum(value), region = "NEU"), by = .(model, scenario, variable, unit, period)],
+          POP[region %in% regionSubsetList[["EU27"]], .(value = sum(value), region = "EU27"), by = .(model, scenario, variable, unit, period)],
+          POP[, .(value = sum(value), region = "GLO"), by = .(model, scenario, variable, unit, period)],
+          GDP[region %in% regionSubsetList[["EUR"]], .(value = sum(value), region = "EUR"), by = .(model, scenario, variable, unit, period)],
+          GDP[region %in% regionSubsetList[["NEU"]], .(value = sum(value), region = "NEU"), by = .(model, scenario, variable, unit, period)],
+          GDP[region %in% regionSubsetList[["EU27"]], .(value = sum(value), region = "EU27"), by = .(model, scenario, variable, unit, period)],
+          GDP[, .(value = sum(value), region = "GLO"), by = .(model, scenario, variable, unit, period)]
+        ), use.names=TRUE)
+      }
+      
       toMIF <- rbind(toMIF, POP, GDP)
       }
     
