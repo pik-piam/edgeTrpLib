@@ -7,9 +7,9 @@
 #' @param logit_params contains logit exponents
 #' @param intensity_data logit level intensity data
 #' @param price_nonmot price of non-motorized modes in the logit tree
-#' @param tech_scen technology that the policymaker wants to promote
+#' @param tech_scen technology scenario
+#' @param ptab4W inconvenience cost factors for LDVs
 #' @param totveh total demand for LDVs by tecnology, in million veh
-#' @param SSP_scen SSP or SDP scenario
 #' @import data.table
 #' @export
 
@@ -20,8 +20,7 @@ calculate_logit_inconv_endog = function(prices,
                                         intensity_data,
                                         price_nonmot,
                                         tech_scen,
-                                        SSP_scen,
-                                        preftab4W,
+                                        ptab4W,
                                         totveh = NULL) {
 
   tot_price <- non_fuel_price <- subsector_L3 <- logit.exponent <- share <- sw <- time_price <- NULL
@@ -299,19 +298,12 @@ calculate_logit_inconv_endog = function(prices,
                            pref[year == 2020]*exp(1)^(weighted_sharessum[year == (t-1)]*bfuelav),
                            pref), by = c("region", "technology", "vehicle_type", "subsector_L1")]
 
-
-      ## load inconvenience factor table
-      if(is.null(preftab4W)){
-        preftab4W <- system.file("extdata", "inconv_factor.csv", package = "edgeTransport")
-      }
-      ptab <- fread(preftab4W, header=T)[techscen == tech_scen & SSPscen == SSP_scen]
-
       ## the phase-in of BEVs should not be too abrupt
       linDecrease <- function(x, x0, y0, x1, y1){
         return(min(y0, max(y1, (y1 - y0)/(x1 - x0) * (x - x0) + y0)))
       }
-
-      mult <- linDecrease(t, ptab[param == "startYeBEV", value], ptab[param == "startValBEV", value], ptab[param == "targetYeBEV", value], ptab[param == "targetValBEV", value])
+# browser()
+      mult <- linDecrease(t, ptab4W[param == "startYeBEV", value], ptab4W[param == "startValBEV", value], ptab4W[param == "targetYeBEV", value], ptab4W[param == "targetValBEV", value])
 
 
       tmp[technology == "BEV", prange :=ifelse(year == t,
@@ -324,7 +316,7 @@ calculate_logit_inconv_endog = function(prices,
         return(min(y1, max(y0, (y1 - y0)/(x1 - x0) * (x - x0) + y0)))
       }
 
-      floor <- linIncrease(t, ptab[param == "startYeICE", value], 0.0, ptab[param == "targetYeICE", value], ptab[param == "targetValICE", value])
+      floor <- linIncrease(t, ptab4W[param == "startYeICE", value], 0.0, ptab4W[param == "targetYeICE", value], ptab4W[param == "targetValICE", value])
 
        ## inconvenience cost for liquids is allowed to increase
       tmp[technology == "Liquids", pinco_tot := ifelse(year == t,
@@ -338,7 +330,7 @@ calculate_logit_inconv_endog = function(prices,
 
 
       ## hybrid electric inconvenience cost cannot decrease below 50% of 2020 value
-      ratioPHEV = ptab[param == "ratioPHEV", value]
+      ratioPHEV = ptab4W[param == "ratioPHEV", value]
       tmp[technology %in% c("Hybrid Electric"), pmod_av := ifelse(year == t,
                                pmax(pmod_av, ratioPHEV*pmod_av[year == 2020]),
                                pmod_av), by = c("region", "technology", "vehicle_type", "subsector_L1")]
