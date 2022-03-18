@@ -1,6 +1,6 @@
 Package: edgeTrpLib
 Title: Helper functions for EDGE transport calculations
-Version: 0.3.3
+Version: 0.3.4
 Authors@R: c(
     person("Alois", "Dirnaichner", email = "dirnaichner@pik-potsdam.de", role = c("aut", "cre")),
     person("Marianna", "Rottoli", email = "rottoli@pik-potsdam.de", role = "aut"))		    
