@@ -212,10 +212,47 @@ showMultiLinePlotsByVariable_orig_ETP <- function(
   setnames(dRegiETPorig, c("REMIND","Unit_REMIND"), c("variable","unit"))
   dRegiETPorig[, model := paste0("IEA ETP ", scenario)][, scenario := "historical"]
   
-  browser()
+  GDP_country = {
+    x <- calcOutput("GDP", aggregate = F)
+    getSets(x)[1] <- "ISO3"
+    getSets(x)[2] <- "Year"
+    x
+  }
+  POP_country = {
+    x <- calcOutput("Population", aggregate = F)
+    getSets(x)[1] <- "iso2c"
+    x
+  }
   
-  if (("OAS"|"NES"|"MEA"|"NEU"|"NEN"|"CAZ") %in% .data$region != .env$mainReg) regiETP <- rbind(regiETP,"NonOECD")
-  if (("CAZ"|"LAM"|"NEN"|"NEU"|"MEA"|"JPN"|"OAS"|"NES") %in% .data$region != .env$mainReg) regiETP <- rbind(regiETP,"OECD")
+  
+  GDP_country <- as.data.table(GDP_country)
+  GDP_country <- GDP_country[, scenario := gsub("gdp_","", variable)][, variable := NULL]
+  GDP_country[, period := as.numeric(gsub("y", "", Year))][, Year := NULL]
+  POP_country <- as.data.table(POP_country)
+  POP_country[, scenario := gsub("pop_","", variable)][, variable := NULL]
+  POP_country[, period := as.numeric(gsub("y", "", year))][, conversion := 1e6][, Year := NULL]
+  Map_ETP <- data.table(
+    ETPreg = c("Brazil","China","India", "Mexico", "Russia", "South Africa", "United States"),
+    ISO = c("BRA","CHN","IND", "MEX", "RUS", "ZAF", "USA")
+  )
+  POP_country[, value := value*conversion][, conversion := NULL]
+  setnames(GDP_country, c("value", "ISO3"), c("gdp","ISO"))
+  setnames(POP_country, c("value", "iso2c"), c("pop", "ISO"))
+  GDP_country <- merge(GDP_country, Map_ETP, all.y = TRUE)
+  POP_country <- merge(POP_country, Map_ETP, all.y = TRUE)
+
+  dRegiETPorig <- merge(dRegiETPorig[, scenario := NULL], GDP_country, by.x = c("region","period"), by.y = c("ETPreg","period"), allow.cartesian = TRUE)
+  dRegiETPorig <- dRegiETPorig[!is.na(value)]
+  dRegiETPorig <- merge(dRegiETPorig, POP_country, by.x =c("region","period","scenario", "ISO"), by.y = c("ETPreg","period", "scenario", "ISO"))
+  #Calculate pCap values
+  dRegiETPorig[, value := value/pop]
+  #Calculate GDP|PPP in kUSD2005 pCap 
+  dRegiETPorig[, gdp := gdp/pop][, pop := NULL]
+  dRegiETPorig[, model:= paste0(model, " ", scenario)][, variable := paste0(variable, " ", "p Cap")]
+  
+  
+  #if (("OAS"|"NES"|"MEA"|"NEU"|"NEN"|"CAZ") %in% .data$region != .env$mainReg) regiETP <- rbind(regiETP,"NonOECD")
+  #if (("CAZ"|"LAM"|"NEN"|"NEU"|"MEA"|"JPN"|"OAS"|"NES") %in% .data$region != .env$mainReg) regiETP <- rbind(regiETP,"OECD")
   if (("OAS") %in% .data$region != .env$mainReg) regiETP <- rbind(regiETP,"ASEAN")
   if (("LAM") %in% .data$region != .env$mainReg) regiETP <- rbind(regiETP,"Brazil")
   if (("CHA") %in% .data$region != .env$mainReg) regiETP <- rbind(regiETP,"China")

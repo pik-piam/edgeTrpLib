@@ -24,7 +24,7 @@ params:
   reg: !r c("Reg12 + World") 
   sections: !r c("01_energy_demand","02_energy_services","04_costs_and_shareweight_trends")
   userSectionPath: null
-  mainReg: "CHA"
+  mainReg: "GLO"
   figWidth: 14 
   figHeight: 8
   warning: no
@@ -74,6 +74,7 @@ library(kableExtra)
 library(quitte)
 library(devtools)
 load_all("C:/Users/johannah/Documents/Git_repos/mip")
+load_all("C:/Users/johannah/Documents/Git_repos/edgeTrpLib")
 library(data.table)
 library(mrremind)
 setConfig(forcecache = T) 
@@ -129,10 +130,12 @@ if (!is.null(params$reg)) {
   }
   if (params$reg=="Reg21 + World"){
     params$reg= c("OAS","MEA","SSA","LAM","REF","CAZ","CHA","IND","JPN","USA","NES","NEN","ENC","EWN","ECS","ESC","ECE","FRA","DEU","UKI","ESW","GLO")
-  }  
+  }
   if (params$reg=="EUR9 + EUR"){
     params$reg= c("ENC","EWN","ECS","ESC","ECE","FRA","DEU","UKI","ESW","EUR")
-  } 
+  }
+
+  cat(params$reg)
   
   data %>% 
     filter(region %in% params$reg) ->

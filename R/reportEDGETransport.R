@@ -18,7 +18,7 @@
 #' @param model_name a model name string
 #' @param name_mif the name of the MIF file to store the variables to. Not compatible with loadmif.
 #' @param gdx path to the GDX file used for the run.
-#' @author Alois Dirnaichner Marianna Rottoli
+#' @author Johanna Hoppe Alois Dirnaichner Marianna Rottoli
 #'
 #' @importFrom rmndt approx_dt readMIF writeMIF
 #' @importFrom gdxdt readgdx
@@ -860,6 +860,7 @@ reportEDGETransport <- function(output_folder = ".", sub_folder = "EDGE-T/",
       GDP <- readRDS(datapath(fname = "GDP.RDS"))
       POP[, model:= model_name][, scenario:= scenario_title][, variable := "Population"][, unit := "million"]
       GDP[, model:= model_name][, scenario:= scenario_title][, variable := "GDP|PPP"][, unit := "kUS$2005"]
+      
       setnames(GDP,c("year","weight"),c("period","value"))
       setnames(POP,"year","period")
 
