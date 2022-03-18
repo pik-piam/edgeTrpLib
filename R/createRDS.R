@@ -11,7 +11,7 @@
 createRDS <- function(input_path, data_path, SSP_scenario, EDGE_scenario){
 
   SSPscen <- EDGEscen <- vehicle_type <- NULL
-  
+
   print("Loading csv data from input folder and creating RDS files...")
   dir.create(file.path(data_path), showWarnings = FALSE)
 
@@ -21,7 +21,10 @@ createRDS <- function(input_path, data_path, SSP_scenario, EDGE_scenario){
       paste0(input_path, pattern, ".cs4r"),
       col.names = names_dt, skip="gdp_"
     )[SSPscen == SSP_scenario & EDGEscen == EDGE_scenario][, -c("SSPscen", "EDGEscen")]
-    tmp[,vehicle_type := gsub("DOT", ".", vehicle_type)]
+    if (any(names(tmp) == 'vehicle_type')) {
+      tmp[,vehicle_type := gsub("DOT", ".", vehicle_type)]
+    }
+
     tmp_list <- split(tmp,tmp$entry)
 
     for (i in names(tmp_list)) {
@@ -81,6 +84,11 @@ createRDS <- function(input_path, data_path, SSP_scenario, EDGE_scenario){
           input_path = input_path,
           names_dt = c("year", "region","SSPscen", "EDGEscen", "vehicle_type", "entry", "annual_mileage"))
 
+  csv2RDS(pattern = "ptab4W",
+          filename = "ptab4W",
+          input_path = input_path,
+          names_dt = c("SSPscen", "EDGEscen", "param", "entry", "ptab4W"))
+
 }
 
 
@@ -104,6 +112,7 @@ loadInputData <- function(data_path){
   UCD_costs <- readRDS(datapathForFile("UCD_NEC_iso.RDS"))
   price_nonmot <- readRDS(datapathForFile("price_nonmot.RDS"))
   loadFactor <- readRDS(datapathForFile("loadFactor.RDS"))
+  ptab4W <- readRDS(datapathForFile("ptab4W.RDS"))
 
   ## FIXME: hotfix to make the (empty) vot_data$value_time_VS1 and vot_data$value_time_S1S2 with the right column types. Probably there is another way to do that, did not look for it.
   vot_data$value_time_VS1$region = as.character(vot_data$value_time_VS1$region)
@@ -136,5 +145,6 @@ loadInputData <- function(data_path){
               nonfuel_costs = nonfuel_costs,
               capcost4W = capcost4W,
               price_nonmot = price_nonmot,
-              loadFactor = loadFactor))
+              loadFactor = loadFactor,
+              ptab4W = ptab4W))
 }
