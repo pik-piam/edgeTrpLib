@@ -1,6 +1,6 @@
 {
   "title": "edgeTrpLib: Helper functions for EDGE transport calculations",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "description": "<p>This package is highly specialized and created solely to not duplicate helper functions.<\/p>",
   "creators": [
     {
