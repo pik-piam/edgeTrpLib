@@ -21,7 +21,7 @@ params:
   yearsScen: !r c(seq(2005, 2060, 5), seq(2070, 2100, 10))
   yearsHist: !r c(seq(2010, 2020, 1), seq(2025, 2100, 5))
   yearsBarPlot: !r c(2010, 2030, 2050, 2100)
-  reg: !r c("Reg12 + World") 
+  reg: !r c("Reg21 + World") 
   sections: !r c("01_energy_demand","02_energy_services","04_costs_and_shareweight_trends")
   userSectionPath: null
   mainReg: "GLO"

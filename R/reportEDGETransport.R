@@ -860,8 +860,8 @@ reportEDGETransport <- function(output_folder = ".", sub_folder = "EDGE-T/",
       POP <- readRDS(datapath(fname = "POP.RDS"))
       GDP <- readRDS(datapath(fname = "GDP.RDS"))
       POP[, model:= model_name][, scenario:= scenario_title][, variable := "Population"][, unit := "million"]
-      GDP[, model:= model_name][, scenario:= scenario_title][, variable := "GDP|PPP"][, unit := "kUS$2005"]
-      
+      GDP[, model:= model_name][, scenario:= scenario_title][, variable := "GDP|PPP"]
+      GDP[, weight := weight*0.001][, unit := "billion US$2005/yr"]
       setnames(GDP,c("year","weight"),c("period","value"))
       setnames(POP,"year","period")
 

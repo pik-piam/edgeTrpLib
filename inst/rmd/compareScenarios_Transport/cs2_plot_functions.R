@@ -201,71 +201,72 @@ showMultiLinePlotsByVariable_orig_ETP <- function(
     filter(.data$region != .env$mainReg, .data$scenario == "historical") %>%
     droplevels()
   
-  dRegiETPorig <- readSource("IEA_ETP", subtype = "transport", convert = F)
-  dRegiETPorig <- as.quitte(dRegiETPorig)
+  ETPorig <- readSource("IEA_ETP", subtype = "transport", convert = F)
+  ETPorig <- as.quitte(ETPorig)
   Mapping_IEA_ETP <- fread(system.file("extdata", "Mapping_IEA_ETP.csv", package = "edgeTrpLib"), header = TRUE) 
   setnames(Mapping_IEA_ETP,"IEA_ETP","variable")
-  dRegiETPorig <- merge(dRegiETPorig, Mapping_IEA_ETP[, -c("Comment")], all.x = TRUE)
-  dRegiETPorig <- as.data.table(dRegiETPorig)
-  dRegiETPorig[, value := value*Conversion][, Conversion := NULL][, unit := NULL]
-  dRegiETPorig <- dRegiETPorig[,.(value = sum(value)), by = .(REMIND, region, period, Unit_REMIND, scenario)]
-  setnames(dRegiETPorig, c("REMIND","Unit_REMIND"), c("variable","unit"))
-  dRegiETPorig[, model := paste0("IEA ETP ", scenario)][, scenario := "historical"]
+  ETPorig <- merge(ETPorig, Mapping_IEA_ETP[, -c("Comment")], all.x = TRUE)
+  ETPorig <- as.data.table(ETPorig)
+  ETPorig[, value := value*Conversion][, Conversion := NULL][, unit := NULL]
+  ETPorig <- ETPorig[,.(value = sum(value)), by = .(REMIND, region, period, Unit_REMIND, scenario)]
+  setnames(ETPorig, c("REMIND","Unit_REMIND"), c("variable","unit"))
+  ETPorig[, model := paste0("IEA ETP ", scenario)][, scenario := "historical"]
   
   GDP_country = {
     x <- calcOutput("GDP", aggregate = F)
-    getSets(x)[1] <- "ISO3"
-    getSets(x)[2] <- "Year"
     x
   }
   POP_country = {
     x <- calcOutput("Population", aggregate = F)
-    getSets(x)[1] <- "iso2c"
     x
   }
   
   
-  GDP_country <- as.data.table(GDP_country)
-  GDP_country <- GDP_country[, scenario := gsub("gdp_","", variable)][, variable := NULL]
-  GDP_country[, period := as.numeric(gsub("y", "", Year))][, Year := NULL]
-  POP_country <- as.data.table(POP_country)
-  POP_country[, scenario := gsub("pop_","", variable)][, variable := NULL]
-  POP_country[, period := as.numeric(gsub("y", "", year))][, conversion := 1e6][, Year := NULL]
+  GDP_country <- as.data.table(as.quitte(GDP_country))
+  GDP_country <- GDP_country[, scenario := gsub("gdp_","", variable)][, variable := NULL][, model := NULL][, conversion := 1e3]
+  POP_country <- as.data.table(as.quitte(POP_country))
+  POP_country[, scenario := gsub("pop_","", variable)][, variable := NULL][, model := NULL][, conversion := 1e6]
+  #Change unit from million US$2005/yr to kUS$2005/yr
+  GDP_country[, value := value*conversion][, conversion := NULL][, unit := NULL]
+  #Change unit from million to one
+  POP_country[, value := value*conversion][, conversion := NULL][, unit := NULL]
+  
+  setnames(GDP_country, c("region","value"), c("ISO","gdp"))
+  setnames(POP_country, c("region","value"), c("ISO","pop"))  
+  
   Map_ETP <- data.table(
     ETPreg = c("Brazil","China","India", "Mexico", "Russia", "South Africa", "United States"),
     ISO = c("BRA","CHN","IND", "MEX", "RUS", "ZAF", "USA")
   )
-  POP_country[, value := value*conversion][, conversion := NULL]
-  setnames(GDP_country, c("value", "ISO3"), c("gdp","ISO"))
-  setnames(POP_country, c("value", "iso2c"), c("pop", "ISO"))
+
   GDP_country <- merge(GDP_country, Map_ETP, all.y = TRUE)
   POP_country <- merge(POP_country, Map_ETP, all.y = TRUE)
 
-  dRegiETPorig <- merge(dRegiETPorig[, scenario := NULL], GDP_country, by.x = c("region","period"), by.y = c("ETPreg","period"), allow.cartesian = TRUE)
-  dRegiETPorig <- dRegiETPorig[!is.na(value)]
-  dRegiETPorig <- merge(dRegiETPorig, POP_country, by.x =c("region","period","scenario", "ISO"), by.y = c("ETPreg","period", "scenario", "ISO"))
+  ETPorig <- merge(ETPorig[, scenario := NULL], GDP_country, by.x = c("region","period"), by.y = c("ETPreg","period"), allow.cartesian = TRUE)
+  ETPorig <- ETPorig[!is.na(value)]
+  ETPorig <- merge(ETPorig, POP_country, by.x =c("region","period","scenario", "ISO"), by.y = c("ETPreg","period", "scenario", "ISO"))
   #Calculate pCap values
-  dRegiETPorig[, value := value/pop]
+  ETPorig[, value := value/pop]
   #Calculate GDP|PPP in kUSD2005 pCap 
-  dRegiETPorig[, gdp := gdp/pop][, pop := NULL]
-  dRegiETPorig[, model:= paste0(model, " ", scenario)][, variable := paste0(variable, " ", "p Cap")]
+  ETPorig[, gdp := gdp/pop][, pop := NULL]
+  ETPorig[, model:= paste0(model, " ", scenario)][, variable := paste0(variable, " ", "pCap")]
   
-  
+  regiETP <- c()
   #if (("OAS"|"NES"|"MEA"|"NEU"|"NEN"|"CAZ") %in% .data$region != .env$mainReg) regiETP <- rbind(regiETP,"NonOECD")
   #if (("CAZ"|"LAM"|"NEN"|"NEU"|"MEA"|"JPN"|"OAS"|"NES") %in% .data$region != .env$mainReg) regiETP <- rbind(regiETP,"OECD")
-  if (("OAS") %in% .data$region != .env$mainReg) regiETP <- rbind(regiETP,"ASEAN")
-  if (("LAM") %in% .data$region != .env$mainReg) regiETP <- rbind(regiETP,"Brazil")
-  if (("CHA") %in% .data$region != .env$mainReg) regiETP <- rbind(regiETP,"China")
-  if (("ENC"|"EWN"|"ECS"|"ESC"|"ECE"|"FRA"|"DEU"|"UKI"|"ESW"|"EUR") %in% .data$region != .env$mainReg) regiETP <- rbind(regiETP,"European Union")
-  if (("IND") %in% .data$region != .env$mainReg) regiETP <- rbind(regiETP,"India")
-  if (("LAM") %in% .data$region != .env$mainReg) regiETP <- rbind(regiETP,"Mexico")
-  if (("REF") %in% .data$region != .env$mainReg) regiETP <- rbind(regiETP,"Russia")
-  if (("SSA") %in% .data$region != .env$mainReg) regiETP <- rbind(regiETP,"South Africa")
-  if (("USA") %in% .data$region != .env$mainReg) regiETP <- rbind(regiETP,"United States")
-  if ("FE|Transport|Pass|Aviation|International"|"FE|Transport|Pass|Aviation|Domestic") .env$vars <- rbind(.env$vars, "FE|Transport|Pass|Aviation")
-  if ("ES|Transport|Pass|Aviation|International"|"ES|Transport|Pass|Aviation|Domestic") .env$vars <- rbind(.env$vars, "ES|Transport|Pass|Aviation")
+  #if (("OAS") %in% .data$region != .env$mainReg) regiETP <- rbind(regiETP,"ASEAN")
+  if (("LAM") %in% .data$region != .env$mainReg) regiETP <- c(regiETP,"Brazil")
+  if (("CHA") %in% .data$region != .env$mainReg) regiETP <- c(regiETP,"China")
+  if (("ENC"|"EWN"|"ECS"|"ESC"|"ECE"|"FRA"|"DEU"|"UKI"|"ESW"|"EUR") %in% .data$region != .env$mainReg) regiETP <- c(regiETP,"European Union")
+  if (("IND") %in% .data$region != .env$mainReg) regiETP <- c(regiETP,"India")
+  if (("LAM") %in% .data$region != .env$mainReg) regiETP <- c(regiETP,"Mexico")
+  if (("REF") %in% .data$region != .env$mainReg) regiETP <- c(regiETP,"Russia")
+  if (("SSA") %in% .data$region != .env$mainReg) regiETP <- c(regiETP,"South Africa")
+  if (("USA") %in% .data$region != .env$mainReg) regiETP <- c(regiETP,"United States")
+  if ("FE|Transport|Pass|Aviation|International"|"FE|Transport|Pass|Aviation|Domestic") .env$vars <- c(.env$vars, "FE|Transport|Pass|Aviation")
+  if ("ES|Transport|Pass|Aviation|International"|"ES|Transport|Pass|Aviation|Domestic") .env$vars <- c(.env$vars, "ES|Transport|Pass|Aviation")
   
-  dRegiETPorig <- dRegiETPorig %>%
+  dRegiETPorig <- ETPorig %>%
     filter(regiETP, .env$xVar, .env$vars) %>%
     droplevels()
   
@@ -307,8 +308,8 @@ showMultiLinePlotsByVariable_orig_ETP <- function(
   }
   if (showETPorig) {
     p2 <- p2 +
-      geom_point(data = dRegiETPorig, aes(shape = .data$model)) +
-      geom_line(data = dRegiETPorig, aes(group = paste0(.data$model, .dRegiETPorig$region)), alpha = 0.5)
+      geom_point(data = dRegiETPorig, aes(shape = .dRegiETPorig$model)) +
+      geom_line(data = dRegiETPorig, aes(group = paste0(.dRegiETPorig$model, .dRegiETPorig$region)), alpha = 0.5)
   }
   # Add markers for certain years.
   if (length(yearsByVariable) > 0) {
