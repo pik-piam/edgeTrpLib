@@ -16,7 +16,6 @@
 #' @param extendedReporting report a larger set of variables
 #' @param scenario_title a scenario title string
 #' @param model_name a model name string
-#' @param name_mif the name of the MIF file to store the variables to. Not compatible with loadmif.
 #' @param gdx path to the GDX file used for the run.
 #' @author Johanna Hoppe Alois Dirnaichner Marianna Rottoli
 #'
@@ -42,23 +41,23 @@ reportEDGETransport <- function(output_folder = ".", sub_folder = "EDGE-T/",
   Region <- Variable <- co2 <- co2val <- elh2 <- fe  <- NULL
   int <- se <- sec  <- sharesec <- te  <- tech <-  val <- share <- NULL
   eff <- sharebio <- sharesyn <- totseliq <- type <- ven <- NULL
-  unit <- NULL 
+  unit <- tot_VOT_price <- tot_price <- logit_type <- capture.output <- NULL
 
   #pkm or tkm is called km in the reporting. Vehicle km are called vkm
-  
+
   yrs <- c(seq(2005, 2060, 5), seq(2070, 2110, 10), 2130, 2150)
-  
+
   datapath <- function(fname){
     file.path(output_folder, sub_folder, fname)}
-  
+
   reporting <- function(datatable, mode){
-    
+    aggr_mode_tech <- aggr_LDV <- aggr_LDV_tech <- det_veh_tech <- aggr_bunkers <- aggr_bunkers_tech <- aggr_veh_tech <- capture.output <- NULL
     report <- list()
-    
+
 
     datatable[, sector := ifelse(sector %in% c("trn_pass", "trn_aviation_intl"), "Pass", "Freight")]
     datatable <- merge(datatable,Aggrdata,by = c("sector", "subsector_L1", "subsector_L2", "subsector_L3", "vehicle_type", "technology"), all.x = TRUE, allow.cartesian = TRUE)
-    
+
     #How to account for Hybrid Electric in Final Energy?
     if (mode == "FE") {
       techmap <- data.table(
@@ -445,21 +444,21 @@ reportEDGETransport <- function(output_folder = ".", sub_folder = "EDGE-T/",
     ), use.names=TRUE)
   }
 
-  
+
   if (extendedReporting) {
 
     LogitCostplotdata <- function(priceData, prefData, logitExp, groupValue){
-
-      yrs_costs <-c(seq(2005, 2060, 5), seq(2070, 2100, 10)) 
+      tot_price <- sw <- logit.exponent <- weight <- NULL
+      yrs_costs <-c(seq(2005, 2060, 5), seq(2070, 2100, 10))
       all_subsectors <- c("technology", "vehicle_type", "subsector_L1", "subsector_L2",
                           "subsector_L3", "sector")
-      
+
       # change variable names for quitte format
       setnames(priceData, c("year"), c("period"))
-      setnames(prefData, c("year"), c("period"))      
+      setnames(prefData, c("year"), c("period"))
       prefData <- prefData[period %in% yrs_costs]
-      priceData<-  priceData[period %in% yrs_costs][, -c("share")]      
-      
+      priceData<-  priceData[period %in% yrs_costs][, -c("share")]
+
       #Filter for logit level according to groupValue. leave out tmp placeholders
       priceData <- priceData[!grepl("tmp", get(groupValue))]
       prefData <- prefData[!grepl("tmp", get(groupValue))]
@@ -550,26 +549,27 @@ reportEDGETransport <- function(output_folder = ".", sub_folder = "EDGE-T/",
         priceData[, variable := paste0("Logit cost|S",gsub("[^123]","",groupValue), "|", get(groupValue), "|", variable)]
         priceData <- priceData[, .(region, period, scenario, variable, value)]
       }
-      
+
       data <- rbind(prefData, priceData)
       data[, unit := "$2005/km"][, scenario := scenario_title][, model := model_name]
-      
-      
+
+
       return(data)
     }
-    
+
     LogitCostplotdata_FV <- function(priceData,prefData,logitExp){
-      #Calcualte equivalent inconvenience cost and 
-      yrs_costs <-c(seq(2005, 2060, 5), seq(2070, 2100, 10)) 
-      
+      tot_price <- sw <- logit.exponent <- weight <- logit_type <- av_veh <- NULL
+      #Calcualte equivalent inconvenience cost and
+      yrs_costs <-c(seq(2005, 2060, 5), seq(2070, 2100, 10))
+
       # change variable names for mip
       setnames(priceData, c("year"), c("period"))
       setnames(prefData, c("year"), c("period"))
-      
+
       #Exclude active modes as they have no fuel
       prefData <- prefData[period %in% yrs_costs & !technology %in% c("Cycle_tmp_technology","Walk_tmp_technology")]
       priceData<-  priceData[period %in% yrs_costs]
-      
+
       # Calculate Inconvenience Cost from share Weight
       priceData_sw <- copy(prefData)
       priceData_sw <- priceData_sw[logit_type == "sw"][, logit_type := NULL]
@@ -629,43 +629,44 @@ reportEDGETransport <- function(output_folder = ".", sub_folder = "EDGE-T/",
       Aggrdata_avveh[, av_veh := "Average veh"]
       priceData_av <- aggregate_dt(priceData[vehicle_type %in% Aggrdata_avveh$vehicle_type], Aggrdata_avveh , fewcol = "av_veh", manycol = "vehicle_type", yearcol = "period", weights = weight_pkm_FV[vehicle_type %in% Aggrdata_avveh$vehicle_type], datacols = c("region", "variable","technology"))
       setnames(priceData_av, "av_veh", "vehicle_type")
-      
+
       priceData <- rbind(priceData, priceData_aggr, priceData_av)
-      
+
       priceData <- priceData[, variable := paste0("Logit cost|F|", gsub("_tmp_vehicletype", "", vehicle_type), "|", technology, "|", variable)][, c("region", "period", "variable", "value")]
-              
+
       priceData[, unit := "$2005/km"][, model := model_name][, scenario := scenario_title]
-      
+
       return(priceData)
     }
-    
+
     Calc_shares <- function(data, add){
+      tot <- NULL
       #Calculate Shares for specific set of variables
       data[, tot := sum(value), by = c("period", "region", "scenario", "model")]
       data[, value := value/tot*100, by = c("period", "region", "scenario", "model")][, unit := "%"][,tot := NULL]
-      data[, variable := paste0(variable, "|", add)] 
+      data[, variable := paste0(variable, "|", add)]
       return(data)
     }
-    
+
     # Mapping efficiencies for useful energy
     Mapp_UE <- data.table(
       technology = c("FCEV", "BEV", "Electric", "Liquids", "Hydrogen"),
       UE_efficiency = c(0.36, 0.64, 0.8, 0.23, 0.25))
-    
+
     #ES pkm are used as weights for data aggregation
     weight_pkm <- copy(demand_km)
     setnames(weight_pkm, c("value","year"), c("weight","period"))
-    
+
     weight_pkm[, sector := ifelse(sector %in% c("Pass"), "trn_pass", "trn_freight")]
     weight_pkm[, sector := ifelse(subsector_L3 == c("International Aviation"), "trn_aviation_intl", sector)]
     weight_pkm[, sector := ifelse(subsector_L3 == c("International Ship"), "trn_shipping_intl", sector)]
-    
+
     #Mapping for region Aggregation
     RegAggregation <- data.table(
     aggr_reg = c("EUR", "EUR", "EUR", "EUR", "EUR", "EUR", "EUR", "EUR", "EUR", "NEU", "NEU"),
-    region = c("ENC", "EWN", "ECS", "ESC", "ECE", "FRA", "DEU", "UKI", "ESW", "NES", "NEN"))    
-    
-  
+    region = c("ENC", "EWN", "ECS", "ESC", "ECE", "FRA", "DEU", "UKI", "ESW", "NES", "NEN"))
+
+
     #To calculate!
     vars_toadd <- c(
     "FE|Transport|Pass",

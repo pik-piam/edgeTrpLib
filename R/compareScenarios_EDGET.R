@@ -16,7 +16,11 @@
 #' @param outputFormat \code{character(1)}, not case-sensitive. \code{"html"},
 #'   \code{"pdf"}, or \code{"rmd"}.
 #' @param ... YAML parameters, see below.
-#' @return The value returned by \code{\link[rmarkdown:render]{rmarkdown::render()}}.
+#' @importFrom yaml yaml.load
+#' @importFrom rlang parse_expr
+#' @importFrom ymlthis yml_params_code yml_replace as_yml use_rmarkdown
+#' @importFrom rmarkdown render
+#' @return The value returned by \code{\link[rmarkdown:render]{render()}}.
 #' @section YAML Parameters:
 #' \describe{
 #'   \item{\code{yearsScen}}{
@@ -86,20 +90,20 @@ compareScenarios_EDGET <- function(
       mifScenNames = names(mifScen),
       mifHist = normalizePath(mifHist, mustWork = TRUE)),
     list(...))
-  
+
   # convert relative to absolute paths
   if ("userSectionPath" %in% names(yamlParams)) {
     yamlParams$userSectionPath <- normalizePath(yamlParams$userSectionPath,
                                                 mustWork = TRUE)
   }
-  
+
   outputFormat <- tolower(outputFormat)
   if (outputFormat == "pdf") outputFormat <- "pdf_document"
   if (outputFormat == "html") outputFormat <- "html_document"
   if (identical(tolower(outputFormat), "rmd")) {
     return(.compareScenarios2Rmd(yamlParams, outputDir, outputFile))
   }
-  rmarkdown::render(
+  render(
     system.file("rmd/compareScenarios_Transport/csEDGET_main.Rmd", package = "edgeTrpLib"),
     intermediates_dir = outputDir,
     output_dir = outputDir,
@@ -116,16 +120,16 @@ compareScenarios_EDGET <- function(
   linesMain <- readLines(pathMain)
   delimiters <- grep("^(---|\\.\\.\\.)\\s*$", linesMain)
   headerMain <- linesMain[(delimiters[1]):(delimiters[2])]
-  yml <- yaml::yaml.load(
+  yml <- yaml.load(
     headerMain,
-    handlers = list(r = function(x) ymlthis::yml_params_code(!!rlang::parse_expr(x))))
-  baseYaml <- ymlthis::as_yml(yml)
+    handlers = list(r = function(x) yml_params_code(!!parse_expr(x))))
+  baseYaml <- as_yml(yml)
   newYamlParams <- baseYaml$params
   newYamlParams[names(yamlParams)] <- yamlParams
   if (!is.null(names(yamlParams$mifScen))) {
     newYamlParams$mifScenNames <- names(yamlParams$mifScen)
   }
-  newYaml <- ymlthis::yml_replace(
+  newYaml <- yml_replace(
     baseYaml,
     params = newYamlParams,
     date = format(Sys.Date()))
@@ -139,7 +143,7 @@ compareScenarios_EDGET <- function(
     pattern = "csEDGET_main\\.Rmd$",
     invert = TRUE, value = TRUE)
   file.copy(rmdDirFiles, pathDir)
-  ymlthis::use_rmarkdown(
+  use_rmarkdown(
     newYaml,
     path = file.path(pathDir, "cs2_main.Rmd"),
     template = system.file(

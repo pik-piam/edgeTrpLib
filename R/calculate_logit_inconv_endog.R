@@ -112,7 +112,7 @@ calculate_logit_inconv_endog = function(prices,
 
 
   F2Vcalc <- function(prices, pref_data, logit_params, value_time, mj_km_data, group_value, totveh, tech_scen) {
-    vehicles_number <- NULL
+    vehicles_number <- param <- value <- NULL
     final_prefFV <- pref_data[["FV_final_pref"]]
     final_prefVS1 <- pref_data[["VS1_final_pref"]]
     logit_exponentFV <- logit_params[["logit_exponent_FV"]]
