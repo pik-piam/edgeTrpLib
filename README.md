@@ -1,8 +1,8 @@
 # Helper functions for EDGE transport calculations
 
-R package **edgeTrpLib**, version **1.0.0**
+R package **edgeTrpLib**, version **1.0.1**
 
-[![CRAN status](https://www.r-pkg.org/badges/version/edgeTrpLib)](https://cran.r-project.org/package=edgeTrpLib)  [![R build status](https://github.com/johannah-pik/edgeTrpLib/workflows/check/badge.svg)](https://github.com/johannah-pik/edgeTrpLib/actions) [![codecov](https://codecov.io/gh/johannah-pik/edgeTrpLib/branch/master/graph/badge.svg)](https://app.codecov.io/gh/johannah-pik/edgeTrpLib) [![r-universe](https://pik-piam.r-universe.dev/badges/edgeTrpLib)](https://pik-piam.r-universe.dev/ui#builds)
+[![CRAN status](https://www.r-pkg.org/badges/version/edgeTrpLib)](https://cran.r-project.org/package=edgeTrpLib)  [![R build status](https://github.com/pik-piam/edgeTrpLib/workflows/check/badge.svg)](https://github.com/pik-piam/edgeTrpLib/actions) [![codecov](https://codecov.io/gh/pik-piam/edgeTrpLib/branch/master/graph/badge.svg)](https://app.codecov.io/gh/pik-piam/edgeTrpLib) [![r-universe](https://pik-piam.r-universe.dev/badges/edgeTrpLib)](https://pik-piam.r-universe.dev/ui#builds)
 
 ## Purpose and Functionality
 
@@ -38,7 +38,7 @@ In case of questions / problems please contact Alois Dirnaichner <dirnaichner@pi
 
 To cite package **edgeTrpLib** in publications use:
 
-Dirnaichner A, Rottoli M (2022). _edgeTrpLib: Helper functions for EDGE transport calculations_. R package version 1.0.0.
+Dirnaichner A, Rottoli M (2022). _edgeTrpLib: Helper functions for EDGE transport calculations_. R package version 1.0.1.
 
 A BibTeX entry for LaTeX users is
 
@@ -47,6 +47,6 @@ A BibTeX entry for LaTeX users is
   title = {edgeTrpLib: Helper functions for EDGE transport calculations},
   author = {Alois Dirnaichner and Marianna Rottoli},
   year = {2022},
-  note = {R package version 1.0.0},
+  note = {R package version 1.0.1},
 }
 ```

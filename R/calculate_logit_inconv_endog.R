@@ -111,7 +111,7 @@ calculate_logit_inconv_endog = function(prices,
 
 
 
-  F2Vcalc <- function(prices, pref_data, logit_params, value_time, mj_km_data, group_value, totveh, tech_scen) {
+  F2Vcalc <- function(prices, pref_data, ptab4W, logit_params, value_time, mj_km_data, group_value, totveh, tech_scen) {
     vehicles_number <- param <- value <- NULL
     final_prefFV <- pref_data[["FV_final_pref"]]
     final_prefVS1 <- pref_data[["VS1_final_pref"]]
@@ -302,7 +302,7 @@ calculate_logit_inconv_endog = function(prices,
       linDecrease <- function(x, x0, y0, x1, y1){
         return(min(y0, max(y1, (y1 - y0)/(x1 - x0) * (x - x0) + y0)))
       }
-# browser()
+
       mult <- linDecrease(t, ptab4W[param == "startYeBEV", value], ptab4W[param == "startValBEV", value], ptab4W[param == "targetYeBEV", value], ptab4W[param == "targetValBEV", value])
 
 
@@ -463,6 +463,7 @@ calculate_logit_inconv_endog = function(prices,
   ## FV
   FV_all <- F2Vcalc(prices = base,
                     pref_data = pref_data,
+                    ptab4W = ptab4W,
                     logit_params = logit_params,
                     value_time = value_time,
                     mj_km_data = mj_km_data,
