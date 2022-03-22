@@ -666,7 +666,6 @@ reportEDGETransport <- function(output_folder = ".", sub_folder = "EDGE-T/",
     aggr_reg = c("EUR", "EUR", "EUR", "EUR", "EUR", "EUR", "EUR", "EUR", "EUR", "NEU", "NEU"),
     region = c("ENC", "EWN", "ECS", "ESC", "ECE", "FRA", "DEU", "UKI", "ESW", "NES", "NEN"))
 
-
     #To calculate!
     vars_toadd <- c(
     "FE|Transport|Pass",
@@ -680,6 +679,13 @@ reportEDGETransport <- function(output_folder = ".", sub_folder = "EDGE-T/",
     "Logit costs"
     )
 
+    #Calculate useful energy
+    UE <- toMIF[grepl("FE" & ("FCEV"|"BEV"|"Electric"|"Liquids"|"Hydrogen"), variable)]
+    UE[, technology := gsub(!("FCEV"|"BEV"|"Electric"|"Liquids"|"Hydrogen"),"", variable)]
+    UE <- merge(UE, Mapp_UE)
+    UE[, value:= value*UE_efficiency][, variable := gsub("FE","UE", variable)]
+
+    toMIF <- rbind(toMIF, UE)
 
     #Calculate logit Costs
     #Read in additional data if exist

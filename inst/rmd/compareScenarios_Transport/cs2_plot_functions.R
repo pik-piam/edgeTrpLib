@@ -11,26 +11,26 @@ mipBarYearDataMod <- function(x, colour = NULL, ylab = NULL, xlab = NULL, title 
                               scenario_markers = TRUE) { #nolint
   scenarioMarkers <- scenario_markers
   x <- as.quitte(x)
-  
+
 
   if (length(unique(x$model)) > 1) {
     stop("this plot can only deal with data that have only one model")
   }
-  
+
   if (!is.integer(x$period)) {
     stop("this plot can only deal with data that have integer periods")
   }
-  
+
   # calculate y-axis label
   x$variable <- shorten_legend(x$variable, identical_only = TRUE)
-  
+
   if (is.null(ylab)) {
     ylab <- paste0(sub(".$", "", attr(x$variable, "front")), attr(x$variable, "back"))
     # add unit
     unit <- unique(as.character(x$unit))
     ylab <- paste0(ylab, " (", paste0(unit, collapse = " | "), ")")
   }
-  
+
   # add dummy-dimension for space between the time-steps
   xpos <- crossing(period   = unique(x$period),
                    region = factor(c(levels(x$region), "\x13"))) %>%
@@ -39,14 +39,14 @@ mipBarYearDataMod <- function(x, colour = NULL, ylab = NULL, xlab = NULL, title 
     mutate(xpos = 1:n()) %>%
     filter("\x13" != !!sym("region")) %>%
     droplevels()
-  
+
   x <- x %>%
     inner_join(
       xpos,
-      
+
       c("region", "period")
     )
-  
+
   if (scenarioMarkers) {
     yMarker <- crossing(
       x %>%
@@ -58,27 +58,27 @@ mipBarYearDataMod <- function(x, colour = NULL, ylab = NULL, xlab = NULL, title 
         mutate(
           y = !!sym("bottom") - 0.05 * (!!sym("top") + !!sym("bottom"))) %>%
         select(-"top", -"bottom"),
-      
+
       xpos
     )
   }
-  
+
   if (scenarioMarkers) {
     scenarioMarkers <- setNames((1:20)[seq_along(unique(x$region))],
                                 levels(x$region))
   }
-  
+
   # calculate positions of period labels
   if (any(scenarioMarkers)) {
     xpos <- xpos %>%
       group_by(!!sym("period")) %>%
       summarise(xpos = mean(!!sym("xpos")))
   }
-  
+
   if (is.null(colour)) {
     colour <- plotstyle(levels(x$variable))
   }
-  
+
   # make plot
   p <- ggplot() +
     geom_col(data = x,
@@ -89,7 +89,7 @@ mipBarYearDataMod <- function(x, colour = NULL, ylab = NULL, xlab = NULL, title 
     facet_wrap(~scenario, scales = "free_y") +
     labs(x = xlab, y = ylab, title = title) +
     theme(legend.position = "bottom")
-  
+
   # add markers
   if (any(scenarioMarkers)) {
     p <- p +
@@ -110,7 +110,7 @@ mipBarYearDataMod <- function(x, colour = NULL, ylab = NULL, xlab = NULL, title 
                            getElement("label")) +
       theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))
   }
-  
+
   return(p)
 }
 
@@ -139,71 +139,56 @@ mipBarYearDataMod <- function(x, colour = NULL, ylab = NULL, xlab = NULL, title 
 #' @section Example Plots:
 #' \if{html}{page 1: \figure{showMultiLinePlotsByVariable1.png}{options: width="100\%"}}
 #' \if{html}{page 2: \figure{showMultiLinePlotsByVariable2.png}{options: width="100\%"}}
-#' @examples
-#' \dontrun{
-#' options(mip.mainReg = "World")
-#' options(mip.yearsBarPlot = c(2010, 2030, 2050, 2100))
-#' options(mip.histRefModel = c("GDP|PPP pCap" = "James_IMF"))
-#' data <- as.quitte(data)
-#' vars <- c(
-#'   "FE|Transport pCap",
-#'   "FE|Buildings pCap",
-#'   "FE|Industry pCap")
-#' showMultiLinePlotsByVariable(data, vars, "GDP|PPP pCap")
-#' }
 #' @export
-#' @importFrom rlang .data .env
+#' @importFrom rlang data .env
 #' @importFrom tidyr drop_na
 #' @importFrom ggplot2 ylim
 
 showMultiLinePlotsByVariable_orig_ETP <- function(
   data, vars, xVar, scales = "free_y",
   showHistorical = FALSE,
-  showETPorig = FALSE,
-  mainReg = getOption("mip.mainReg"),
-  histRefModel = getOption("mip.histRefModel"),
-  yearsByVariable = getOption("mip.yearsBarPlot")
-) {
-  
+  showETPorig = FALSE)
+ {
+
   data <- as.quitte(data)
-  
+  yearsByVariable <- c(2010, 2030, 2050)
+
   # Validate function arguments.
   stopifnot(is.character(vars))
   stopifnot(is.character(xVar) && length(xVar) == 1)
   stopifnot(is.character(scales) && length(scales) == 1)
   stopifnot(identical(showHistorical, TRUE) || identical(showHistorical, FALSE))
   stopifnot(is.null(yearsByVariable) || is.numeric(yearsByVariable))
-  checkGlobalOptionsProvided(c("mainReg", "histRefModel"))
-  stopifnot(is.character(mainReg) && length(mainReg) == 1)
+  stopifnot(is.character(params$mainReg) && length(params$mainReg) == 1)
   stopifnot(is.character(histRefModel) && !is.null(names(histRefModel)))
   stopifnot(xVar %in% names(histRefModel))
-  
+
   dy <- data %>%
-    filter(.data$variable %in% .env$vars)
+    filter(.data$variable %in% vars)
   dx <- data %>%
-    filter(.data$variable %in% .env$xVar) %>%
-    filter(.data$scenario != "historical" | .data$model == .env$histRefModel[.env$xVar])
+    filter(.data$variable %in% xVar) %>%
+    filter(.data$scenario != "historical" | .data$model == histRefModel[xVar])
   d <- dy %>%
     left_join(dx, by = c("scenario", "region", "period"), suffix = c("", ".x")) %>%
     drop_na(.data$value, .data$value.x) %>%
     arrange(.data$period) %>%
     droplevels()
   dMainScen <- d %>%
-    filter(.data$region == .env$mainReg, .data$scenario != "historical") %>%
+    filter(.data$region == params$mainReg, .data$scenario != "historical") %>%
     droplevels()
   dMainHist <- d %>%
-    filter(.data$region == .env$mainReg, .data$scenario == "historical") %>%
+    filter(.data$region == params$mainReg, .data$scenario == "historical") %>%
     droplevels()
   dRegiScen <- d %>%
-    filter(.data$region != .env$mainReg, .data$scenario != "historical") %>%
+    filter(.data$region != params$mainReg, .data$scenario != "historical") %>%
     droplevels()
   dRegiHist <- d %>%
-    filter(.data$region != .env$mainReg, .data$scenario == "historical") %>%
+    filter(.data$region != params$mainReg, .data$scenario == "historical") %>%
     droplevels()
-  
+
   ETPorig <- readSource("IEA_ETP", subtype = "transport", convert = F)
   ETPorig <- as.quitte(ETPorig)
-  Mapping_IEA_ETP <- fread(system.file("extdata", "Mapping_IEA_ETP.csv", package = "edgeTrpLib"), header = TRUE) 
+  Mapping_IEA_ETP <- fread(system.file("extdata", "Mapping_IEA_ETP.csv", package = "edgeTrpLib"), header = TRUE)
   setnames(Mapping_IEA_ETP,"IEA_ETP","variable")
   ETPorig <- merge(ETPorig, Mapping_IEA_ETP[, -c("Comment")], all.x = TRUE)
   ETPorig <- as.data.table(ETPorig)
@@ -211,7 +196,7 @@ showMultiLinePlotsByVariable_orig_ETP <- function(
   ETPorig <- ETPorig[,.(value = sum(value)), by = .(REMIND, region, period, Unit_REMIND, scenario)]
   setnames(ETPorig, c("REMIND","Unit_REMIND"), c("variable","unit"))
   ETPorig[, model := paste0("IEA ETP ", scenario)][, scenario := "historical"]
-  
+
   GDP_country = {
     x <- calcOutput("GDP", aggregate = F)
     x
@@ -220,8 +205,8 @@ showMultiLinePlotsByVariable_orig_ETP <- function(
     x <- calcOutput("Population", aggregate = F)
     x
   }
-  
-  
+
+
   GDP_country <- as.data.table(as.quitte(GDP_country))
   GDP_country <- GDP_country[, scenario := gsub("gdp_","", variable)][, variable := NULL][, model := NULL][, conversion := 1e3]
   POP_country <- as.data.table(as.quitte(POP_country))
@@ -230,10 +215,10 @@ showMultiLinePlotsByVariable_orig_ETP <- function(
   GDP_country[, value := value*conversion][, conversion := NULL][, unit := NULL]
   #Change unit from million to one
   POP_country[, value := value*conversion][, conversion := NULL][, unit := NULL]
-  
+
   setnames(GDP_country, c("region","value"), c("ISO","gdp"))
-  setnames(POP_country, c("region","value"), c("ISO","pop"))  
-  
+  setnames(POP_country, c("region","value"), c("ISO","pop"))
+
   Map_ETP <- data.table(
     ETPreg = c("Brazil","China","India", "Mexico", "Russia", "South Africa", "United States"),
     ISO = c("BRA","CHN","IND", "MEX", "RUS", "ZAF", "USA")
@@ -242,47 +227,63 @@ showMultiLinePlotsByVariable_orig_ETP <- function(
   GDP_country <- merge(GDP_country, Map_ETP, all.y = TRUE)
   POP_country <- merge(POP_country, Map_ETP, all.y = TRUE)
 
+  GDP <- copy(GDP_country)
+  GDP <- merge(GDP, POP_country, by = c("ISO","ETPreg","period","scenario"))
+  GDP[ , gdp := gdp/pop][, value := gdp][, pop := NULL]
+  GDP_B2DS <- copy(GDP)
+  GDP_B2DS[, variable := "GDP|PPP pCap"][, model := "IEA ETP B2DS"]
+  GDP_RTS <- copy(GDP)
+  GDP_RTS[, variable := "GDP|PPP pCap"][, model := "IEA ETP RTS"]
+  GDP_2DS <- copy(GDP)
+  GDP_2DS[, variable := "GDP|PPP pCap"][, model := "IEA ETP RTS 2DS"]
+  GDP <- rbind(GDP_B2DS, GDP_RTS, GDP_2DS)
+  GDP[, model := paste0(model, " ", scenario)][, scenario := "historical"][, ISO := NULL][, unit := "kUS$2005/yr"]
+  setnames(GDP, c("ETPreg"), c("region"))
+
   ETPorig <- merge(ETPorig[, scenario := NULL], GDP_country, by.x = c("region","period"), by.y = c("ETPreg","period"), allow.cartesian = TRUE)
   ETPorig <- ETPorig[!is.na(value)]
   ETPorig <- merge(ETPorig, POP_country, by.x =c("region","period","scenario", "ISO"), by.y = c("ETPreg","period", "scenario", "ISO"))
   #Calculate pCap values
   ETPorig[, value := value/pop]
-  #Calculate GDP|PPP in kUSD2005 pCap 
+  #Calculate GDP|PPP in kUSD2005 pCap
   ETPorig[, gdp := gdp/pop][, pop := NULL]
   ETPorig[, model:= paste0(model, " ", scenario)][, variable := paste0(variable, " ", "pCap")]
-  
+
+  ETPorig <- rbind(ETPorig[, ISO := NULL], GDP)
+
   regiETP <- c()
-  #if (("OAS"|"NES"|"MEA"|"NEU"|"NEN"|"CAZ") %in% .data$region != .env$mainReg) regiETP <- rbind(regiETP,"NonOECD")
-  #if (("CAZ"|"LAM"|"NEN"|"NEU"|"MEA"|"JPN"|"OAS"|"NES") %in% .data$region != .env$mainReg) regiETP <- rbind(regiETP,"OECD")
-  #if (("OAS") %in% .data$region != .env$mainReg) regiETP <- rbind(regiETP,"ASEAN")
-  if (("LAM") %in% .data$region != .env$mainReg) regiETP <- c(regiETP,"Brazil")
-  if (("CHA") %in% .data$region != .env$mainReg) regiETP <- c(regiETP,"China")
-  if (("ENC"|"EWN"|"ECS"|"ESC"|"ECE"|"FRA"|"DEU"|"UKI"|"ESW"|"EUR") %in% .data$region != .env$mainReg) regiETP <- c(regiETP,"European Union")
-  if (("IND") %in% .data$region != .env$mainReg) regiETP <- c(regiETP,"India")
-  if (("LAM") %in% .data$region != .env$mainReg) regiETP <- c(regiETP,"Mexico")
-  if (("REF") %in% .data$region != .env$mainReg) regiETP <- c(regiETP,"Russia")
-  if (("SSA") %in% .data$region != .env$mainReg) regiETP <- c(regiETP,"South Africa")
-  if (("USA") %in% .data$region != .env$mainReg) regiETP <- c(regiETP,"United States")
-  if ("FE|Transport|Pass|Aviation|International"|"FE|Transport|Pass|Aviation|Domestic") .env$vars <- c(.env$vars, "FE|Transport|Pass|Aviation")
-  if ("ES|Transport|Pass|Aviation|International"|"ES|Transport|Pass|Aviation|Domestic") .env$vars <- c(.env$vars, "ES|Transport|Pass|Aviation")
-  
-  dRegiETPorig <- ETPorig %>%
-    filter(regiETP, .env$xVar, .env$vars) %>%
-    droplevels()
-  
-  
-  
+  #if (("OAS"|"NES"|"MEA"|"NEU"|"NEN"|"CAZ") %in% data$region != params$mainReg) regiETP <- rbind(regiETP,"NonOECD")
+  #if (("CAZ"|"LAM"|"NEN"|"NEU"|"MEA"|"JPN"|"OAS"|"NES") %in% data$region != params$mainReg) regiETP <- rbind(regiETP,"OECD")
+  #if (("OAS") %in% data$region != params$mainReg) regiETP <- rbind(regiETP,"ASEAN")
+  if (("LAM") %in% data$region) regiETP <- c(regiETP,"Brazil")
+  if (("CHA") %in% data$region) regiETP <- c(regiETP,"China")
+  if (length(intersect(data$region, c("ENC","EWN","ECS","ESC","ECE","FRA","DEU","UKI","ESW","EUR"))) > 0) regiETP <- c(regiETP,"European Union")
+  if (("IND") %in% data$region) regiETP <- c(regiETP,"India")
+  if (("LAM") %in% data$region) regiETP <- c(regiETP,"Mexico")
+  if (("REF") %in% data$region) regiETP <- c(regiETP,"Russia")
+  if (("SSA") %in% data$region) regiETP <- c(regiETP,"South Africa")
+  if (("USA") %in% data$region) regiETP <- c(regiETP,"United States")
+  if (length(intersect(vars, c("FE|Transport|Pass|Aviation|International","FE|Transport|Pass|Aviation|Domestic"))) > 0)  vars <- c(vars, "FE|Transport|Pass|Aviation")
+  if (length(intersect(vars, c("ES|Transport|Pass|Aviation|International","ES|Transport|Pass|Aviation|Domestic"))) > 0) vars <- c(vars, "ES|Transport|Pass|Aviation")
+  if (length(intersect(vars, c("FE|Transport|Pass|Aviation|International pCap","FE|Transport|Pass|Aviation|Domestic pCap"))) > 0)  vars <- c(vars, "FE|Transport|Pass|Aviation pCap")
+  if (length(intersect(vars, c("ES|Transport|Pass|Aviation|International pCap","ES|Transport|Pass|Aviation|Domestic pCap"))) > 0) vars <- c(vars, "ES|Transport|Pass|Aviation pCap")
+
+  dRegiETPorig <- ETPorig[region %in% regiETP & variable %in% vars]
+  dRegiETPorig <- droplevels(dRegiETPorig)
+
+
+
   regions <- levels(dRegiScen$region)
-  
+
   warnMissingVars(dMainScen, vars)
   if (NROW(dMainScen) == 0) {
     warning("Nothing to plot.", call. = FALSE)
     return(invisible(NULL))
   }
-  
+
   label <- paste0("[", paste0(levels(d$unit), collapse = ","), "]")
   xLabel <- paste0(xVar, " [", paste0(levels(d$unit.x), collapse = ","), "]")
-  
+
   p1 <- dMainScen %>%
     ggplot(aes(.data$value.x, .data$value)) +
     geom_line(aes(linetype = .data$scenario)) +
@@ -301,37 +302,37 @@ showMultiLinePlotsByVariable_orig_ETP <- function(
   if (showHistorical) {
     p1 <- p1 +
       geom_point(data = dMainHist, aes(shape = .data$model)) +
-      geom_line(data = dMainHist, aes(group = paste0(.data$model, .data$region)), alpha = 0.5)
+      geom_line(data = dMainHist, aes(group = paste0(data$model, .data$region)), alpha = 0.5)
     p2 <- p2 +
       geom_point(data = dRegiHist, aes(shape = .data$model)) +
       geom_line(data = dRegiHist, aes(group = paste0(.data$model, .data$region)), alpha = 0.5)
   }
-  if (showETPorig) {
+  if (showETPorig & xVar == "GDP|PPP pCap") {
     p2 <- p2 +
-      geom_point(data = dRegiETPorig, aes(shape = .dRegiETPorig$model)) +
-      geom_line(data = dRegiETPorig, aes(group = paste0(.dRegiETPorig$model, .dRegiETPorig$region)), alpha = 0.5)
+      geom_point(data = dRegiETPorig, aes(dRegiETPorig$gdp, dRegiETPorig$value, shape = .dRegiETPorig$model)) +
+      geom_line(data = dRegiETPorig, aes(group = paste0(dRegiETPorig$model, dRegiETPorig$region)), alpha = 0.5)
   }
   # Add markers for certain years.
   if (length(yearsByVariable) > 0) {
     p1 <- p1 +
       geom_point(
         data = dMainScen %>%
-          filter(.data$period %in% .env$yearsByVariable) %>%
+          filter(.data$period %in% yearsByVariable) %>%
           mutate(year = factor(.data$period)),
         mapping = aes(.data$value.x, .data$value, shape = .data$year))
     p2 <- p2 +
       geom_point(
         data = dRegiScen %>%
-          filter(.data$period %in% .env$yearsByVariable) %>%
+          filter(.data$period %in% yearsByVariable) %>%
           mutate(year = factor(.data$period)),
         mapping = aes(.data$value.x, .data$value, shape = .data$year))
   }
-  
+
   # Show plots.
   print(p1)
   cat("\n\n")
   print(p2)
   cat("\n\n")
-  
+
   return(invisible(NULL))
 }
