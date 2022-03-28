@@ -270,8 +270,9 @@ showMultiLinePlotsByVariable_orig_ETP <- function(
 
   dRegiETPorig <- ETPorig[region %in% regiETP & variable %in% vars]
   dRegiETPorig <- droplevels(dRegiETPorig)
-
-
+  scen <- unique(data$scenario)
+  scen <- gsub("(Mix.|ElecEra|HydrHype|ConvCase|historical)", "", scen)
+  dRegiETPorig <- ETPorig[scenario %in% scen]
 
   regions <- levels(dRegiScen$region)
 
@@ -309,7 +310,7 @@ showMultiLinePlotsByVariable_orig_ETP <- function(
   }
   if (showETPorig & xVar == "GDP|PPP pCap") {
     p2 <- p2 +
-      geom_point(data = dRegiETPorig, aes(dRegiETPorig$gdp, dRegiETPorig$value, shape = .dRegiETPorig$model)) +
+      geom_point(data = dRegiETPorig, aes(dRegiETPorig$gdp, dRegiETPorig$value, shape = dRegiETPorig$model)) +
       geom_line(data = dRegiETPorig, aes(group = paste0(dRegiETPorig$model, dRegiETPorig$region)), alpha = 0.5)
   }
   # Add markers for certain years.

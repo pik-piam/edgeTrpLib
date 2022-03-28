@@ -26,14 +26,14 @@ walk(items, showLinePlots, data=data)
 
 items <- c(
     "ES|Transport|Pass|w/o bunkers pCap",
-    "ES|Transport|Pass|Aviation|International pCap")
-    #"ES|Transport|Pass|Aviation|Domestic pCap",
-    #"ES|Transport|Pass|Rail|non-HSR pCap",
-    #"ES|Transport|Pass|Rail|HSR pCap",
-    #"ES|Transport|Pass|Road|Bus pCap",
-    #"ES|Transport|Pass|Road|LDV pCap",
-    #"ES|Transport|Pass|Road|Non-Motorized|Walking pCap",
-    #"ES|Transport|Pass|Road|Non-Motorized|Cycling pCap")
+    "ES|Transport|Pass|Aviation|International pCap",
+    "ES|Transport|Pass|Aviation|Domestic pCap",
+    "ES|Transport|Pass|Rail|non-HSR pCap",
+    "ES|Transport|Pass|Rail|HSR pCap",
+    "ES|Transport|Pass|Road|Bus pCap",
+    "ES|Transport|Pass|Road|LDV pCap",
+    "ES|Transport|Pass|Road|Non-Motorized|Walking pCap",
+    "ES|Transport|Pass|Road|Non-Motorized|Cycling pCap")
 showMultiLinePlots(data, items)    
 showMultiLinePlotsByVariable_orig_ETP(data, items, "GDP|PPP pCap")
 ```
