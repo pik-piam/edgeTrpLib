@@ -15,13 +15,13 @@ output:
     number_sections: yes
 geometry: "a4paper,landscape,left=0.5cm,right=0.5cm,top=1.5cm,bottom=0.5cm,footnotesep=0.0cm,footskip=0.1cm"
 params:
-  mifScen: "C:/Users/johannah/Documents/EDGE-Transport/Output/SSP2-Mix1_2022-03-16_16.00.06/EDGE-T_SA.mif"
+  mifScen: "C:/Users/johannah/Documents/EDGE-Transport/Output/SSP2-Mix1_2022-03-28_15.07.15/EDGE-T_SA.mif"
   mifScenNames: null
   mifHist: "C:/Users/johannah/Documents/EDGE-Transport/Validation/historical_eu.mif"
   yearsScen: !r c(seq(2005, 2060, 5), seq(2070, 2100, 10))
   yearsHist: !r c(seq(2010, 2020, 1), seq(2025, 2100, 5))
   yearsBarPlot: !r c(2010, 2030, 2050, 2100)
-  reg: !r c("Reg21 + World") 
+  reg: !r c("OAS","MEA","SSA","LAM","REF","CAZ","CHA","IND","JPN","USA","GLO")
   sections: !r c("01_energy_demand","02_energy_services","04_costs_and_shareweight_trends")
   userSectionPath: null
   mainReg: "GLO"
@@ -136,8 +136,6 @@ if (!is.null(params$reg)) {
     params$reg= c("ENC","EWN","ECS","ESC","ECE","FRA","DEU","UKI","ESW","EUR")
   }
 
-  cat(params$reg)
-  
   data %>% 
     filter(region %in% params$reg) ->
     data

@@ -163,29 +163,7 @@ showMultiLinePlotsByVariable_orig_ETP <- function(
   stopifnot(is.character(histRefModel) && !is.null(names(histRefModel)))
   stopifnot(xVar %in% names(histRefModel))
 
-  dy <- data %>%
-    filter(.data$variable %in% vars)
-  dx <- data %>%
-    filter(.data$variable %in% xVar) %>%
-    filter(.data$scenario != "historical" | .data$model == histRefModel[xVar])
-  d <- dy %>%
-    left_join(dx, by = c("scenario", "region", "period"), suffix = c("", ".x")) %>%
-    drop_na(.data$value, .data$value.x) %>%
-    arrange(.data$period) %>%
-    droplevels()
-  dMainScen <- d %>%
-    filter(.data$region == params$mainReg, .data$scenario != "historical") %>%
-    droplevels()
-  dMainHist <- d %>%
-    filter(.data$region == params$mainReg, .data$scenario == "historical") %>%
-    droplevels()
-  dRegiScen <- d %>%
-    filter(.data$region != params$mainReg, .data$scenario != "historical") %>%
-    droplevels()
-  dRegiHist <- d %>%
-    filter(.data$region != params$mainReg, .data$scenario == "historical") %>%
-    droplevels()
-
+  #load and wrangle original ETP data
   ETPorig <- readSource("IEA_ETP", subtype = "transport", convert = F)
   ETPorig <- as.quitte(ETPorig)
   Mapping_IEA_ETP <- fread(system.file("extdata", "Mapping_IEA_ETP.csv", package = "edgeTrpLib"), header = TRUE)
@@ -195,7 +173,7 @@ showMultiLinePlotsByVariable_orig_ETP <- function(
   ETPorig[, value := value*Conversion][, Conversion := NULL][, unit := NULL]
   ETPorig <- ETPorig[,.(value = sum(value)), by = .(REMIND, region, period, Unit_REMIND, scenario)]
   setnames(ETPorig, c("REMIND","Unit_REMIND"), c("variable","unit"))
-  ETPorig[, model := paste0("IEA ETP ", scenario)][, scenario := "historical"]
+  ETPorig[, model := paste0("IEA ETP ", scenario)][, scenario := NULL]
 
   GDP_country = {
     x <- calcOutput("GDP", aggregate = F)
@@ -237,36 +215,48 @@ showMultiLinePlotsByVariable_orig_ETP <- function(
   GDP_2DS <- copy(GDP)
   GDP_2DS[, variable := "GDP|PPP pCap"][, model := "IEA ETP RTS 2DS"]
   GDP <- rbind(GDP_B2DS, GDP_RTS, GDP_2DS)
-  GDP[, model := paste0(model, " ", scenario)][, scenario := "historical"][, ISO := NULL][, unit := "kUS$2005/yr"]
+  GDP[, ISO := NULL][, unit := "kUS$2005/yr"]
   setnames(GDP, c("ETPreg"), c("region"))
 
-  ETPorig <- merge(ETPorig[, scenario := NULL], GDP_country, by.x = c("region","period"), by.y = c("ETPreg","period"), allow.cartesian = TRUE)
+  ETPorig <- merge(ETPorig, GDP_country, by.x = c("region","period"), by.y = c("ETPreg","period"), allow.cartesian = TRUE)
   ETPorig <- ETPorig[!is.na(value)]
   ETPorig <- merge(ETPorig, POP_country, by.x =c("region","period","scenario", "ISO"), by.y = c("ETPreg","period", "scenario", "ISO"))
   #Calculate pCap values
   ETPorig[, value := value/pop]
   #Calculate GDP|PPP in kUSD2005 pCap
   ETPorig[, gdp := gdp/pop][, pop := NULL]
-  ETPorig[, model:= paste0(model, " ", scenario)][, variable := paste0(variable, " ", "pCap")]
+  ETPorig[, variable := paste0(variable, " ", "pCap")]
 
-  ETPorig <- rbind(ETPorig[, ISO := NULL], GDP)
+  #Exclude disaggregated ETP data
+  data <- data[!grepl("IEA ETP", model)]
+  data <- rbind(ETPorig[, ISO := NULL], GDP, data)
 
-  regiETP <- c()
-  #if (("OAS"|"NES"|"MEA"|"NEU"|"NEN"|"CAZ") %in% data$region != params$mainReg) regiETP <- rbind(regiETP,"NonOECD")
-  #if (("CAZ"|"LAM"|"NEN"|"NEU"|"MEA"|"JPN"|"OAS"|"NES") %in% data$region != params$mainReg) regiETP <- rbind(regiETP,"OECD")
-  #if (("OAS") %in% data$region != params$mainReg) regiETP <- rbind(regiETP,"ASEAN")
-  if (("LAM") %in% data$region) regiETP <- c(regiETP,"Brazil")
-  if (("CHA") %in% data$region) regiETP <- c(regiETP,"China")
-  if (length(intersect(data$region, c("ENC","EWN","ECS","ESC","ECE","FRA","DEU","UKI","ESW","EUR"))) > 0) regiETP <- c(regiETP,"European Union")
-  if (("IND") %in% data$region) regiETP <- c(regiETP,"India")
-  if (("LAM") %in% data$region) regiETP <- c(regiETP,"Mexico")
-  if (("REF") %in% data$region) regiETP <- c(regiETP,"Russia")
-  if (("SSA") %in% data$region) regiETP <- c(regiETP,"South Africa")
-  if (("USA") %in% data$region) regiETP <- c(regiETP,"United States")
-  if (length(intersect(vars, c("FE|Transport|Pass|Aviation|International","FE|Transport|Pass|Aviation|Domestic"))) > 0)  vars <- c(vars, "FE|Transport|Pass|Aviation")
-  if (length(intersect(vars, c("ES|Transport|Pass|Aviation|International","ES|Transport|Pass|Aviation|Domestic"))) > 0) vars <- c(vars, "ES|Transport|Pass|Aviation")
-  if (length(intersect(vars, c("FE|Transport|Pass|Aviation|International pCap","FE|Transport|Pass|Aviation|Domestic pCap"))) > 0)  vars <- c(vars, "FE|Transport|Pass|Aviation pCap")
-  if (length(intersect(vars, c("ES|Transport|Pass|Aviation|International pCap","ES|Transport|Pass|Aviation|Domestic pCap"))) > 0) vars <- c(vars, "ES|Transport|Pass|Aviation pCap")
+  #filter for stated variables
+  dy <- data %>%
+    filter(.data$variable %in% vars)
+  #filter fo x variable GDP|PPP
+  dx <- data %>%
+    filter(.data$variable %in% xVar) %>%
+    filter(.data$scenario != "historical" | .data$model == histRefModel[xVar])
+  d <- dy %>%
+    left_join(dx, by = c("scenario", "region", "period"), suffix = c("", ".x")) %>%
+    drop_na(.data$value, .data$value.x) %>%
+    arrange(.data$period) %>%
+    droplevels()
+  dMainScen <- d %>%
+    filter(.data$region == params$mainReg, .data$scenario != "historical") %>%
+    droplevels()
+  dMainHist <- d %>%
+    filter(.data$region == params$mainReg, .data$scenario == "historical") %>%
+    droplevels()
+  dRegiScen <- d %>%
+    filter(.data$region != params$mainReg, .data$scenario != "historical") %>%
+    droplevels()
+  dRegiHist <- d %>%
+    filter(.data$region != params$mainReg, .data$scenario == "historical") %>%
+    droplevels()
+
+
 
   dRegiETPorig <- ETPorig[region %in% regiETP & variable %in% vars]
   dRegiETPorig <- droplevels(dRegiETPorig)

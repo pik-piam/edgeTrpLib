@@ -35,7 +35,18 @@ items <- c(
     "ES|Transport|Pass|Road|Non-Motorized|Walking pCap",
     "ES|Transport|Pass|Road|Non-Motorized|Cycling pCap")
 showMultiLinePlots(data, items)    
-showMultiLinePlotsByVariable_orig_ETP(data, items, "GDP|PPP pCap")
+showMultiLinePlotsByVariable(data, items, "GDP|PPP pCap")
+```
+
+## Passenger per Capita with original ETP values
+```{r}
+# items <- c(
+#     "ES|Transport|Pass|Aviation pCap",
+#     "ES|Transport|Pass|Rail pCap",
+#     "ES|Transport|Pass|Road|Bus pCap",
+#     "ES|Transport|Pass|Road|LDV pCap")
+# showMultiLinePlots(data, items)    
+# showMultiLinePlotsByVariable_orig_ETP(data, items, "GDP|PPP pCap")
 ```
 
 ## LDV 4-Wheelers 
