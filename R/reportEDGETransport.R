@@ -101,7 +101,6 @@ reportEDGETransport <- function(output_folder = ".", sub_folder = "EDGE-T/",
         datatable0 <- copy(datatable)
         datatable0 <- datatable0[!is.na(get(Aggr0))]
 
-
         datatable0 <- datatable0[sector == var0, .(value = sum(value, na.rm = T)),
                                  by = c("region", "year", Aggr0)]
         if (nrow(datatable0>0)) {
@@ -336,6 +335,7 @@ reportEDGETransport <- function(output_folder = ".", sub_folder = "EDGE-T/",
   repES <- reporting(
     datatable = demand_km,
     mode = "ES")
+  browser()
   toMIF <- rbind(
     repFE,
     repVKM,
@@ -348,6 +348,7 @@ reportEDGETransport <- function(output_folder = ".", sub_folder = "EDGE-T/",
 
 
   aggrmode <- c("ES|Transport|Pass|Road",
+                "ES|Transport|Pass|Aviation",
                       "ES|Transport|Pass|Rail",
                       "ES|Transport|Pass",
                       "ES|Transport|Freight",
@@ -388,6 +389,7 @@ reportEDGETransport <- function(output_folder = ".", sub_folder = "EDGE-T/",
                       )
 
   vars <-list(c("ES|Transport|Pass|Road|LDV", "ES|Transport|Pass|Road|Bus", "ES|Transport|Pass|Road|Non-Motorized"),
+              c("ES|Transport|Pass|Aviation|International", "ES|Transport|Pass|Aviation|Domestic"),
               c("ES|Transport|Pass|Rail|HSR", "ES|Transport|Pass|Rail|non-HSR"),
               c("ES|Transport|Pass|Road|LDV", "ES|Transport|Pass|Road|Bus", "ES|Transport|Pass|Road|Non-Motorized","ES|Transport|Pass|Rail|HSR", "ES|Transport|Pass|Rail|non-HSR","ES|Transport|Pass|Aviation|International", "ES|Transport|Pass|Aviation|Domestic"),
               c("ES|Transport|Freight|Road","ES|Transport|Freight|International Shipping","ES|Transport|Freight|Rail", "ES|Transport|Freight|Navigation"),
@@ -560,7 +562,7 @@ reportEDGETransport <- function(output_folder = ".", sub_folder = "EDGE-T/",
     LogitCostplotdata_FV <- function(priceData,prefData,logitExp){
       tot_price <- sw <- logit.exponent <- weight <- logit_type <- av_veh <- NULL
       #Calcualte equivalent inconvenience cost and
-      yrs_costs <-c(seq(2005, 2060, 5), seq(2070, 2100, 10))
+      yrs_costs <-c(seq(2005, 2060, 5), seq(2070, 2110, 10), 2130, 2150)
 
       # change variable names for mip
       setnames(priceData, c("year"), c("period"))
@@ -637,14 +639,7 @@ reportEDGETransport <- function(output_folder = ".", sub_folder = "EDGE-T/",
       return(priceData)
     }
 
-    Calc_shares <- function(data, add){
-      tot <- NULL
-      #Calculate Shares for specific set of variables
-      data[, tot := sum(value), by = c("period", "region", "scenario", "model")]
-      data[, value := value/tot*100, by = c("period", "region", "scenario", "model")][, unit := "%"][,tot := NULL]
-      data[, variable := paste0(variable, "|", add)]
-      return(data)
-    }
+
 
     # Mapping efficiencies for useful energy
     Mapp_UE <- data.table(
@@ -677,13 +672,13 @@ reportEDGETransport <- function(output_folder = ".", sub_folder = "EDGE-T/",
     "Logit costs"
     )
 
-    #Calculate useful energy
-    UE <- toMIF[grepl("FE" & ("FCEV"|"BEV"|"Electric"|"Liquids"|"Hydrogen"), variable)]
-    UE[, technology := gsub(!("FCEV"|"BEV"|"Electric"|"Liquids"|"Hydrogen"),"", variable)]
-    UE <- merge(UE, Mapp_UE)
-    UE[, value:= value*UE_efficiency][, variable := gsub("FE","UE", variable)]
+    # #Calculate useful energy
+    # UE <- toMIF[grepl("FE" & ("FCEV"|"BEV"|"Electric"|"Liquids"|"Hydrogen"), variable)]
+    # UE[, technology := gsub(!("FCEV"|"BEV"|"Electric"|"Liquids"|"Hydrogen"),"", variable)]
+    # UE <- merge(UE, Mapp_UE)
+    # UE[, value:= value*UE_efficiency][, variable := gsub("FE","UE", variable)]
 
-    toMIF <- rbind(toMIF, UE)
+    # toMIF <- rbind(toMIF, UE)
 
     #Calculate logit Costs
     #Read in additional data if exist
@@ -759,110 +754,15 @@ reportEDGETransport <- function(output_folder = ".", sub_folder = "EDGE-T/",
 
 
     ## Move to update validation Excel-Sheet as this is the only remaining use case
-    #Calculate Vehicle Size Shares LDV
 
-     #Calculate LDV 4W tech shares
-     vars <- c(
-       "ES|Transport|Pass|Road|LDV|4-Wheelers|BEV",
-       "ES|Transport|Pass|Road|LDV|4-Wheelers|FCEV",
-       "ES|Transport|Pass|Road|LDV|4-Wheelers|Hybrid Electric",
-       "ES|Transport|Pass|Road|LDV|4-Wheelers|Gases",
-       "ES|Transport|Pass|Road|LDV|4-Wheelers|Liquids"
-     )
-
-     ES_shares_LDV4tech <- Calc_shares(toMIF[variable %in% vars], "Share")
-
-     #Calculate LDV 2W tech shares
-     vars <- c(
-       "ES|Transport|Pass|Road|LDV|Two-Wheelers|BEV",
-       "ES|Transport|Pass|Road|LDV|Two-Wheelers|Liquids"
-     )
-
-     ES_shares_LDV2tech <- Calc_shares(toMIF[variable %in% vars], "Share")
-
-     #Calculate Bus tech shares
-     vars <- c(
-       "ES|Transport|Pass|Road|Bus|BEV",
-       "ES|Transport|Pass|Road|Bus|FCEV",
-       "ES|Transport|Pass|Road|Bus|Hybrid Electric",
-       "ES|Transport|Pass|Road|Bus|Gases",
-       "ES|Transport|Pass|Road|Bus|Liquids"
-     )
-
-     ES_shares_Bustech <- Calc_shares(toMIF[variable %in% vars], "Share")
-
-     #Truck size
-     vars <- c(
-       "ES|Transport|Freight|Road|Truck (0-3.5t)",
-       "ES|Transport|Freight|Road|Truck (18t)",
-       "ES|Transport|Freight|Road|Truck (26t)",
-       "ES|Transport|Freight|Road|Truck (40t)",
-       "ES|Transport|Freight|Road|Truck (7.5t)"
-     )
-
-     ES_shares_Trucksize <- Calc_shares(toMIF[variable %in% vars], "Share")
-
-     #Freight road technology shares
-     vars <- c(
-       "ES|Transport|Freight|Road|Electric",
-       "ES|Transport|Freight|Road|FCEV",
-       "ES|Transport|Freight|Road|Gases",
-       "ES|Transport|Freight|Road|Liquids"
-     )
-
-     ES_shares_Truckstech <- Calc_shares(toMIF[variable %in% vars], "Share")
-
-
-    #Calculate Energy Service Shares
-    #with bunkers
-    vars <- c(
-      "ES|Transport|Pass|Aviation|Domestic",
-      "ES|Transport|Pass|Aviation|International",
-      "ES|Transport|Pass|Rail|HSR",
-      "ES|Transport|Pass|Rail|non-HSR",
-      "ES|Transport|Pass|Road|Bus",
-      "ES|Transport|Pass|Road|LDV",
-      "ES|Transport|Pass|Road|Non-Motorized|Cycling",
-      "ES|Transport|Pass|Road|Non-Motorized|Walking"
-    )
-
-    ES_shares_Pass <- Calc_shares(toMIF[variable %in% vars], "Share")
-
-    vars <- c(
-      "ES|Transport|Freight|Road",
-      "ES|Transport|Freight|Rail",
-      "ES|Transport|Freight|International Shipping",
-      "ES|Transport|Freight|Navigation"
-    )
-
-    ES_shares_Freight <- Calc_shares(toMIF[variable %in% vars], "Share")
-
-    #without bunkers
-    vars <- c(
-      "ES|Transport|Pass|Aviation|Domestic",
-      "ES|Transport|Pass|Rail|HSR",
-      "ES|Transport|Pass|Rail|non-HSR",
-      "ES|Transport|Pass|Road|Bus",
-      "ES|Transport|Pass|Road|LDV",
-      "ES|Transport|Pass|Road|Non-Motorized|Cycling",
-      "ES|Transport|Pass|Road|Non-Motorized|Walking"
-    )
-
-    ES_shares_Pass_wobunk <- Calc_shares(toMIF[variable %in% vars], "Share w/o bunkers")
-
-    vars <- c(
-      "ES|Transport|Freight|Road",
-      "ES|Transport|Freight|Rail",
-      "ES|Transport|Freight|Navigation"
-    )
-
-    ES_shares_Freight_wobunk <- Calc_shares(toMIF[variable %in% vars], "Share w/o bunkers")
 
     #Aggregate data
     #Insert POP and GDP
-    if (file.exists(datapath(fname = "POP.RDS"))&file.exists(datapath(fname = "GDP.RDS"))){
+    if (file.exists(datapath(fname = "POP.RDS")) & file.exists(datapath(fname = "GDP.RDS"))){
       POP <- readRDS(datapath(fname = "POP.RDS"))
       GDP <- readRDS(datapath(fname = "GDP.RDS"))
+      POP <- POP[year %in% yrs]
+      GDP <- GDP[year %in% yrs]
       POP[, model:= model_name][, scenario:= scenario_title][, variable := "Population"][, unit := "million"]
       GDP[, model:= model_name][, scenario:= scenario_title][, variable := "GDP|PPP"]
       GDP[, weight := weight*0.001][, unit := "billion US$2005/yr"]
@@ -885,8 +785,6 @@ reportEDGETransport <- function(output_folder = ".", sub_folder = "EDGE-T/",
 
       toMIF <- rbind(toMIF, POP, GDP)
       }
-
-    toMIF <- rbind(toMIF,ES_shares_Pass,ES_shares_Freight,ES_shares_Pass_wobunk,ES_shares_Freight_wobunk,ES_shares_Trucksize,ES_shares_Truckstech,ES_shares_LDV2tech,ES_shares_LDV4tech, ES_shares_Bustech)
   }
 
   ## Make sure there are no duplicates!
