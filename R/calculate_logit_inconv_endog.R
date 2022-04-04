@@ -50,6 +50,7 @@ calculate_logit_inconv_endog = function(prices,
     df <- df[ !(is.na(tot_price))]
     ## entries that are not present in the mix have non_fuel_price == 0, but also Walk and Cycle: delete all the not-present in the mix options
     df <- df[(non_fuel_price>0)|(non_fuel_price==0 & subsector_L3 %in% c("Walk", "Cycle"))]
+
     ## needs random lambdas for the sectors that are not explicitly calculated
     df <- df[ is.na(logit.exponent), logit.exponent := -10]
 
@@ -384,6 +385,10 @@ calculate_logit_inconv_endog = function(prices,
     final_prefFV = rbind(final_prefNonMot, final_prefFV)
     ## overwrite the preferences with the market based ones
     pref_data[["FV_final_pref"]] = final_prefFV
+
+    ##HOTfix: Truck size classes are not all included in the input data -> they need to be added manually
+    ##ATTENTION: This should be changed in the refactoring process
+    dfother[grepl("Truck", vehicle_type), logit.exponent := -4]
 
     ## for all entries other than 4wheelers, shares based on SW are calculated
     dfother[, share := sw*tot_price^logit.exponent/(sum(sw*tot_price^logit.exponent)),
