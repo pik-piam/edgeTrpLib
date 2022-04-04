@@ -388,7 +388,7 @@ calculate_logit_inconv_endog = function(prices,
 
     ##HOTfix: Truck size classes are not all included in the input data -> they need to be added manually
     ##ATTENTION: This should be changed in the refactoring process
-    dfother[grepl("Truck", vehicle_type), logit.exponent := -4]
+    dfother[grepl("^Truck", vehicle_type), logit.exponent := -4]
 
     ## for all entries other than 4wheelers, shares based on SW are calculated
     dfother[, share := sw*tot_price^logit.exponent/(sum(sw*tot_price^logit.exponent)),
