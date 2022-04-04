@@ -286,7 +286,7 @@ calculate_logit_inconv_endog = function(prices,
 
       ## Hotfix: CHN has very low costs for NG, which leads to unstable NG behavior. Temporarily constrained to 2020 values
       tmp[technology == "NG", pref := ifelse(year == t,
-                                                          pmax(0.8*pref[year == 2020], pref[year == 2020]*exp(1)^(weighted_sharessum[year == (t-1)]*bfuelav)),
+                                                          pmax(pref[year == 2020], pref[year == 2020]*exp(1)^(weighted_sharessum[year == (t-1)]*bfuelav)),
                                                           pref), by = c("region", "technology", "vehicle_type", "subsector_L1")]
 
       ## range anxiety for BEVs
