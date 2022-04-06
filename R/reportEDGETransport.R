@@ -487,7 +487,7 @@ reportEDGETransport <- function(output_folder = ".", sub_folder = "EDGE-T/",
             length(all_subsectors), 1)], "value"), with = FALSE][, variable := "Eq inconvenience cost"]
 
       #Prepare PriceData
-      priceData <- melt(priceData[, -c("tot_price")], id.vars = c("region", "period", all_subsectors[
+      priceData <- data.table::melt(priceData[, -c("tot_price")], id.vars = c("region", "period", all_subsectors[
         seq(match(groupValue, all_subsectors),
             length(all_subsectors), 1)]))
 
@@ -591,9 +591,7 @@ reportEDGETransport <- function(output_folder = ".", sub_folder = "EDGE-T/",
       priceData_inco_LDV <- prefData[!logit_type == "sw"][, c("period", "region", "technology","vehicle_type","value","logit_type")]
       setnames(priceData_inco_LDV, "logit_type", "variable")
 
-      priceData <- melt(priceData[, -c("tot_price", "share", "subsector_L1", "subsector_L2", "subsector_L3", "sector")], id.vars = c("region", "period", "technology", "vehicle_type"))
-      #Why is this necessary?
-      priceData <- as.data.table(priceData)
+      priceData <- data.table::melt(priceData[, -c("tot_price", "share", "subsector_L1", "subsector_L2", "subsector_L3", "sector")], id.vars = c("region", "period", "technology", "vehicle_type"))
       priceData <- rbind(priceData, priceData_sw, priceData_inco_LDV)
 
       #Regional Aggregation
