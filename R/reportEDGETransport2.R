@@ -26,7 +26,7 @@
 #' @importFrom quitte as.quitte
 #' @export
 
-reportEDGETransport <- function(output_folder = ".", sub_folder = "EDGE-T/",
+reportEDGETransport2 <- function(output_folder = ".", sub_folder = "EDGE-T/",
                                 loadmif = TRUE , extendedReporting = FALSE,
                                 scenario_title = NULL, model_name = "EDGE-Transport",
                                 gdx = NULL) {
