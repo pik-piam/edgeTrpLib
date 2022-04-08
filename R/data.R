@@ -15,4 +15,3 @@
 #'   \item{mode}{the human readable mobility mode name}
 #' }
 "L1mapping"
-
