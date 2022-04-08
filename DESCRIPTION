@@ -1,6 +1,6 @@
 Package: edgeTrpLib
 Title: Helper functions for EDGE transport calculations
-Version: 1.1.1
+Version: 1.2.0
 Authors@R: c(
     person("Alois", "Dirnaichner", email = "dirnaichner@pik-potsdam.de", role = c("aut", "cre")),
     person("Marianna", "Rottoli", email = "rottoli@pik-potsdam.de", role = "aut"))		    
@@ -25,6 +25,6 @@ License: GPL-3
 Encoding: UTF-8
 LazyData: true
 RoxygenNote: 7.1.2
-Date: 2022-04-07
+Date: 2022-04-08
 Suggests: 
     covr
