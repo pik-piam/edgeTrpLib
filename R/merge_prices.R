@@ -55,7 +55,7 @@ feh2t,H2 enduse
     test <- pfe[year > 2005 & value <= 1]
 
     if(nrow(test)){
-        print(paste("Fuel prices lower than 1$/GJ found. Regions:", unique(test$region)))
+        print(paste("Fuel prices lower than 1$/GJ found. Regions:", paste(unique(test$region), collapse = ", ")))
         print("The weighted averages of non-zero regions of the corresponding fuel will be used.")
         pfe[, value := ifelse(value <= 1, mean(value[value>1]), value), by = c("year", "sector_fuel")]
     }
