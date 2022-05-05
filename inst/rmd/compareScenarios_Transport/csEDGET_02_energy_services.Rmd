@@ -9,7 +9,8 @@ items <- c(
     "ES|Transport|Pass|Rail|non-HSR",
     "ES|Transport|Pass|Rail|HSR",
     "ES|Transport|Pass|Road|Bus",
-    "ES|Transport|Pass|Road|LDV",
+    "ES|Transport|Pass|Road|LDV|4-Wheelers",
+    "ES|Transport|Pass|Road|LDV|Two-Wheelers",
     "ES|Transport|Pass|Road|Non-Motorized|Walking",
     "ES|Transport|Pass|Road|Non-Motorized|Cycling"
   )
@@ -31,7 +32,8 @@ items <- c(
     "ES|Transport|Pass|Rail|non-HSR pCap",
     "ES|Transport|Pass|Rail|HSR pCap",
     "ES|Transport|Pass|Road|Bus pCap",
-    "ES|Transport|Pass|Road|LDV pCap",
+    "ES|Transport|Pass|Road|LDV|4-Wheelers pCap",
+    "ES|Transport|Pass|Road|LDV|Two-Wheelers pCap",
     "ES|Transport|Pass|Road|Non-Motorized|Walking pCap",
     "ES|Transport|Pass|Road|Non-Motorized|Cycling pCap")
 showMultiLinePlots(data, items)    
