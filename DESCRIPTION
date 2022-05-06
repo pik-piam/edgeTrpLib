@@ -1,6 +1,6 @@
 Package: edgeTrpLib
 Title: Helper functions for EDGE transport calculations
-Version: 1.2.0
+Version: 1.4.0
 Authors@R: c(
     person("Alois", "Dirnaichner", email = "dirnaichner@pik-potsdam.de", role = c("aut", "cre")),
     person("Marianna", "Rottoli", email = "rottoli@pik-potsdam.de", role = "aut"))		    
@@ -8,11 +8,9 @@ Description: This package is highly specialized and created solely to not duplic
 Depends: R (>= 3.3.1)
 Imports:
 	magclass,
-	madrat,
 	data.table,
 	rmndt,
 	gdx,
-	stats,
 	magrittr,
 	quitte,
 	gdxdt,
@@ -25,6 +23,6 @@ License: GPL-3
 Encoding: UTF-8
 LazyData: true
 RoxygenNote: 7.1.2
-Date: 2022-04-08
+Date: 2022-05-06
 Suggests: 
     covr

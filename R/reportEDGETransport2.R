@@ -103,7 +103,8 @@ reportEDGETransport2 <- function(output_folder = ".", sub_folder = "EDGE-T/",
 
         datatable0 <- datatable0[sector == var0, .(value = sum(value, na.rm = T)),
                                  by = c("region", "year", Aggr0)]
-        if (nrow(datatable0>0)) {
+
+        if(nrow(datatable0) > 0) {
 
           setnames(datatable0, "year", "period")
 
