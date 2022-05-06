@@ -8,11 +8,9 @@ Description: This package is highly specialized and created solely to not duplic
 Depends: R (>= 3.3.1)
 Imports:
 	magclass,
-	madrat,
 	data.table,
 	rmndt,
 	gdx,
-	stats,
 	magrittr,
 	quitte,
 	gdxdt,
