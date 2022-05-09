@@ -90,6 +90,7 @@ for (reg0 in CostReg) {
 
 
 ```
+
 ## LDV non fuel prices for different technologies and vehicle sizes
 ```{r LDV non fuel prices for different technologies and vehicle sizes}
 
@@ -146,6 +147,7 @@ for (reg0 in CostReg) {
 
   p <- lineplot(varname = paste0("Shareweight trend S3 ", reg0), data = plotdata)
   print(p)
+  
   cat("\n\n")
   plotdata <- data[grepl("Shareweight\\|S2\\|(Bus|trn_pass_road_LDV)",variable) & region == reg0]
   plotdata <- plotdata[, variable := gsub("Shareweight\\|S2\\|", "",variable)]
@@ -153,6 +155,7 @@ for (reg0 in CostReg) {
   p <- lineplot(varname = paste0("Shareweight trend S2 ", reg0), data = plotdata)
   print(p)
   cat("\n\n")
+  
   plotdata <- data[grepl("Shareweight\\|S1\\|(trn_pass_road_LDV_2W|trn_pass_road_LDV_4W)",variable) & region == reg0]
   plotdata <- plotdata[, variable := gsub("Shareweight\\|S1\\|", "", variable)]
   
