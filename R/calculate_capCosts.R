@@ -19,6 +19,7 @@ calculate_capCosts <-function(base_price, Fdemand_ES, stations,
 
   teEs <- region <- variable <- value <- demand_F <- `.` <- subsector_L3 <- vehicle_type <- NULL
   vehicles_number <- annual_mileage <- load_factor <- demand <- technology <- cost_st_km <- NULL
+  subsector_L2 <- NULL
 
   ## the non fuel price is to be calculated only for motorized entries
   Fdemand_ES=Fdemand_ES[!subsector_L3 %in% c("Walk","Cycle"),]
