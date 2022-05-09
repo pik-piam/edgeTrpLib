@@ -6,19 +6,20 @@ tot_wobunk <- "ES|Transport|Pass|w/o bunkers"
 items <- c(
     "ES|Transport|Pass|Aviation|International",
     "ES|Transport|Pass|Aviation|Domestic",
-    "ES|Transport|Pass|Rail|non-HSR",
     "ES|Transport|Pass|Rail|HSR",
+    "ES|Transport|Pass|Rail|non-HSR",
     "ES|Transport|Pass|Road|Bus",
-    "ES|Transport|Pass|Road|LDV",
+    "ES|Transport|Pass|Road|LDV|Four Wheelers",
+    "ES|Transport|Pass|Road|LDV|Two Wheelers",
     "ES|Transport|Pass|Road|Non-Motorized|Walking",
     "ES|Transport|Pass|Road|Non-Motorized|Cycling"
   )
-showAreaAndBarPlots(data, items, tot_wbunk)
-showAreaAndBarPlots(data, items[2:8], tot_wobunk)
-showAreaAndBarPlots(data, items, tot_wbunk, fill=TRUE)
-showAreaAndBarPlots(data, items[2:8], tot_wobunk, fill=TRUE)
+showAreaAndBarPlots(data, items, tot_wbunk,  orderVars = "user")
+showAreaAndBarPlots(data, items[2:9], tot_wobunk, orderVars = "user")
+showAreaAndBarPlots(data, items, tot_wbunk, fill=TRUE, orderVars = "user")
+showAreaAndBarPlots(data, items[2:9], tot_wobunk, fill=TRUE, orderVars = "user")
 showLinePlots(data, tot_wbunk)
-walk(items, showLinePlots, data=data)
+walk(items, showLinePlots, data = data)
 ```
 
 ## Passenger per Capita
@@ -28,70 +29,60 @@ items <- c(
     "ES|Transport|Pass|w/o bunkers pCap",
     "ES|Transport|Pass|Aviation|International pCap",
     "ES|Transport|Pass|Aviation|Domestic pCap",
-    "ES|Transport|Pass|Rail|non-HSR pCap",
     "ES|Transport|Pass|Rail|HSR pCap",
+    "ES|Transport|Pass|Rail|non-HSR pCap",
     "ES|Transport|Pass|Road|Bus pCap",
-    "ES|Transport|Pass|Road|LDV pCap",
+    "ES|Transport|Pass|Road|LDV|Four Wheelers pCap",
+    "ES|Transport|Pass|Road|LDV|Two Wheelers pCap",
     "ES|Transport|Pass|Road|Non-Motorized|Walking pCap",
     "ES|Transport|Pass|Road|Non-Motorized|Cycling pCap")
 showMultiLinePlots(data, items)    
 showMultiLinePlotsByVariable(data, items, "GDP|PPP pCap")
 ```
 
-## Passenger per Capita with original ETP values
-```{r}
-# items <- c(
-#     "ES|Transport|Pass|Aviation pCap",
-#     "ES|Transport|Pass|Rail pCap",
-#     "ES|Transport|Pass|Road|Bus pCap",
-#     "ES|Transport|Pass|Road|LDV pCap")
-# showMultiLinePlots(data, items)    
-# showMultiLinePlotsByVariable_orig_ETP(data, items, "GDP|PPP pCap")
-```
-
-## LDV 4-Wheelers 
+## LDV Four Wheelers 
 
 ### By vehicle size
 ```{r}
-tot <- "ES|Transport|Pass|Road|LDV|4-Wheelers"
+tot <- "ES|Transport|Pass|Road|LDV|Four Wheelers"
 items <- c(
+       "ES|Transport|Pass|Road|LDV|Van",
+       "ES|Transport|Pass|Road|LDV|SUV",
        "ES|Transport|Pass|Road|LDV|Large",
        "ES|Transport|Pass|Road|LDV|Medium",
-       "ES|Transport|Pass|Road|LDV|SUV",
-       "ES|Transport|Pass|Road|LDV|Mini",
        "ES|Transport|Pass|Road|LDV|Small",
-       "ES|Transport|Pass|Road|LDV|Van"
+       "ES|Transport|Pass|Road|LDV|Mini"
   )
 
-showAreaAndBarPlots(data, items, tot)
-showAreaAndBarPlots(data, items, tot, fill=TRUE)
+showAreaAndBarPlots(data, items, tot, orderVars = "user")
+showAreaAndBarPlots(data, items, tot, fill = TRUE,  orderVars = "user")
 ```
 
 ### By technology
 ```{r}
-tot <- "ES|Transport|Pass|Road|LDV|4-Wheelers"
+tot <- "ES|Transport|Pass|Road|LDV|Four Wheelers"
 items <- c(
-       "ES|Transport|Pass|Road|LDV|4-Wheelers|BEV",
-       "ES|Transport|Pass|Road|LDV|4-Wheelers|FCEV",
-       "ES|Transport|Pass|Road|LDV|4-Wheelers|Hybrid Electric",
-       "ES|Transport|Pass|Road|LDV|4-Wheelers|Gases",
-       "ES|Transport|Pass|Road|LDV|4-Wheelers|Liquids"
+       "ES|Transport|Pass|Road|LDV|Four Wheelers|BEV",
+       "ES|Transport|Pass|Road|LDV|Four Wheelers|FCEV",
+       "ES|Transport|Pass|Road|LDV|Four Wheelers|Hybrid Electric",
+       "ES|Transport|Pass|Road|LDV|Four Wheelers|Gases",
+       "ES|Transport|Pass|Road|LDV|Four Wheelers|Liquids"
   )
 
-showAreaAndBarPlots(data, items, tot)
-showAreaAndBarPlots(data, items, tot, fill=TRUE)
+showAreaAndBarPlots(data, items, tot, orderVars = "user")
+showAreaAndBarPlots(data, items, tot, fill=TRUE, orderVars = "user")
 ```
 
 ## LDV 2-Wheelers by technology
 ```{r}
-tot <- "ES|Transport|Pass|Road|LDV|Two-Wheelers"
+tot <- "ES|Transport|Pass|Road|LDV|Two Wheelers"
 items <- c(
-     "ES|Transport|Pass|Road|LDV|Two-Wheelers|BEV",
-     "ES|Transport|Pass|Road|LDV|Two-Wheelers|Liquids" 
+     "ES|Transport|Pass|Road|LDV|Two Wheelers|BEV",
+     "ES|Transport|Pass|Road|LDV|Two Wheelers|Liquids" 
   )
 
-showAreaAndBarPlots(data, items, tot)
-showAreaAndBarPlots(data, items, tot, fill=TRUE)
+showAreaAndBarPlots(data, items, tot, orderVars = "user")
+showAreaAndBarPlots(data, items, tot, fill=TRUE, orderVars = "user")
 ```
 
 ## Busses by technology
@@ -104,8 +95,8 @@ items <- c(
        "ES|Transport|Pass|Road|Bus|Liquids" 
   )
 
-showAreaAndBarPlots(data, items, tot)
-showAreaAndBarPlots(data, items, tot, fill=TRUE)
+showAreaAndBarPlots(data, items, tot, orderVars = "user")
+showAreaAndBarPlots(data, items, tot, fill=TRUE, orderVars = "user")
 ```
 
 ## Freight
@@ -114,14 +105,14 @@ tot_wbunk <- "ES|Transport|Freight"
 tot_wobunk <- "ES|Transport|Freight|w/o bunkers"
 items <- c(
       "ES|Transport|Freight|International Shipping",
-      "ES|Transport|Freight|Road",
+      "ES|Transport|Freight|Navigation",
       "ES|Transport|Freight|Rail",
-      "ES|Transport|Freight|Navigation"
+      "ES|Transport|Freight|Road"
   )
-showAreaAndBarPlots(data, items, tot_wbunk)
-showAreaAndBarPlots(data, items[2:4], tot_wobunk)
-showAreaAndBarPlots(data, items, tot_wbunk, fill=TRUE)
-showAreaAndBarPlots(data, items[2:4], tot_wobunk, fill=TRUE)
+showAreaAndBarPlots(data, items, tot_wbunk, orderVars = "user")
+showAreaAndBarPlots(data, items[2:4], tot_wobunk, orderVars = "user")
+showAreaAndBarPlots(data, items, tot_wbunk, fill=TRUE, orderVars = "user")
+showAreaAndBarPlots(data, items[2:4], tot_wobunk, fill=TRUE, orderVars = "user")
 showLinePlots(data, tot_wbunk)
 walk(items, showLinePlots, data=data)
 ```
@@ -132,9 +123,9 @@ walk(items, showLinePlots, data=data)
 items <- c(
       "ES|Transport|Freight|w/o bunkers pCap",
       "ES|Transport|Freight|International Shipping pCap",
-      "ES|Transport|Freight|Road pCap",
+      "ES|Transport|Freight|Navigation pCap",
       "ES|Transport|Freight|Rail pCap",
-      "ES|Transport|Freight|Navigation pCap"
+      "ES|Transport|Freight|Road pCap"
     )
 showMultiLinePlots(data, items)    
 showMultiLinePlotsByVariable(data, items, "GDP|PPP pCap")
@@ -146,15 +137,15 @@ showMultiLinePlotsByVariable(data, items, "GDP|PPP pCap")
 ```{r}
 tot <- "ES|Transport|Freight|Road"
 items <- c(
-       "ES|Transport|Freight|Road|Truck (0-3.5t)",
-       "ES|Transport|Freight|Road|Truck (7.5t)",
-       "ES|Transport|Freight|Road|Truck (18t)",
+       "ES|Transport|Freight|Road|Truck (40t)",
        "ES|Transport|Freight|Road|Truck (26t)",
-       "ES|Transport|Freight|Road|Truck (40t)"
+       "ES|Transport|Freight|Road|Truck (18t)",
+       "ES|Transport|Freight|Road|Truck (7.5t)",
+       "ES|Transport|Freight|Road|Truck (0-3.5t)"
   )
 
-showAreaAndBarPlots(data, items, tot)
-showAreaAndBarPlots(data, items, tot, fill=TRUE)
+showAreaAndBarPlots(data, items, tot, orderVars = "user")
+showAreaAndBarPlots(data, items, tot, fill=TRUE, orderVars = "user")
 ```
 
 ### By technology
@@ -167,6 +158,6 @@ items <- c(
        "ES|Transport|Freight|Road|Liquids"
   )
 
-showAreaAndBarPlots(data, items, tot)
-showAreaAndBarPlots(data, items, tot, fill=TRUE)
+showAreaAndBarPlots(data, items, tot, orderVars = "user")
+showAreaAndBarPlots(data, items, tot, fill=TRUE, orderVars = "user")
 ```

@@ -402,7 +402,7 @@ reportEDGETransport2 <- function(output_folder = ".", sub_folder = "EDGE-T/",
       toMIF[region %in% regionSubsetList[["EUR"]], .(value = sum(value), region = "EUR"), by = .(model, scenario, variable, unit, period)],
       toMIF[region %in% regionSubsetList[["NEU"]], .(value = sum(value), region = "NEU"), by = .(model, scenario, variable, unit, period)],
       toMIF[region %in% regionSubsetList[["EU27"]], .(value = sum(value), region = "EU27"), by = .(model, scenario, variable, unit, period)],
-      toMIF[, .(value = sum(value), region = "GLO"), by = .(model, scenario, variable, unit, period)]
+      toMIF[, .(value = sum(value), region = "World"), by = .(model, scenario, variable, unit, period)]
     ), use.names=TRUE)
   }
 
@@ -730,11 +730,11 @@ reportEDGETransport2 <- function(output_folder = ".", sub_folder = "EDGE-T/",
           POP[region %in% regionSubsetList[["EUR"]], .(value = sum(value), region = "EUR"), by = .(model, scenario, variable, unit, period)],
           POP[region %in% regionSubsetList[["NEU"]], .(value = sum(value), region = "NEU"), by = .(model, scenario, variable, unit, period)],
           POP[region %in% regionSubsetList[["EU27"]], .(value = sum(value), region = "EU27"), by = .(model, scenario, variable, unit, period)],
-          POP[, .(value = sum(value), region = "GLO"), by = .(model, scenario, variable, unit, period)],
+          POP[, .(value = sum(value), region = "World"), by = .(model, scenario, variable, unit, period)],
           GDP[region %in% regionSubsetList[["EUR"]], .(value = sum(value), region = "EUR"), by = .(model, scenario, variable, unit, period)],
           GDP[region %in% regionSubsetList[["NEU"]], .(value = sum(value), region = "NEU"), by = .(model, scenario, variable, unit, period)],
           GDP[region %in% regionSubsetList[["EU27"]], .(value = sum(value), region = "EU27"), by = .(model, scenario, variable, unit, period)],
-          GDP[, .(value = sum(value), region = "GLO"), by = .(model, scenario, variable, unit, period)]
+          GDP[, .(value = sum(value), region = "World"), by = .(model, scenario, variable, unit, period)]
         ), use.names=TRUE)
       }
 

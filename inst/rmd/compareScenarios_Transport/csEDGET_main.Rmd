@@ -73,10 +73,10 @@ library(tidyverse)
 library(kableExtra)
 library(quitte)
 library(devtools)
-library(mip)
 library(edgeTrpLib)
 library(data.table)
 library(mrremind)
+library(mip)
 setConfig(forcecache = T) 
 ```
 
@@ -196,8 +196,10 @@ pCapVariables <- tribble(
   "ES|Transport|Freight|International Shipping", "tkm/yr", 1e9,
   "ES|Transport|Freight|Road", "tkm/yr", 1e9,
   "ES|Transport|Freight|Navigation", "tkm/yr", 1e9,
-  "ES|Transport|Freight|Rail pCap", "tkm/yr", 1e9,
+  "ES|Transport|Freight|Rail", "tkm/yr", 1e9,
   "ES|Transport|Pass|Road|LDV", "km/yr", 1e9,
+  "ES|Transport|Pass|Road|LDV|Four Wheelers", "km/yr", 1e9,
+  "ES|Transport|Pass|Road|LDV|Two Wheelers", "km/yr", 1e9,
   "ES|Transport|Pass|non-LDV", "km/yr", 1e9,
   "ES|Transport|Pass|Road|LDV|BEV", "km/yr", 1e9,
   "ES|Transport|Pass|Road|LDV|FCEV", "km/yr", 1e9,
