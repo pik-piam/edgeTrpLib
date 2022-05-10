@@ -74,7 +74,7 @@ shares_intensity_and_demand <- function(logit_shares,
     ## plug in hybrids need to be redistributed on liquids and BEVs (on fuel consumtpion)
     demandFPIH = demandF[technology == "Hybrid Electric"]
     demandFPIH[, c("demand_EJel", "demand_EJliq") := list(0.4*demand_EJ, 0.6*demand_EJ)]
-    demandFPIH[, c("MJ_kmel", "MJ_kmliq") := list((demand_EJel+demand_EJliq)*MJ_km/demand_EJel, (demand_EJel+demand_EJliq)*MJ_km/demand_EJliq)]
+    demandFPIH[, c("MJ_kmel", "MJ_kmliq") := list(0.4*MJ_km, 0.6*MJ_km)]
     demandFPIH[, c("demand_Fel", "demand_Fliq") := list(demand_EJel/(1e6*MJ_kmel*1e-12), demand_EJel/(1e6*MJ_kmliq*1e-12))]
     demandFPIH[, c("demand_EJ", "demand_F", "technology", "sector_fuel", "MJ_kmel", "MJ_kmliq") := NULL]
     demandFPIH = melt(demandFPIH, id.vars = c("region", "sector", "year", "subsector_L3", "subsector_L2", "subsector_L1", "vehicle_type", "MJ_km"),
