@@ -1,0 +1,15 @@
+sector,fuel,CES_node
+trn_pass,Electric,feelt_p_sm
+trn_pass,Liquids,fepet_p_sm
+trn_pass,NG,fegat_p_sm
+trn_pass,Hydrogen,feh2t_p_sm
+trn_freight,Electric,feelt_f_sm
+trn_freight,Liquids,fedie_f_sm
+trn_freight,NG,fegat_f_sm
+trn_freight,Hydrogen,feh2t_f_sm
+trn_aviation_intl,Electric,feelt_p_lo
+trn_aviation_intl,Liquids,fedie_p_lo
+trn_aviation_intl,Hydrogen,feh2t_p_lo
+trn_shipping_intl,Electric,feelt_f_lo
+trn_shipping_intl,Liquids,fedie_f_lo
+trn_shipping_intl,Hydrogen,feh2t_f_lo
