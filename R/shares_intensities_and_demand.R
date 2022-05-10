@@ -58,14 +58,10 @@ shares_intensity_and_demand <- function(logit_shares,
     ## put aside the non motorized modes
     demandNM = demand[subsector_L3 %in% c("Cycle", "Walk")]
 
-    ## Calculate demand in EJ
-    ## merge the demand in pkm with the energy intensity
-    demandF = merge(demand, MJ_km_base, all=FALSE, by = c("region", "sector", "year", "subsector_L3", "subsector_L2", "subsector_L1", "vehicle_type", "technology"))
-
     ## treat hybrid electric vehicles. These vehicles are listed in ES demand tables but not in FE
     ## the reason is that we set technology = fuel, which can be used for all technologies except
     ## hybrid electric cars
-    ## we therefore add a column `fuel` to both intensity and FE demand tables
+    ## we therefore add a column `fuel` to the intensity tables
     tech2fuel <- fread(text="technology,fuel
 BEV,Electric
 FCEV,Hydrogen
@@ -73,17 +69,22 @@ Hybrid Electric,Liquids")
 
     demshare_liq <- 0.6
 
-    demandF <- tech2fuel[demandF, on="technology"]
-    demandF[is.na(fuel), fuel := technology]
-    demandF <- rbind(
-        demandF, demandF[technology == "Hybrid Electric"][
-                   , `:=`(fuel="Electric", demand_F=demand_F*(1-demshare_liq), MJ_km=MJ_km*(1-demshare_liq))])
-    demandF[technology == "Hybrid Electric" & fuel == "Liquids",
-            `:=`(demand_F=demand_F*demshare_liq, MJ_km=MJ_km*demshare_liq)]
+    MJ_km_base <- tech2fuel[MJ_km_base, on="technology"]
+    MJ_km_base[is.na(fuel), fuel := technology]
+    MJ_km_base <- rbind(
+        MJ_km_base, MJ_km_base[technology == "Hybrid Electric"][
+                   , `:=`(fuel="Electric", MJ_km=MJ_km*(1-demshare_liq))])
+    MJ_km_base[technology == "Hybrid Electric" & fuel == "Liquids",
+            `:=`(MJ_km=MJ_km*demshare_liq)]
 
-    demandF_plot_pkm = demand[,
+    ## Calculate demand in EJ
+    ## merge the demand in pkm with the energy intensity
+    demandF = merge(demand, MJ_km_base, all=FALSE, by = c("region", "sector", "year", "subsector_L3", "subsector_L2", "subsector_L1", "vehicle_type", "technology"))
+
+
+    demandF_plot_pkm = demandF[,
                               c("demand_F", "year","region", "sector", "subsector_L3", "subsector_L2","subsector_L1", "vehicle_type", "technology", "fuel")]
-    demandF_plot_mjkm = demand[,
+    demandF_plot_mjkm = demandF[,
                                c("MJ_km", "year","region", "sector", "subsector_L3", "subsector_L2","subsector_L1", "vehicle_type", "technology", "fuel")]
 
     demandF[, demand_EJ:=demand_F # in Mpkm or Mtkm
@@ -92,8 +93,8 @@ Hybrid Electric,Liquids")
             * 1e-12 # in EJ
             ]
 
-    demandF = demandF[,.(demand_EJ = sum(demand_EJ), demand_F = sum(demand_F)),
-                      by = c("year","region", "sector", "subsector_L3", "subsector_L2","subsector_L1", "vehicle_type", "technology")]
+    ## demandF = demandF[,.(demand_EJ = sum(demand_EJ), demand_F = sum(demand_F)),
+    ##                   by = c("year","region", "sector", "subsector_L3", "subsector_L2","subsector_L1", "vehicle_type", "technology", "fuel")]
     demandF_plot_EJ = copy(demandF)
 
     EDGE2CESmap <- fread(system.file("extdata", "mapping_EDGECES.csv", package = "edgeTrpLib"))
