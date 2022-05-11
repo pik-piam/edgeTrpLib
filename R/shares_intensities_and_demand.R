@@ -2,7 +2,6 @@
 #'
 #' @param logit_shares logit tree level shares
 #' @param MJ_km_base logit tree level intensities
-#' @param EDGE2CESmap map top level EDGE-T categories to CES tree nodes
 #' @param REMINDyears range of REMIND time steps
 #' @param scenario REMIND GDP scenario
 #' @param demand_input full REMIND CES level ES demand, optional. If not given, logit level demand output is normalized.
@@ -12,7 +11,6 @@
 
 shares_intensity_and_demand <- function(logit_shares,
                                         MJ_km_base,
-                                        EDGE2CESmap,
                                         REMINDyears,
                                         scenario,
                                         demand_input=NULL){
