@@ -79,8 +79,8 @@ Hybrid Electric,Liquids")
     ## merge the demand in pkm with the energy intensity
     demandF = merge(demand, MJ_km_base, all=FALSE, by = c("region", "sector", "year", "subsector_L3", "subsector_L2", "subsector_L1", "vehicle_type", "technology"))
 
-
-    demandF_plot_pkm = demandF[,
+    ## for the demand output we add non-motorized modes
+    demandF_plot_pkm = rbind(demandF, demandNM, use.names=T, fill=T)[,
                               c("demand_F", "year","region", "sector", "subsector_L3", "subsector_L2","subsector_L1", "vehicle_type", "technology", "fuel")]
     demandF_plot_mjkm = demandF[,
                                c("MJ_km", "year","region", "sector", "subsector_L3", "subsector_L2","subsector_L1", "vehicle_type", "technology", "fuel")]
