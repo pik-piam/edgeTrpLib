@@ -2,7 +2,6 @@
 #'
 #' @param logit_shares logit tree level shares
 #' @param MJ_km_base logit tree level intensities
-#' @param EDGE2CESmap map top level EDGE-T categories to CES tree nodes
 #' @param REMINDyears range of REMIND time steps
 #' @param scenario REMIND GDP scenario
 #' @param demand_input full REMIND CES level ES demand, optional. If not given, logit level demand output is normalized.
@@ -12,7 +11,6 @@
 
 shares_intensity_and_demand <- function(logit_shares,
                                         MJ_km_base,
-                                        EDGE2CESmap,
                                         REMINDyears,
                                         scenario,
                                         demand_input=NULL){
@@ -55,15 +53,37 @@ shares_intensity_and_demand <- function(logit_shares,
     demand = demand[,.(demand_F = demand_V*share, region, sector, year, subsector_L3, subsector_L2, subsector_L1, vehicle_type, technology)]
 
    
-    demandF_plot_pkm = demand[,
-      c("demand_F", "year","region", "sector", "subsector_L3", "subsector_L2","subsector_L1", "vehicle_type", "technology")]
-
     ## put aside the non motorized modes
     demandNM = demand[subsector_L3 %in% c("Cycle", "Walk")]
+
+    ## treat hybrid electric vehicles. These vehicles are listed in ES demand tables but not in FE
+    ## the reason is that we set technology = fuel, which can be used for all technologies except
+    ## hybrid electric cars
+    ## we therefore add a column `fuel` to the intensity tables
+    tech2fuel <- fread(text="technology,fuel
+BEV,Electric
+FCEV,Hydrogen
+Hybrid Electric,Liquids")
+
+    demshare_liq <- 0.6
+
+    MJ_km_base <- tech2fuel[MJ_km_base, on="technology"]
+    MJ_km_base[is.na(fuel), fuel := technology]
+    MJ_km_base <- rbind(
+        MJ_km_base, MJ_km_base[technology == "Hybrid Electric"][
+                   , `:=`(fuel="Electric", MJ_km=MJ_km*(1-demshare_liq))])
+    MJ_km_base[technology == "Hybrid Electric" & fuel == "Liquids",
+            `:=`(MJ_km=MJ_km*demshare_liq)]
 
     ## Calculate demand in EJ
     ## merge the demand in pkm with the energy intensity
     demandF = merge(demand, MJ_km_base, all=FALSE, by = c("region", "sector", "year", "subsector_L3", "subsector_L2", "subsector_L1", "vehicle_type", "technology"))
+
+
+    demandF_plot_pkm = demandF[,
+                              c("demand_F", "year","region", "sector", "subsector_L3", "subsector_L2","subsector_L1", "vehicle_type", "technology", "fuel")]
+    demandF_plot_mjkm = demandF[,
+                               c("MJ_km", "year","region", "sector", "subsector_L3", "subsector_L2","subsector_L1", "vehicle_type", "technology", "fuel")]
 
     demandF[, demand_EJ:=demand_F # in Mpkm or Mtkm
             * 1e6 # in pkm or tkm
@@ -71,33 +91,14 @@ shares_intensity_and_demand <- function(logit_shares,
             * 1e-12 # in EJ
             ]
 
-    ## plug in hybrids need to be redistributed on liquids and BEVs (on fuel consumtpion)
-    demandFPIH = demandF[technology == "Hybrid Electric"]
-    demandFPIH[, c("demand_EJel", "demand_EJliq") := list(0.4*demand_EJ, 0.6*demand_EJ)]
-    demandFPIH[, c("MJ_kmel", "MJ_kmliq") := list((demand_EJel+demand_EJliq)*MJ_km/demand_EJel, (demand_EJel+demand_EJliq)*MJ_km/demand_EJliq)]
-    demandFPIH[, c("demand_Fel", "demand_Fliq") := list(demand_EJel/(1e6*MJ_kmel*1e-12), demand_EJel/(1e6*MJ_kmliq*1e-12))]
-    demandFPIH[, c("demand_EJ", "demand_F", "technology", "sector_fuel", "MJ_kmel", "MJ_kmliq") := NULL]
-    demandFPIH = melt(demandFPIH, id.vars = c("region", "sector", "year", "subsector_L3", "subsector_L2", "subsector_L1", "vehicle_type", "MJ_km"),
-                      measure.vars = c("demand_Fel", "demand_Fliq", "demand_EJel", "demand_EJliq"))
-    demandFPIH[, technology := ifelse(variable %in%  c("demand_Fel", "demand_EJel"), "BEV", "Liquids")]
-    demandFPIHEJ = demandFPIH[variable %in%  c("demand_EJliq", "demand_EJel")]
-    setnames(demandFPIHEJ, old = "value", new = "demand_EJ")
-    demandFPIHEJ[, variable := NULL]
-    demandFPIHF = demandFPIH[variable %in%  c("demand_Fliq", "demand_Fel")]
-    setnames(demandFPIHF, old = "value", new = "demand_F")
-    demandFPIHF[, variable := NULL]
-
-    demandFPIH = merge(demandFPIHF, demandFPIHEJ, all = TRUE)
-    demandFPIH[, sector_fuel := ifelse(technology =="BEV", "elect_td_trn", "refined liquids enduse")]
-    demandF = rbind(demandFPIH[,MJ_km := NULL], demandF[technology != "Hybrid Electric"][,MJ_km := NULL])
-    demandF = demandF[,.(demand_EJ = sum(demand_EJ), demand_F = sum(demand_F)),
-            by = c("year","region", "sector", "subsector_L3", "subsector_L2","subsector_L1", "vehicle_type", "technology")]
+    ## demandF = demandF[,.(demand_EJ = sum(demand_EJ), demand_F = sum(demand_F)),
+    ##                   by = c("year","region", "sector", "subsector_L3", "subsector_L2","subsector_L1", "vehicle_type", "technology", "fuel")]
     demandF_plot_EJ = copy(demandF)
 
+    EDGE2CESmap <- fread(system.file("extdata", "mapping_EDGECES.csv", package = "edgeTrpLib"))
     ## first I need to merge with a mapping that represents how the entries match to the CES
     demandF = merge(demandF, EDGE2CESmap, all=TRUE,
-                  by = c("sector", "subsector_L3", "subsector_L2",
-                         "subsector_L1", "vehicle_type", "technology"))
+                  by = c("sector", "fuel"))
 
     ## calculate both shares and average energy intensity
     demandF = demandF[,.(region, year, Value_demand = demand_EJ, demand_F, CES_node, sector)]
@@ -135,6 +136,7 @@ shares_intensity_and_demand <- function(logit_shares,
     demand_list = list(demand = demand,
                      demandI = demandI,
                      demandF_plot_pkm = demandF_plot_pkm,
+                     demandF_plot_mjkm = demandF_plot_mjkm,
                      demandF_plot_EJ = demandF_plot_EJ)
 
     return(demand_list)
