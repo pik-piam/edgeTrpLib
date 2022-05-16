@@ -73,7 +73,7 @@ calculate_logit_inconv_endog = function(prices,
     MJ_km <- merge(df, mj_km_data, by=intersect(names(df),names(mj_km_data)),all = FALSE)
 
     MJ_km <- MJ_km[, .(MJ_km = sum(share * MJ_km)),
-                   by = c("region", "year", group_value)]
+                   by = c("region", "year", "technology", group_value)]
 
     ## get rid of the ( misleading afterwards) columns
     df_shares <- copy(df)
@@ -400,7 +400,7 @@ calculate_logit_inconv_endog = function(prices,
     ## merge energy intensity
     MJ_km <- merge(df, mj_km_data, by=intersect(names(df),names(mj_km_data)),all = FALSE)
     MJ_km <- MJ_km[, .(MJ_km = sum(share * MJ_km)),
-                   by = c("region", "year", group_value)]
+                   by = c("region", "year", "technology", group_value)]
 
     ## save complete dt at this level
     df_shares <- copy(df)

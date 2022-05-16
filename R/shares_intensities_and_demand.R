@@ -97,8 +97,8 @@ Hybrid Electric,Liquids")
 
     EDGE2CESmap <- fread(system.file("extdata", "mapping_EDGECES.csv", package = "edgeTrpLib"))
     ## first I need to merge with a mapping that represents how the entries match to the CES
-    demandF = merge(demandF, EDGE2CESmap, all=TRUE,
-                  by = c("sector", "fuel"))
+    demandF <- merge(demandF, EDGE2CESmap, all=TRUE,
+                    by = c("sector", "subsector_L2", "fuel"))
 
     ## calculate both shares and average energy intensity
     demandF = demandF[,.(region, year, Value_demand = demand_EJ, demand_F, CES_node, sector)]
