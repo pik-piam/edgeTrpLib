@@ -12,13 +12,9 @@ trn_pass,Domestic Aviation_tmp_subsector_L2,Hydrogen,feh2t_p_sm
 trn_pass,HSR_tmp_subsector_L2,Electric,feelt_p_sm
 trn_pass,Passenger Rail_tmp_subsector_L2,Electric,feelt_p_sm
 trn_pass,Passenger Rail_tmp_subsector_L2,Liquids,fedie_p_sm
-trn_pass,Passenger Rail_tmp_subsector_L2,Tech-Adv-Electric,feelt_p_sm
-trn_pass,Passenger Rail_tmp_subsector_L2,Tech-Adv-Liquid,fedie_p_sm
 trn_freight,trn_freight_road_tmp_subsector_L2,Liquids,fedie_f_sm
 trn_freight,trn_freight_road_tmp_subsector_L2,NG,fegat_f_sm
 trn_freight,Domestic Ship_tmp_subsector_L2,Liquids,fedie_f_sm
-trn_freight,Freight Rail_tmp_subsector_L2,Adv-Electric,feelt_f_sm
-trn_freight,Freight Rail_tmp_subsector_L2,Adv-Liquid,fedie_f_sm
 trn_freight,Freight Rail_tmp_subsector_L2,Coal,fedie_f_sm
 trn_freight,Freight Rail_tmp_subsector_L2,Electric,feelt_f_sm
 trn_freight,Freight Rail_tmp_subsector_L2,Liquids,fedie_f_sm
@@ -26,7 +22,5 @@ trn_aviation_intl,International Aviation_tmp_subsector_L2,Liquids,fedie_p_lo
 trn_shipping_intl,International Ship_tmp_subsector_L2,Liquids,fedie_f_lo
 trn_freight,trn_freight_road_tmp_subsector_L2,Electric,feelt_f_sm
 trn_pass,Bus,Electric,feelt_p_sm
-trn_pass,trn_pass_road_bus,Electric,feelt_p_sm
-trn_freight,trn_freight_road_tmp_subsector_L2,FCEV,feh2t_f_sm
-trn_pass,Bus,FCEV,feh2t_p_sm
-trn_pass,trn_pass_road_bus,FCEV,feh2t_p_sm
+trn_freight,trn_freight_road_tmp_subsector_L2,Hydrogen,feh2t_f_sm
+trn_pass,Bus,Hydrogen,feh2t_p_sm
