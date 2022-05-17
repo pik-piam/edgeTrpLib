@@ -7,6 +7,7 @@
 #' @param demand_input full REMIND CES level ES demand, optional. If not given, logit level demand output is normalized.
 #' @import data.table
 #' @importFrom rmndt aggregate_dt approx_dt
+#' @importFrom stats complete.cases
 #' @export
 
 shares_intensity_and_demand <- function(logit_shares,
