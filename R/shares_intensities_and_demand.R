@@ -61,7 +61,7 @@ shares_intensity_and_demand <- function(logit_shares,
     ## hybrid electric cars
     ## we therefore add a column `fuel` to the intensity tables
     tech2fuel <- fread(text="technology,fuel
-BEV,Electric
+BEV,Electricity
 FCEV,Hydrogen
 Hybrid Electric,Liquids")
 
@@ -71,7 +71,7 @@ Hybrid Electric,Liquids")
     MJ_km_base[is.na(fuel), fuel := technology]
     MJ_km_base <- rbind(
         MJ_km_base, MJ_km_base[technology == "Hybrid Electric"][
-                   , `:=`(fuel="Electric", MJ_km=MJ_km*(1-demshare_liq))])
+                   , `:=`(fuel="Electricity", MJ_km=MJ_km*(1-demshare_liq))])
     MJ_km_base[technology == "Hybrid Electric" & fuel == "Liquids",
             `:=`(MJ_km=MJ_km*demshare_liq)]
 
@@ -99,7 +99,6 @@ Hybrid Electric,Liquids")
     ## first I need to merge with a mapping that represents how the entries match to the CES
     demandF <- merge(demandF, EDGE2CESmap, all=TRUE,
                     by = c("sector", "subsector_L2", "fuel"))
-
     ## calculate both shares and average energy intensity
     demandF = demandF[,.(region, year, Value_demand = demand_EJ, demand_F, CES_node, sector)]
 
@@ -133,11 +132,21 @@ Hybrid Electric,Liquids")
                       idxcols = c("region", "CES_node"),
                       extrapolate=T)
 
+    for(dt in list(demand, demandI)){
+        nas <- rbindlist(lapply(names(dt), function(col){
+            dt[is.na(get(col))]
+        }))
+        if(nrow(nas) > 0){
+            print("NAs found in REMIND output table")
+            browser()
+        }
+    }
     demand_list = list(demand = demand,
                      demandI = demandI,
                      demandF_plot_pkm = demandF_plot_pkm,
                      demandF_plot_mjkm = demandF_plot_mjkm,
                      demandF_plot_EJ = demandF_plot_EJ)
+
 
     return(demand_list)
 }
