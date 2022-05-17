@@ -133,9 +133,7 @@ Hybrid Electric,Liquids")
                       extrapolate=T)
 
     for(dt in list(demand, demandI)){
-        nas <- rbindlist(lapply(names(dt), function(col){
-            dt[is.na(get(col))]
-        }))
+        nas <- dt[!complete.cases(dt)]
         if(nrow(nas) > 0){
             print("NAs found in REMIND output table")
             browser()
