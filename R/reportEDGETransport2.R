@@ -54,7 +54,7 @@ reportEDGETransport2 <- function(output_folder = ".", sub_folder = "EDGE-T/",
 
   # splits  FE Liquids variables into Biomass, Fossil and Hydrogen according to FE demand shares
   split_fe_liquids <- function(df) {
-  browser()
+
     demFeSector <- readGDX(gdx, "vm_demFeSector", field = "l", restore_zeros = F)
 
     # biomass share in biomass+hydrogen liquids in total transport sector
@@ -138,7 +138,7 @@ reportEDGETransport2 <- function(output_folder = ".", sub_folder = "EDGE-T/",
       setNames(m[, y, "FE|Transport|Freight|International Shipping|Liquids"] * feShareBunkersLiqBio[, y, ], paste0(prefix, "FE|Transport|Freight|International Shipping|Liquids|Biomass", suffix)),
       setNames(m[, y, "FE|Transport|Freight|International Shipping|Liquids"] * feShareBunkersLiqSyn[, y, ], paste0(prefix, "FE|Transport|Freight|International Shipping|Liquids|Hydrogen", suffix))
     )
-   browser()
+
     as.data.frame(tmp, rev = 2) %>%
       as.data.table() %>%
       setnames(".value", "value") %>%
@@ -218,7 +218,6 @@ reportEDGETransport2 <- function(output_folder = ".", sub_folder = "EDGE-T/",
       }
     }
 
-    browser()
     if (mode == "FE") {
       reportliq <- split_fe_liquids(report)
     }
