@@ -12,7 +12,6 @@
 #'
 #' @param output_folder path to the output folder, default is current folder.
 #' @param sub_folder subfolder with EDGE-T output files (level_2 for standalone, EDGE-T for coupled runs)
-#' @param loadmif shall we try to load a REMIND MIF file from the output folder to append the variables?
 #' @param extendedReporting report a larger set of variables
 #' @param scenario_title a scenario title string
 #' @param model_name a model name string
@@ -29,7 +28,7 @@
 #' @export
 
 reportEDGETransport2 <- function(output_folder = ".", sub_folder = "EDGE-T/",
-                                 loadmif = TRUE, extendedReporting = FALSE,
+                                 extendedReporting = FALSE,
                                  scenario_title = NULL, model_name = "EDGE-Transport",
                                  gdx = NULL) {
 
