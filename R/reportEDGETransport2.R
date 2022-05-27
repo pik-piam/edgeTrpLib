@@ -43,7 +43,7 @@ reportEDGETransport2 <- function(output_folder = ".", sub_folder = "EDGE-T/",
   Region <- Variable <- co2 <- co2val <- elh2 <- fe  <- NULL
   int <- se <- sec  <- sharesec <- te  <- tech <-  val <- share <- NULL
   eff <- sharebio <- sharesyn <- totseliq <- type <- ven <- NULL
-  unit <- tot_VOT_price <- tot_price <- logit_type <- capture.output <- weight <- liqsplit <- NULL
+  unit <- tot_VOT_price <- tot_price <- logit_type <- capture.output <- weight <- liqsplit <- setNames <- NULL
 
   #pkm or tkm is called km in the reporting. Vehicle km are called vkm
 
