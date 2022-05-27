@@ -29,21 +29,19 @@
 #' @export
 
 reportEDGETransport2 <- function(output_folder = ".", sub_folder = "EDGE-T/",
-                                 loadmif = TRUE , extendedReporting = FALSE,
+                                 loadmif = TRUE, extendedReporting = FALSE,
                                  scenario_title = NULL, model_name = "EDGE-Transport",
                                  gdx = NULL) {
 
 
   ## NULL Definitons for codeCheck compliance
-  RegionCode <- CountryCode <- `.` <- sector <- subsector_L3 <- region <- year <- NULL
-  subsector_L2 <- subsector_L1 <- aggr_mode <- vehicle_type <- det_veh <- aggr_nonmot <- NULL
-  demand_F <- demand_EJ <- remind_rep <- V25 <- aggr_veh <- technology <- NULL
-  ttot <- se_share <- fe_demand <- variable <- value <- demand_VKM <- loadFactor <- NULL
-  all_enty <- ef <- variable_agg <- model <- scenario <- period <- NULL
-  Region <- Variable <- co2 <- co2val <- elh2 <- fe  <- NULL
-  int <- se <- sec  <- sharesec <- te  <- tech <-  val <- share <- NULL
-  eff <- sharebio <- sharesyn <- totseliq <- type <- ven <- NULL
-  unit <- tot_VOT_price <- tot_price <- logit_type <- capture.output <- weight <- liqsplit <- setNames <- NULL
+  RegionCode <- `.` <- sector <- subsector_L3 <- region <- year <- NULL
+  subsector_L2 <- subsector_L1 <-  NULL
+  demand_F <- remind_rep <- aggr_veh <- technology <- NULL
+  ttot <- se_share <- fe_demand <- variable <- value <- loadFactor <- NULL
+  all_enty <- ef <- variable_agg <- aggr_mode <- det_veh <- model <- scenario <- period <- NULL
+  se <- type <- ven <- vehicle_type <- vehicle_type <- capture.output <- NULL
+  unit <- tot_VOT_price <- tot_price <- logit_type <- weight <- liqsplit <- setNames <- NULL
 
   #pkm or tkm is called km in the reporting. Vehicle km are called vkm
 
@@ -73,7 +71,7 @@ reportEDGETransport2 <- function(output_folder = ".", sub_folder = "EDGE-T/",
                               all_enty1 = "fepet", emi_sectors = "trans"
     )
 
-    feShareLdvLiqFos <- dimSums(demFeSectorLdv[, , "seliqfos.fepet"], dim = 3, na.rm = T) / dimSums(demFeSectorLdv, dim = 3, na.rm = T)
+    feShareLdvLiqFos <- dimSums(demFeSectorLdv[,, "seliqfos.fepet"], dim = 3, na.rm = T) / dimSums(demFeSectorLdv, dim = 3, na.rm = T)
 
     # for non-fossil liquids we apply the share of the transport sector to the subsector
     feShareLdvLiqBio <- dimSums(mselect(demFeSectorLdv, all_enty = c("seliqbio", "seliqsyn")), dim = 3, na.rm = T) * bioShareTrans / dimSums(demFeSectorLdv, dim = 3, na.rm = T)
@@ -87,7 +85,7 @@ reportEDGETransport2 <- function(output_folder = ".", sub_folder = "EDGE-T/",
                                  all_enty1 = "fedie", emi_sectors = "trans", all_emiMkt = "ES"
     )
 
-    feShareNonLdvLiqFos <- demFeSectorNonLdv[, , "seliqfos.fedie"] / dimSums(demFeSectorNonLdv, dim = 3, na.rm = T)
+    feShareNonLdvLiqFos <- demFeSectorNonLdv[,, "seliqfos.fedie"] / dimSums(demFeSectorNonLdv, dim = 3, na.rm = T)
     feShareNonLdvLiqBio <- dimSums(mselect(demFeSectorNonLdv, all_enty = c("seliqbio", "seliqsyn")), dim = 3, na.rm = T) * bioShareTrans / dimSums(demFeSectorNonLdv, dim = 3, na.rm = T)
     feShareNonLdvLiqSyn <- dimSums(mselect(demFeSectorNonLdv, all_enty = c("seliqbio", "seliqsyn")), dim = 3, na.rm = T) * synShareTrans / dimSums(demFeSectorNonLdv, dim = 3, na.rm = T)
 
@@ -99,7 +97,7 @@ reportEDGETransport2 <- function(output_folder = ".", sub_folder = "EDGE-T/",
                                   all_enty1 = "fedie", emi_sectors = "trans", all_emiMkt = "other"
     )
 
-    feShareBunkersLiqFos <- demFeSectorBunkers[, , "seliqfos.fedie"] / dimSums(demFeSectorBunkers, dim = 3, na.rm = T)
+    feShareBunkersLiqFos <- demFeSectorBunkers[,, "seliqfos.fedie"] / dimSums(demFeSectorBunkers, dim = 3, na.rm = T)
     feShareBunkersLiqBio <- dimSums(mselect(demFeSectorBunkers, all_enty = c("seliqbio", "seliqsyn")), dim = 3, na.rm = T) * bioShareTrans / dimSums(demFeSectorBunkers, dim = 3, na.rm = T)
     feShareBunkersLiqSyn <- dimSums(mselect(demFeSectorBunkers, all_enty = c("seliqbio", "seliqsyn")), dim = 3, na.rm = T) * synShareTrans / dimSums(demFeSectorBunkers, dim = 3, na.rm = T)
 
@@ -246,7 +244,7 @@ reportEDGETransport2 <- function(output_folder = ".", sub_folder = "EDGE-T/",
     ## merge with emission factors
     emidem = emidem[p_ef_dem, on = c("all_enty","region")]
     ## calculate emissions and attribute variable and unit names
-    emidem[, value := value*ef][, c("variable", "unit") := list(gsub("FE", "Emi\\|CO2", variable), "Mt CO2/yr")]
+    emidem[, value := value * ef][, c("variable", "unit") := list(gsub("FE", "Emi\\|CO2", variable), "Mt CO2/yr")]
 
     emi = rbind(copy(emidem)[, c("type", "variable") := list("tailpipe", paste0(variable, "|Tailpipe"))],
                 copy(emidem)[, c("type", "variable") := list("demand", paste0(variable, "|Demand"))])
@@ -260,7 +258,7 @@ reportEDGETransport2 <- function(output_folder = ".", sub_folder = "EDGE-T/",
     emi <- prodFe[emi, on = c("period", "region", "all_enty")]
     ## in case no fossil fuels are used (e.g. 100% biodiesel), the value in se_share results NA. set the NA value to 0
     emi[is.na(se_share), se_share := 0]
-    emi <- emi[all_enty %in% c("fedie", "fepet", "fegat") & type == "demand", value := value*se_share]
+    emi <- emi[all_enty %in% c("fedie", "fepet", "fegat") & type == "demand", value := value * se_share]
 
     emi[, c("se_share", "type", "ef", "all_enty") := NULL]
 
@@ -316,8 +314,8 @@ reportEDGETransport2 <- function(output_folder = ".", sub_folder = "EDGE-T/",
       vintages_file <- file.path(output_folder, "vintcomp.csv")
       vintgs <- fread(vintages_file)
     } else if (file.exists(datapath(fname = "vintcomp.RDS"))){
-      #vintages_file <- datapath(fname = "vintcomp.RDS")
-      #vintgs <- readRDS(vintages_file)
+      vintages_file <- datapath(fname = "vintcomp.RDS")
+      vintgs <- readRDS(vintages_file)
       return(NULL)
     } else {
       print("EDGE-T Reporting: No vintages file found.")
@@ -358,10 +356,10 @@ reportEDGETransport2 <- function(output_folder = ".", sub_folder = "EDGE-T/",
     vintgs <- rbindlist(list(
       vintgs,
       vintgs[, .(value = sum(value), variable = gsub("(.+)\\|.+$", "\\1", variable)),
-             by=c("category", "year", "region", "vehicle_type")],
+             by = c("category", "year", "region", "vehicle_type")],
       vintgs[grepl("|LDV|", variable, fixed = TRUE),
              .(value = sum(value), variable=sprintf("%s|Transport|LDV", category)),
-             by=c("category", "year", "region")]), fill = TRUE)
+             by = c("category", "year", "region")]), fill = TRUE)
 
     vintgs[, c("vehicle_type", "technology", "annual_mileage", "category") := NULL]
     vintgs <- unique(vintgs[!is.na(value)])
@@ -457,31 +455,35 @@ reportEDGETransport2 <- function(output_folder = ".", sub_folder = "EDGE-T/",
     repES,
     reportingVehNum(
       repVKM,
-      annual_mileage
-    ),
+      annual_mileage),
     reportingEmi(
       repFE = repFE,
-      gdx = gdx
+      gdx = gdx)
     )
-  )
 
   varsl <- list(
     `ES|Transport|Pass|Road` = c("ES|Transport|Pass|Road|LDV", "ES|Transport|Pass|Road|Bus", "ES|Transport|Pass|Road|Non-Motorized"),
     `ES|Transport|Pass|Aviation` = c("ES|Transport|Pass|Aviation|International", "ES|Transport|Pass|Aviation|Domestic"),
-    `ES|Transport|Pass` = c("ES|Transport|Pass|Road|LDV", "ES|Transport|Pass|Road|Bus", "ES|Transport|Pass|Road|Non-Motorized","ES|Transport|Pass|Rail|HSR", "ES|Transport|Pass|Rail|non-HSR","ES|Transport|Pass|Aviation|International", "ES|Transport|Pass|Aviation|Domestic"),
+    `ES|Transport|Pass` = c("ES|Transport|Pass|Road|LDV", "ES|Transport|Pass|Road|Bus", "ES|Transport|Pass|Road|Non-Motorized","ES|Transport|Pass|Rail|HSR",
+                            "ES|Transport|Pass|Rail|non-HSR","ES|Transport|Pass|Aviation|International", "ES|Transport|Pass|Aviation|Domestic"),
     `ES|Transport|Freight` = c("ES|Transport|Freight|Road","ES|Transport|Freight|International Shipping","ES|Transport|Freight|Rail", "ES|Transport|Freight|Navigation"),
-    `ES|Transport` = c("ES|Transport|Freight|Road","ES|Transport|Freight|International Shipping","ES|Transport|Freight|Rail", "ES|Transport|Freight|Navigation","ES|Transport|Pass|Road|LDV", "ES|Transport|Pass|Road|Bus", "ES|Transport|Pass|Road|Non-Motorized","ES|Transport|Pass|Rail|HSR", "ES|Transport|Pass|Rail|non-HSR","ES|Transport|Pass|Aviation|International", "ES|Transport|Pass|Aviation|Domestic"),
+    `ES|Transport` = c("ES|Transport|Freight|Road","ES|Transport|Freight|International Shipping","ES|Transport|Freight|Rail", "ES|Transport|Freight|Navigation",
+                       "ES|Transport|Pass|Road|LDV", "ES|Transport|Pass|Road|Bus", "ES|Transport|Pass|Road|Non-Motorized","ES|Transport|Pass|Rail|HSR",
+                       "ES|Transport|Pass|Rail|non-HSR","ES|Transport|Pass|Aviation|International", "ES|Transport|Pass|Aviation|Domestic"),
     `ES|Transport|VKM|Pass|Road` = c("ES|Transport|VKM|Pass|Road|LDV", "ES|Transport|VKM|Pass|Road|Bus"),
     `ES|Transport|VKM||Road` = c("ES|Transport|VKM|Freight|Road", "ES|Transport|VKM|Pass|Road|LDV", "ES|Transport|VKM|Pass|Road|Bus"),
     `ES|Transport|VKM|Rail` = c("ES|Transport|VKM|Pass|Rail|HSR", "ES|Transport|VKM|Pass|Rail|non-HSR", "ES|Transport|VKM|Freight|Rail" ),
     `FE|Transport|Pass|Road` = c("FE|Transport|Pass|Road|LDV", "FE|Transport|Pass|Road|Bus"),
     `FE|Transport|Road` = c("FE|Transport|Freight|Road", "FE|Transport|Pass|Road|LDV", "FE|Transport|Pass|Road|Bus"),
     `FE|Transport|Rail` = c("FE|Transport|Pass|Rail|HSR", "FE|Transport|Pass|Rail|non-HSR", "FE|Transport|Freight|Rail"),
-    `FE|Transport|Pass` = c("FE|Transport|Pass|Road|LDV", "FE|Transport|Pass|Road|Bus","FE|Transport|Pass|Rail|HSR", "FE|Transport|Pass|Rail|non-HSR","FE|Transport|Pass|Aviation|International", "FE|Transport|Pass|Aviation|Domestic"),
+    `FE|Transport|Pass` = c("FE|Transport|Pass|Road|LDV", "FE|Transport|Pass|Road|Bus","FE|Transport|Pass|Rail|HSR", "FE|Transport|Pass|Rail|non-HSR","FE|Transport|Pass|Aviation|International",
+                            "FE|Transport|Pass|Aviation|Domestic"),
     `FE|Transport|Freight` = c("FE|Transport|Freight|Road","FE|Transport|Freight|International Shipping","FE|Transport|Freight|Rail", "FE|Transport|Freight|Navigation"),
-    `FE|Transport` = c("FE|Transport|Freight|Road","FE|Transport|Freight|International Shipping","FE|Transport|Freight|Rail", "FE|Transport|Freight|Navigation","FE|Transport|Pass|Road|LDV", "FE|Transport|Pass|Road|Bus","FE|Transport|Pass|Rail|HSR", "FE|Transport|Pass|Rail|non-HSR","FE|Transport|Pass|Aviation|International", "FE|Transport|Pass|Aviation|Domestic"),
+    `FE|Transport` = c("FE|Transport|Freight|Road","FE|Transport|Freight|International Shipping","FE|Transport|Freight|Rail", "FE|Transport|Freight|Navigation","FE|Transport|Pass|Road|LDV",
+                       "FE|Transport|Pass|Road|Bus","FE|Transport|Pass|Rail|HSR", "FE|Transport|Pass|Rail|non-HSR","FE|Transport|Pass|Aviation|International", "FE|Transport|Pass|Aviation|Domestic"),
     `FE|Transport|w/o bunkers` = c("FE|Transport|Freight|w/o bunkers","FE|Transport|Pass|w/o bunkers"),
-    `FE|Transport|Pass|Liquids` = c("FE|Transport|Pass|Road|LDV|Liquids", "FE|Transport|Pass|Road|Bus|Liquids", "FE|Transport|Pass|Rail|non-HSR|Liquids","FE|Transport|Pass|Aviation|International|Liquids", "FE|Transport|Pass|Aviation|Domestic|Liquids"),
+    `FE|Transport|Pass|Liquids` = c("FE|Transport|Pass|Road|LDV|Liquids", "FE|Transport|Pass|Road|Bus|Liquids", "FE|Transport|Pass|Rail|non-HSR|Liquids","FE|Transport|Pass|Aviation|International|Liquids",
+                                    "FE|Transport|Pass|Aviation|Domestic|Liquids"),
     `FE|Transport|Pass|Hydrogen` = c("FE|Transport|Pass|Road|LDV|Hydrogen", "FE|Transport|Pass|Road|Bus|Hydrogen", "FE|Transport|Pass|Aviation|Domestic|Hydrogen"),
     `FE|Transport|Pass|Gases` = c("FE|Transport|Pass|Road|LDV|Gases", "FE|Transport|Pass|Road|Bus|Gases"),
     `FE|Transport|Pass|Electricity` = c("FE|Transport|Pass|Road|LDV|Electricity", "FE|Transport|Pass|Road|Bus|Electricity","FE|Transport|Pass|Rail|HSR|Electricity", "FE|Transport|Pass|Rail|non-HSR|Electricity"),
@@ -489,10 +491,13 @@ reportEDGETransport2 <- function(output_folder = ".", sub_folder = "EDGE-T/",
     `FE|Transport|Freight|Hydrogen` = c("FE|Transport|Freight|Road|Hydrogen"),
     `FE|Transport|Freight|Gases` = c("FE|Transport|Freight|Road|Gases"),
     `FE|Transport|Freight|Electricity` = c("FE|Transport|Freight|Road|Electricity","FE|Transport|Freight|Rail|Electricity"),
-    `FE|Transport|Liquids` = c("FE|Transport|Freight|Road|Liquids","FE|Transport|Freight|International Shipping|Liquids","FE|Transport|Freight|Rail|Liquids", "FE|Transport|Freight|Navigation|Liquids","FE|Transport|Pass|Road|LDV|Liquids", "FE|Transport|Pass|Road|Bus|Liquids", "FE|Transport|Pass|Rail|non-HSR|Liquids","FE|Transport|Pass|Aviation|International|Liquids", "FE|Transport|Pass|Aviation|Domestic|Liquids"),
+    `FE|Transport|Liquids` = c("FE|Transport|Freight|Road|Liquids","FE|Transport|Freight|International Shipping|Liquids","FE|Transport|Freight|Rail|Liquids", "FE|Transport|Freight|Navigation|Liquids",
+                               "FE|Transport|Pass|Road|LDV|Liquids", "FE|Transport|Pass|Road|Bus|Liquids", "FE|Transport|Pass|Rail|non-HSR|Liquids","FE|Transport|Pass|Aviation|International|Liquids",
+                               "FE|Transport|Pass|Aviation|Domestic|Liquids"),
     `FE|Transport|Hydrogen` = c("FE|Transport|Freight|Road|Hydrogen","FE|Transport|Pass|Road|LDV|Hydrogen", "FE|Transport|Pass|Road|Bus|Hydrogen", "FE|Transport|Pass|Aviation|Domestic|Hydrogen"),
     `FE|Transport|Gases` = c("FE|Transport|Freight|Road|Gases","FE|Transport|Pass|Road|LDV|Gases", "FE|Transport|Pass|Road|Bus|Gases"),
-    `FE|Transport|Electricity` = c("FE|Transport|Freight|Road|Electricity","FE|Transport|Freight|Rail|Electricity","FE|Transport|Pass|Road|LDV|Electricity", "FE|Transport|Pass|Road|Bus|Electricity","FE|Transport|Pass|Rail|HSR|Electricity", "FE|Transport|Pass|Rail|non-HSR|Electricity"),
+    `FE|Transport|Electricity` = c("FE|Transport|Freight|Road|Electricity","FE|Transport|Freight|Rail|Electricity","FE|Transport|Pass|Road|LDV|Electricity", "FE|Transport|Pass|Road|Bus|Electricity","FE|Transport|Pass|Rail|HSR|Electricity",
+                                   "FE|Transport|Pass|Rail|non-HSR|Electricity"),
     `FE|Transport|w/o bunkers|Liquids` = c("FE|Transport|Freight|w/o bunkers|Liquids","FE|Transport|Pass|w/o bunkers|Liquids"),
     `FE|Transport|w/o bunkers|Hydrogen` = c("FE|Transport|Freight|w/o bunkers|Hydrogen","FE|Transport|Pass|w/o bunkers|Hydrogen"),
     `FE|Transport|w/o bunkers|Gases` = c("FE|Transport|Freight|w/o bunkers|Gases","FE|Transport|Pass|w/o bunkers|Gases"),
@@ -503,8 +508,8 @@ reportEDGETransport2 <- function(output_folder = ".", sub_folder = "EDGE-T/",
     `Emi|CO2|Transport|Rail|Tailpipe` = c("Emi|CO2|Transport|Pass|Rail|non-HSR|Tailpipe", "Emi|CO2|Transport|Freight|Rail|Tailpipe"),
     `Emi|CO2|Transport|Road|Demand` = c("Emi|CO2|Transport|Freight|Road|Demand", "Emi|CO2|Transport|Pass|Road|LDV|Demand", "Emi|CO2|Transport|Pass|Road|Bus|Demand"),
     `Emi|CO2|Transport|Rail|Demand` = c("Emi|CO2|Transport|Pass|Rail|non-HSR|Demand", "Emi|CO2|Transport|Freight|Rail|Demand"),
-    `Emi|CO2|Transport|Demand` = c("Emi|CO2|Transport|Pass|Rail|non-HSR|Demand", "Emi|CO2|Transport|Freight|Rail|Demand", "Emi|CO2|Transport|Freight|Road|Demand", "Emi|CO2|Transport|Pass|Road|LDV|Demand", "Emi|CO2|Transport|Pass|Road|Bus|Demand", "Emi|CO2|Transport|Freight|International Shipping|Demand", "Emi|CO2|Transport|Freight|Navigation|Demand", "Emi|CO2|Transport|Pass|Aviation|Domestic|Demand", "Emi|CO2|Transport|Pass|Aviation|International|Demand"),
-    #Additional complex variables
+    `Emi|CO2|Transport|Demand` = c("Emi|CO2|Transport|Pass|Rail|non-HSR|Demand", "Emi|CO2|Transport|Freight|Rail|Demand", "Emi|CO2|Transport|Freight|Road|Demand", "Emi|CO2|Transport|Pass|Road|LDV|Demand", "Emi|CO2|Transport|Pass|Road|Bus|Demand",
+                                   "Emi|CO2|Transport|Freight|International Shipping|Demand", "Emi|CO2|Transport|Freight|Navigation|Demand", "Emi|CO2|Transport|Pass|Aviation|Domestic|Demand", "Emi|CO2|Transport|Pass|Aviation|International|Demand"),
     `FE|Transport|LDV|Gases` = c("FE|Transport|Pass|Road|LDV|Gases"),
     `FE|Transport|LDV|Electricity` = c("FE|Transport|Pass|Road|LDV|Electricity"),
     `FE|Transport|LDV|Hydrogen` = c("FE|Transport|Pass|Road|LDV|Hydrogen"),
@@ -523,13 +528,12 @@ reportEDGETransport2 <- function(output_folder = ".", sub_folder = "EDGE-T/",
   #Aggregate variables to "World" region
   toMIF <- rbindlist(list(toMIF, toMIF[, .(value = sum(value), region = "World"), by = .(model, scenario, variable, unit, period)]), use.names=TRUE)
 
-
   if (!is.null(regionSubsetList)){
     toMIF <- rbindlist(list(
       toMIF,
       toMIF[region %in% regionSubsetList[["EUR"]], .(value = sum(value), region = "EUR"), by = .(model, scenario, variable, unit, period)],
       toMIF[region %in% regionSubsetList[["NEU"]], .(value = sum(value), region = "NEU"), by = .(model, scenario, variable, unit, period)],
-      toMIF[region %in% regionSubsetList[["EU27"]], .(value = sum(value), region = "EU27"), by = .(model, scenario, variable, unit, period)],
+      toMIF[region %in% regionSubsetList[["EU27"]], .(value = sum(value), region = "EU27"), by = .(model, scenario, variable, unit, period)]
     ), use.names=TRUE)
   }
 
@@ -590,12 +594,12 @@ reportEDGETransport2 <- function(output_folder = ".", sub_folder = "EDGE-T/",
             length(all_subsectors), 1)]))
       setnames(prefData_aggr,"aggr_reg","region")
 
-      prefData_inco_aggr <- aggregate_dt(prefData_inco[region %in% Reg_Aggregation$region], Reg_Aggregation , fewcol = "aggr_reg", manycol = "region", yearcol = "period", weights = weight_pkm_logitlevel[region %in% Reg_Aggregation$region], datacols = c("period", "variable", all_subsectors[
+      prefData_inco_aggr <- aggregate_dt(prefData_inco[region %in% Reg_Aggregation$region], Reg_Aggregation, fewcol = "aggr_reg", manycol = "region", yearcol = "period", weights = weight_pkm_logitlevel[region %in% Reg_Aggregation$region], datacols = c("period", "variable", all_subsectors[
         seq(match(groupValue, all_subsectors),
             length(all_subsectors), 1)]))
 
       setnames(prefData_inco_aggr,"aggr_reg","region")
-      priceData_aggr <- aggregate_dt(priceData[region %in% Reg_Aggregation$region], Reg_Aggregation , fewcol = "aggr_reg", manycol = "region", yearcol = "period", weights = weight_pkm_logitlevel[region %in% Reg_Aggregation$region], datacols = c("period", all_subsectors[
+      priceData_aggr <- aggregate_dt(priceData[region %in% Reg_Aggregation$region], Reg_Aggregation, fewcol = "aggr_reg", manycol = "region", yearcol = "period", weights = weight_pkm_logitlevel[region %in% Reg_Aggregation$region], datacols = c("period", all_subsectors[
         seq(match(groupValue, all_subsectors),
             length(all_subsectors), 1)]))
 
@@ -614,10 +618,10 @@ reportEDGETransport2 <- function(output_folder = ".", sub_folder = "EDGE-T/",
         Aggrdata_veh <- Aggrdata_veh[!vehicle_type==det_veh]
         priceData <- priceData[, c("region","variable","vehicle_type","period","value")]
         weight_pkm_VS1 <- weight_pkm[,.(weight = sum(weight)), by = c("region", "vehicle_type", "period")]
-        weight_pkm_VS1_aggrreg <- aggregate_dt(weight_pkm_VS1[region %in% Reg_Aggregation$region], Reg_Aggregation ,fewcol = "aggr_reg", manycol = "region",  yearcol = "period", valuecol="weight",  datacols = c("period", "vehicle_type"))
+        weight_pkm_VS1_aggrreg <- aggregate_dt(weight_pkm_VS1[region %in% Reg_Aggregation$region], Reg_Aggregation, fewcol = "aggr_reg", manycol = "region",  yearcol = "period", valuecol="weight",  datacols = c("period", "vehicle_type"))
         setnames(weight_pkm_VS1_aggrreg,"aggr_reg","region")
         weight_pkm_VS1 <- rbind(weight_pkm_VS1, weight_pkm_VS1_aggrreg)
-        Prices_veh_aggr <- aggregate_dt(priceData[vehicle_type %in% Aggrdata_veh$vehicle_type], Aggrdata_veh , fewcol = "det_veh", manycol = "vehicle_type", yearcol = "period", weights = weight_pkm_VS1[vehicle_type %in% Aggrdata_veh$vehicle_type], datacols = c("region","variable"))
+        Prices_veh_aggr <- aggregate_dt(priceData[vehicle_type %in% Aggrdata_veh$vehicle_type], Aggrdata_veh, fewcol = "det_veh", manycol = "vehicle_type", yearcol = "period", weights = weight_pkm_VS1[vehicle_type %in% Aggrdata_veh$vehicle_type], datacols = c("region","variable"))
         setnames(Prices_veh_aggr, "det_veh", "vehicle_type")
         Prices_veh_aggr[, variable:=paste0("Logit cost|V|", vehicle_type, "|", variable)][, vehicle_type := NULL]
       }
@@ -698,7 +702,7 @@ reportEDGETransport2 <- function(output_folder = ".", sub_folder = "EDGE-T/",
       weight_pkm_FV <- weight_pkm_FV[, c("region", "period","vehicle_type", "technology", "weight")]
       weight_pkm_FV <- weight_pkm_FV[period > 1990 & period < 2110]
       weight_pkm_FV <- unique(weight_pkm_FV)
-      weight_pkm_FV_aggrreg <- aggregate_dt(weight_pkm_FV[region %in% Reg_Aggregation$region], Reg_Aggregation ,fewcol = "aggr_reg", manycol = "region",  yearcol = "period", valuecol="weight",  datacols = c("period", "vehicle_type","technology"))
+      weight_pkm_FV_aggrreg <- aggregate_dt(weight_pkm_FV[region %in% Reg_Aggregation$region], Reg_Aggregation, fewcol = "aggr_reg", manycol = "region",  yearcol = "period", valuecol="weight",  datacols = c("period", "vehicle_type","technology"))
       setnames(weight_pkm_FV_aggrreg,"aggr_reg","region")
       weight_pkm_FV <- rbind(weight_pkm_FV, weight_pkm_FV_aggrreg)
 
@@ -716,7 +720,7 @@ reportEDGETransport2 <- function(output_folder = ".", sub_folder = "EDGE-T/",
       #Remove entries that are not aggregated
       Aggrdata_veh <- Aggrdata_veh[!vehicle_type == det_veh]
       Aggrdata_veh <- unique(Aggrdata_veh[!is.na(det_veh)])[, det_veh := gsub("Freight\\|Road\\||Pass\\|Road\\|", "", det_veh)]
-      priceData_aggr <- aggregate_dt(priceData[vehicle_type %in% Aggrdata_veh$vehicle_type], Aggrdata_veh , fewcol = "det_veh", manycol = "vehicle_type", yearcol = "period", weights = weight_pkm_FV[vehicle_type %in% Aggrdata_veh$vehicle_type], datacols = c("region", "variable", "technology"))
+      priceData_aggr <- aggregate_dt(priceData[vehicle_type %in% Aggrdata_veh$vehicle_type], Aggrdata_veh, fewcol = "det_veh", manycol = "vehicle_type", yearcol = "period", weights = weight_pkm_FV[vehicle_type %in% Aggrdata_veh$vehicle_type], datacols = c("region", "variable", "technology"))
       setnames(priceData_aggr, "det_veh", "vehicle_type")
 
       #Aggregate average vehicle
@@ -724,7 +728,7 @@ reportEDGETransport2 <- function(output_folder = ".", sub_folder = "EDGE-T/",
       Aggrdata_avveh <- Aggrdata_avveh[subsector_L1 == "trn_pass_road_LDV_4W"]
       Aggrdata_avveh <- unique(Aggrdata_avveh[, c("vehicle_type")])
       Aggrdata_avveh[, av_veh := "Average veh"]
-      priceData_av <- aggregate_dt(priceData[vehicle_type %in% Aggrdata_avveh$vehicle_type], Aggrdata_avveh , fewcol = "av_veh", manycol = "vehicle_type", yearcol = "period", weights = weight_pkm_FV[vehicle_type %in% Aggrdata_avveh$vehicle_type], datacols = c("region", "variable","technology"))
+      priceData_av <- aggregate_dt(priceData[vehicle_type %in% Aggrdata_avveh$vehicle_type], Aggrdata_avveh, fewcol = "av_veh", manycol = "vehicle_type", yearcol = "period", weights = weight_pkm_FV[vehicle_type %in% Aggrdata_avveh$vehicle_type], datacols = c("region", "variable","technology"))
       setnames(priceData_av, "av_veh", "vehicle_type")
 
       priceData <- rbind(priceData, priceData_aggr, priceData_av)
