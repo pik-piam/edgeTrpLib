@@ -104,6 +104,7 @@ reportEDGETransport2 <- function(output_folder = ".", sub_folder = "EDGE-T/",
     feShareBunkersLiqSyn <- dimSums(mselect(demFeSectorBunkers, all_enty = c("seliqbio", "seliqsyn")), dim = 3, na.rm = T) * synShareTrans / dimSums(demFeSectorBunkers, dim = 3, na.rm = T)
 
     # apply splits to data frame ----
+    #magclass needs the following column order
     m <- as.magpie(df[, c(4, 1, 5, 6, 2, 3, 7)])
     y <- intersect(getItems(m, dim = 2), getItems(demFeSector, dim = 2))
     prefix <- paste0(getNames(m, dim = 1), ".", getNames(m, dim = 2), ".")
@@ -139,10 +140,16 @@ reportEDGETransport2 <- function(output_folder = ".", sub_folder = "EDGE-T/",
       setNames(m[, y, "FE|Transport|Freight|International Shipping|Liquids"] * feShareBunkersLiqSyn[, y, ], paste0(prefix, "FE|Transport|Freight|International Shipping|Liquids|Hydrogen", suffix))
     )
 
-    as.data.frame(tmp, rev = 2) %>%
-      as.data.table() %>%
-      setnames(".value", "value") %>%
-      return()
+    #Convert back to data.table
+    tmp <- magpie2dt(tmp)
+    #Get rid of NAS
+    tmp <- tmp[!is.na(variable)]
+    tmp <- approx_dt(tmp, yrs, xcol = "period", ycol = "value",
+                            idxcols = c("scenario","variable","unit","model","region"),
+                            extrapolate = T)
+
+
+    return(tmp)
   }
 
   reporting <- function(dt, mode){
@@ -195,7 +202,6 @@ reportEDGETransport2 <- function(output_folder = ".", sub_folder = "EDGE-T/",
 
       for (Aggr0 in Aggr) {
 
-
         #Aggregate data
         datatable0 <- copy(datatable)
         datatable0 <- datatable0[!is.na(get(Aggr0))]
@@ -216,10 +222,6 @@ reportEDGETransport2 <- function(output_folder = ".", sub_folder = "EDGE-T/",
           report <- rbind(report, datatable0)}
 
       }
-    }
-
-    if (mode == "FE") {
-      reportliq <- split_fe_liquids(report)
     }
 
     return(report)
@@ -435,6 +437,11 @@ reportEDGETransport2 <- function(output_folder = ".", sub_folder = "EDGE-T/",
     dt = demand_ej,
     mode = "FE"
   )
+
+
+  liqsplit <- split_fe_liquids(repFE)
+
+
   repVKM <- reporting(
     dt = demand_vkm,
     mode = "VKM"
@@ -443,8 +450,11 @@ reportEDGETransport2 <- function(output_folder = ".", sub_folder = "EDGE-T/",
     dt = demand_km,
     mode = "ES"
   )
+
+
   toMIF <- rbind(
     repFE,
+    #liqsplit,
     repVKM,
     repES,
     reportingVehNum(
@@ -495,14 +505,14 @@ reportEDGETransport2 <- function(output_folder = ".", sub_folder = "EDGE-T/",
     `Emi|CO2|Transport|Rail|Tailpipe` = c("Emi|CO2|Transport|Pass|Rail|non-HSR|Tailpipe", "Emi|CO2|Transport|Freight|Rail|Tailpipe"),
     `Emi|CO2|Transport|Road|Demand` = c("Emi|CO2|Transport|Freight|Road|Demand", "Emi|CO2|Transport|Pass|Road|LDV|Demand", "Emi|CO2|Transport|Pass|Road|Bus|Demand"),
     `Emi|CO2|Transport|Rail|Demand` = c("Emi|CO2|Transport|Pass|Rail|non-HSR|Demand", "Emi|CO2|Transport|Freight|Rail|Demand"),
-    `Emi|CO2|Transport|Demand` = c("Emi|CO2|Transport|Rail|Demand", "Emi|CO2|Transport|Road|Demand", "Emi|CO2|Transport|Freight|International Shipping|Demand", "Emi|CO2|Transport|Freight|Navigation|Demand", "Emi|CO2|Transport|Pass|Aviation|Domestic|Demand", "Emi|CO2|Transport|Pass|Aviation|International|Demand"),
+    `Emi|CO2|Transport|Demand` = c("Emi|CO2|Transport|Pass|Rail|non-HSR|Demand", "Emi|CO2|Transport|Freight|Rail|Demand", "Emi|CO2|Transport|Freight|Road|Demand", "Emi|CO2|Transport|Pass|Road|LDV|Demand", "Emi|CO2|Transport|Pass|Road|Bus|Demand", "Emi|CO2|Transport|Freight|International Shipping|Demand", "Emi|CO2|Transport|Freight|Navigation|Demand", "Emi|CO2|Transport|Pass|Aviation|Domestic|Demand", "Emi|CO2|Transport|Pass|Aviation|International|Demand"),
     #Additional complex variables
-    `FE|Transport|LDV|Gases` = c("FE|Transport|Pass|LDV|Gases"),
-    `FE|Transport|LDV|Electricity` = c("FE|Transport|Pass|LDV|Electricity"),
-    `FE|Transport|LDV|Hydrogen` = c("FE|Transport|Pass|LDV|Hydrogen"),
-    `FE|Transport|non-LDV|Gases` = c("FE|Transport|Pass|non-LDV|Gases","FE|Transport|Freight|Gases"),
-    `FE|Transport|non-LDV|Electricity` = c("FE|Transport|Pass|non-LDV|Electricity","FE|Transport|Freight|Electricity"),
-    `FE|Transport|non-LDV|Hydrogen` = c("FE|Transport|Pass|non-LDV|Hydrogen","FE|Transport|Freight|Hydrogen"))
+    `FE|Transport|LDV|Gases` = c("FE|Transport|Pass|Road|LDV|Gases"),
+    `FE|Transport|LDV|Electricity` = c("FE|Transport|Pass|Road|LDV|Electricity"),
+    `FE|Transport|LDV|Hydrogen` = c("FE|Transport|Pass|Road|LDV|Hydrogen"),
+    `FE|Transport|non-LDV|Gases` = c("FE|Transport|Pass|non-LDV|Gases","FE|Transport|Freight|Road|Gases"),
+    `FE|Transport|non-LDV|Electricity` = c("FE|Transport|Pass|non-LDV|Electricity","FE|Transport|Freight|Road|Electricity","FE|Transport|Freight|Rail|Electricity"),
+    `FE|Transport|non-LDV|Hydrogen` = c("FE|Transport|Pass|non-LDV|Hydrogen","FE|Transport|Freight|Road|Hydrogen"))
 
   names <- names(varsl)
   totals <- sapply(names, reportTotals, datatable = toMIF, varlist = varsl, simplify = FALSE, USE.NAMES = TRUE)
@@ -512,13 +522,16 @@ reportEDGETransport2 <- function(output_folder = ".", sub_folder = "EDGE-T/",
 
   toMIF <- rbindlist(list(toMIF, reportStockAndSales(annual_mileage)), use.names=TRUE)
 
+  #Aggregate variables to "World" region
+  toMIF <- rbindlist(list(toMIF, toMIF[, .(value = sum(value), region = "World"), by = .(model, scenario, variable, unit, period)]), use.names=TRUE)
+
+
   if (!is.null(regionSubsetList)){
     toMIF <- rbindlist(list(
       toMIF,
       toMIF[region %in% regionSubsetList[["EUR"]], .(value = sum(value), region = "EUR"), by = .(model, scenario, variable, unit, period)],
       toMIF[region %in% regionSubsetList[["NEU"]], .(value = sum(value), region = "NEU"), by = .(model, scenario, variable, unit, period)],
       toMIF[region %in% regionSubsetList[["EU27"]], .(value = sum(value), region = "EU27"), by = .(model, scenario, variable, unit, period)],
-      toMIF[, .(value = sum(value), region = "World"), by = .(model, scenario, variable, unit, period)]
     ), use.names=TRUE)
   }
 
