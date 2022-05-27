@@ -159,7 +159,7 @@ reportEDGETransport2 <- function(output_folder = ".", sub_folder = "EDGE-T/",
 
 
     datatable[, sector := ifelse(sector %in% c("trn_pass", "trn_aviation_intl"), "Pass", "Freight")]
-    datatable <- merge(datatable,Aggrdata,by = c("sector", "subsector_L1", "subsector_L2", "subsector_L3", "vehicle_type", "technology"), all.x = TRUE, allow.cartesian = TRUE)
+    datatable <- merge(datatable, Aggrdata, by = c("sector", "subsector_L1", "subsector_L2", "subsector_L3", "vehicle_type", "technology"), all.x = TRUE, allow.cartesian = TRUE)
 
     datatable[grepl("Passenger Rail|HSR", vehicle_type), aggr_veh := "Pass|Rail"]
 
@@ -167,11 +167,11 @@ reportEDGETransport2 <- function(output_folder = ".", sub_folder = "EDGE-T/",
     #How to account for Hybrid Electric in Final Energy?
     if (mode == "FE") {
       techmap <- data.table(
-        technology = c("BEV","Electric", "Hybrid Electric", "FCEV", "Hydrogen", "Liquids", "NG"),
+        technology = c("BEV", "Electric", "Hybrid Electric", "FCEV", "Hydrogen", "Liquids", "NG"),
         remind_rep = c("Electricity", "Electricity", "Liquids", "Hydrogen", "Hydrogen", "Liquids", "Gases"))
     } else {
       techmap <- data.table(
-        technology = c("BEV", "Electric", "Hybrid Electric", "FCEV", "Hydrogen", "Liquids","NG"),
+        technology = c("BEV", "Electric", "Hybrid Electric", "FCEV", "Hydrogen", "Liquids", "NG"),
         remind_rep = c("BEV", "Electric", "Hybrid Electric", "FCEV", "Hydrogen", "Liquids", "Gases"))
     }
 
@@ -193,9 +193,9 @@ reportEDGETransport2 <- function(output_folder = ".", sub_folder = "EDGE-T/",
                      "ES" = "ES|Transport|",
                      "VKM" = "ES|Transport|VKM|")
 
-    var <- c("Pass","Freight")
+    var <- c("Pass", "Freight")
 
-    Aggr <- c("aggr_mode", "aggr_veh", "aggr_LDV", "det_veh", "nonmot", "aggr_nonmot", "aggr_bunkers", "aggr_mode_tech", "aggr_veh_tech", "aggr_LDV_tech", "det_veh_tech","aggr_bunkers_tech")
+    Aggr <- c("aggr_mode", "aggr_veh", "aggr_LDV", "det_veh", "nonmot", "aggr_nonmot", "aggr_bunkers", "aggr_mode_tech", "aggr_veh_tech", "aggr_LDV_tech", "det_veh_tech", "aggr_bunkers_tech")
 
 
     for (var0 in var) {
@@ -216,7 +216,7 @@ reportEDGETransport2 <- function(output_folder = ".", sub_folder = "EDGE-T/",
           datatable0 <- datatable0[, model := model_name][, scenario := scenario_title][, variable := paste0(prefix, get(Aggr0))][, unit := unit][, eval(Aggr0) := NULL]
 
           datatable0 <- approx_dt(datatable0, yrs, xcol = "period", ycol = "value",
-                                  idxcols = c("scenario","variable","unit","model","region"),
+                                  idxcols = c("scenario", "variable", "unit", "model", "region"),
                                   extrapolate = T)
 
           report <- rbind(report, datatable0)}
@@ -341,7 +341,7 @@ reportEDGETransport2 <- function(output_folder = ".", sub_folder = "EDGE-T/",
 
     setnames(vintgs, "full_demand_vkm", "Stock")
     vintgs[, Stock := Stock * fct]
-    vintgs[, Sales := Stock - sum(vintage_demand_vkm), by=.(year, region, vehicle_type, technology)]
+    vintgs[, Sales := Stock - sum(vintage_demand_vkm), by = .(year, region, vehicle_type, technology)]
     vintgs[, c("construction_year", "vintage_demand_vkm", "year_c") := NULL]
     vintgs <- unique(vintgs)
 
@@ -357,11 +357,11 @@ reportEDGETransport2 <- function(output_folder = ".", sub_folder = "EDGE-T/",
     ## totals
     vintgs <- rbindlist(list(
       vintgs,
-      vintgs[, .(value=sum(value), variable=gsub("(.+)\\|.+$", "\\1", variable)),
+      vintgs[, .(value = sum(value), variable = gsub("(.+)\\|.+$", "\\1", variable)),
              by=c("category", "year", "region", "vehicle_type")],
-      vintgs[grepl("|LDV|", variable, fixed=TRUE),
-             .(value=sum(value), variable=sprintf("%s|Transport|LDV", category)),
-             by=c("category", "year", "region")]), fill=TRUE)
+      vintgs[grepl("|LDV|", variable, fixed = TRUE),
+             .(value = sum(value), variable=sprintf("%s|Transport|LDV", category)),
+             by=c("category", "year", "region")]), fill = TRUE)
 
     vintgs[, c("vehicle_type", "technology", "annual_mileage", "category") := NULL]
     vintgs <- unique(vintgs[!is.na(value)])
@@ -388,7 +388,7 @@ reportEDGETransport2 <- function(output_folder = ".", sub_folder = "EDGE-T/",
     datatable <- datatable[variable %in% vars,
                            .(variable = aggrname,
                              value = sum(value)),
-                           by = c("model", "scenario", "region", "period","unit")]
+                           by = c("model", "scenario", "region", "period", "unit")]
 
     return(datatable)
   }
@@ -398,14 +398,14 @@ reportEDGETransport2 <- function(output_folder = ".", sub_folder = "EDGE-T/",
 
   # ADD EU-27 region aggregation if possible
   if("EUR" %in% names(regionSubsetList)){
-    regionSubsetList <- c(regionSubsetList,list(
-      "EU27"=c("ENC", "EWN", "ECS", "ESC", "ECE", "FRA", "DEU", "ESW")
+    regionSubsetList <- c(regionSubsetList, list(
+      "EU27" = c("ENC", "EWN", "ECS", "ESC", "ECE", "FRA", "DEU", "ESW")
     ))
   }
 
 
 
-  Aggrdata <- fread(system.file("extdata", "EDGETdataAggregation.csv", package = "edgeTrpLib"),header = TRUE)
+  Aggrdata <- fread(system.file("extdata", "EDGETdataAggregation.csv", package = "edgeTrpLib"), header = TRUE)
 
 
   ## load input data from last EDGE run
@@ -454,7 +454,7 @@ reportEDGETransport2 <- function(output_folder = ".", sub_folder = "EDGE-T/",
 
   toMIF <- rbind(
     repFE,
-    #liqsplit,
+    liqsplit,
     repVKM,
     repES,
     reportingVehNum(
@@ -587,7 +587,7 @@ reportEDGETransport2 <- function(output_folder = ".", sub_folder = "EDGE-T/",
         seq(match(groupValue, all_subsectors),
             length(all_subsectors), 1)])]
 
-      prefData_aggr <- aggregate_dt(prefData[region %in% Reg_Aggregation$region], Reg_Aggregation ,fewcol = "aggr_reg", manycol = "region",  yearcol = "period", weights = weight_pkm_logitlevel[region %in% Reg_Aggregation$region & period %in% prefData$period], datacols = c("period", all_subsectors[
+      prefData_aggr <- aggregate_dt(prefData[region %in% Reg_Aggregation$region], Reg_Aggregation, fewcol = "aggr_reg", manycol = "region",  yearcol = "period", weights = weight_pkm_logitlevel[region %in% Reg_Aggregation$region & period %in% prefData$period], datacols = c("period", all_subsectors[
         seq(match(groupValue, all_subsectors),
             length(all_subsectors), 1)]))
       setnames(prefData_aggr,"aggr_reg","region")
@@ -633,10 +633,10 @@ reportEDGETransport2 <- function(output_folder = ".", sub_folder = "EDGE-T/",
         priceData <- priceData[, .(region, period, scenario, variable, value)]
         priceData <- rbind(priceData, Prices_veh_aggr)}
       else{
-        prefData[, variable := paste0("Shareweight|S",gsub("[^123]","",groupValue), "|", get(groupValue))]
+        prefData[, variable := paste0("Shareweight|S",gsub("[^123]",  "", groupValue), "|", get(groupValue))]
         prefData <- prefData[, .(region, period, scenario, variable, value)]
         #Convert costs to quitte format
-        priceData[, variable := paste0("Logit cost|S",gsub("[^123]","",groupValue), "|", get(groupValue), "|", variable)]
+        priceData[, variable := paste0("Logit cost|S",gsub("[^123]", "", groupValue), "|", get(groupValue), "|", variable)]
         priceData <- priceData[, .(region, period, scenario, variable, value)]
       }
 
@@ -657,7 +657,7 @@ reportEDGETransport2 <- function(output_folder = ".", sub_folder = "EDGE-T/",
       setnames(prefData, c("year"), c("period"))
 
       #Exclude active modes as they have no fuel
-      prefData <- prefData[period %in% yrs_costs & !technology %in% c("Cycle_tmp_technology","Walk_tmp_technology")]
+      prefData <- prefData[period %in% yrs_costs & !technology %in% c("Cycle_tmp_technology", "Walk_tmp_technology")]
       priceData<-  priceData[period %in% yrs_costs]
 
       # Calculate Inconvenience Cost from share Weight
@@ -695,7 +695,7 @@ reportEDGETransport2 <- function(output_folder = ".", sub_folder = "EDGE-T/",
       weight_pkm_FV <- weight_pkm[, .(weight = sum(weight)), by = c("region", "period","vehicle_type", "technology")]
       #TO FIX:
       #Hydrogen and BEV technologies for aviation and 2Wheelers are not everywhere available: -> Insert zero as weight
-      weight_pkm_FV <- merge(weight_pkm_FV, priceData, on=c("region", "period", "vehicle_type", "technology"), all = TRUE)
+      weight_pkm_FV <- merge(weight_pkm_FV, priceData, on = c("region", "period", "vehicle_type", "technology"), all = TRUE)
       weight_pkm_FV[is.na(weight_pkm_FV$weight), weight := 0]
       weight_pkm_FV <- weight_pkm_FV[, c("region", "period","vehicle_type", "technology", "weight")]
       weight_pkm_FV <- weight_pkm_FV[period > 1990 & period < 2110]
@@ -748,7 +748,7 @@ reportEDGETransport2 <- function(output_folder = ".", sub_folder = "EDGE-T/",
 
     #ES pkm are used as weights for data aggregation
     weight_pkm <- copy(demand_km)
-    setnames(weight_pkm, c("value","year"), c("weight","period"))
+    setnames(weight_pkm, c("value", "year"), c("weight", "period"))
 
     weight_pkm[, sector := ifelse(sector %in% c("Pass"), "trn_pass", "trn_freight")]
     weight_pkm[, sector := ifelse(subsector_L3 == c("International Aviation"), "trn_aviation_intl", sector)]
@@ -787,8 +787,8 @@ reportEDGETransport2 <- function(output_folder = ".", sub_folder = "EDGE-T/",
         setkey(logit_exp_S3S, NULL)
 
         #Adjust in model itself in refactoring process
-        Prices_S3S[subsector_L3 %in% c("Cycle","Walk"), tot_VOT_price := tot_price]
-        PrefandPrices_S3S <- LogitCostplotdata(priceData = Prices_S3S, prefData = Pref_S3S, logitExp =logit_exp_S3S, groupValue = "subsector_L3", Reg_Aggregation = RegAggregation)
+        Prices_S3S[subsector_L3 %in% c("Cycle", "Walk"), tot_VOT_price := tot_price]
+        PrefandPrices_S3S <- LogitCostplotdata(priceData = Prices_S3S, prefData = Pref_S3S, logitExp = logit_exp_S3S, groupValue = "subsector_L3", Reg_Aggregation = RegAggregation)
 
         #Prices S2S3
         Prices_S2S3 <- prices$S2S3_shares
@@ -830,13 +830,13 @@ reportEDGETransport2 <- function(output_folder = ".", sub_folder = "EDGE-T/",
         logit_exp_VS1 <- logit_exp$logit_exponent_FV
         setkey(logit_exp_VS1, NULL)
 
-        Prices_FV <- LogitCostplotdata_FV(priceData=Prices_FV, prefData=Pref_FV, logitExp=logit_exp_VS1, Reg_Aggregation = RegAggregation)
+        Prices_FV <- LogitCostplotdata_FV(priceData = Prices_FV, prefData = Pref_FV, logitExp = logit_exp_VS1, Reg_Aggregation = RegAggregation)
 
         Pref_FV <- Pref_FV[logit_type=="sw"]
         #Walking and cycling have no fuel options
-        Pref_FV <- Pref_FV[!technology %in% c("Cycle_tmp_technology","Walk_tmp_technology")]
-        Pref_FV[, variable:=paste0("Shareweight|F|",gsub("_tmp_vehicletype","",vehicle_type),"|",technology)][,unit:="-"][,scenario:=scenario_title][,model:=model_name]
-        Pref_FV <- Pref_FV[,.(region,period,scenario,variable,value,unit,model)]
+        Pref_FV <- Pref_FV[!technology %in% c("Cycle_tmp_technology", "Walk_tmp_technology")]
+        Pref_FV[, variable := paste0("Shareweight|F|", gsub("_tmp_vehicletype", "", vehicle_type), "|", technology)][, unit := "-"][,scenario := scenario_title][, model := model_name]
+        Pref_FV <- Pref_FV[, .(region,period,scenario,variable,value,unit,model)]
 
         toMIF <- rbind(toMIF,PrefandPrices_S3S, PrefandPrices_S2S3, PrefandPrices_S1S2, PrefandPrices_VS1, Prices_FV, Pref_FV)}}
 
@@ -847,11 +847,11 @@ reportEDGETransport2 <- function(output_folder = ".", sub_folder = "EDGE-T/",
       GDP <- readRDS(datapath(fname = "GDP.RDS"))
       POP <- POP[year %in% yrs]
       GDP <- GDP[year %in% yrs]
-      POP[, model:= model_name][, scenario:= scenario_title][, variable := "Population"][, unit := "million"]
-      GDP[, model:= model_name][, scenario:= scenario_title][, variable := "GDP|PPP"]
+      POP[, model := model_name][, scenario := scenario_title][, variable := "Population"][, unit := "million"]
+      GDP[, model := model_name][, scenario := scenario_title][, variable := "GDP|PPP"]
       GDP[, weight := weight*0.001][, unit := "billion US$2005/yr"]
-      setnames(GDP,c("year","weight"),c("period","value"))
-      setnames(POP,"year","period")
+      setnames(GDP, c("year", "weight"), c("period", "value"))
+      setnames(POP, "year", "period")
 
       if (!is.null(regionSubsetList)){
         toMIF <- rbindlist(list(
