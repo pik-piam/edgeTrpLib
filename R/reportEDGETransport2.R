@@ -154,12 +154,8 @@ reportEDGETransport2 <- function(output_folder = ".", sub_folder = "EDGE-T/",
     aggr_mode_tech <- aggr_LDV <- aggr_LDV_tech <- det_veh_tech <- aggr_bunkers <- aggr_bunkers_tech <- aggr_veh_tech <- capture.output <- NULL
     report <- list()
 
-
     datatable[, sector := ifelse(sector %in% c("trn_pass", "trn_aviation_intl"), "Pass", "Freight")]
     datatable <- merge(datatable, Aggrdata, by = c("sector", "subsector_L1", "subsector_L2", "subsector_L3", "vehicle_type", "technology"), all.x = TRUE, allow.cartesian = TRUE)
-
-    datatable[grepl("Passenger Rail|HSR", vehicle_type), aggr_veh := "Pass|Rail"]
-
 
     #How to account for Hybrid Electric in Final Energy?
     if (mode == "FE") {
