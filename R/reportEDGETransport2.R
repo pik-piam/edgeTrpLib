@@ -1,17 +1,14 @@
 #' Reporting for the coupled EDGE-T Transport Sector Model (REMIND Module edge_esm)
 #'
-#' Data is loaded from the EDGE-T subfolder in the output folder.
-#' The input files can be (re-) generated calling
+#' Data is loaded from the EDGE-T subfolder in the output folder or from the `level_2` folder
+#' in a standalone run.
+#' For a coupled run the EDGE-T output files can be (re-) generated calling
 #' `Rscript EDGETransport.R --reporting`
 #' from the output folder.
-#'
-#' *Warning* The function modifies the "REMIND_generic_<scenario>.mif" file by appending the
-#' additional reporting variables and replaces the "_withoutPlus" version.
 #'
 #' Region subsets are obtained from fulldata.gdx
 #'
 #' @param output_folder path to the output folder, default is current folder.
-#' @param sub_folder subfolder with EDGE-T output files (level_2 for standalone, EDGE-T for coupled runs)
 #' @param extendedReporting report a larger set of variables
 #' @param scenario_title a scenario title string
 #' @param model_name a model name string
@@ -27,7 +24,7 @@
 #' @importFrom dplyr %>%
 #' @export
 
-reportEDGETransport2 <- function(output_folder = ".", sub_folder = "EDGE-T/",
+reportEDGETransport2 <- function(output_folder = ".",
                                  extendedReporting = FALSE,
                                  scenario_title = NULL, model_name = "EDGE-Transport",
                                  gdx = NULL) {
@@ -45,9 +42,10 @@ reportEDGETransport2 <- function(output_folder = ".", sub_folder = "EDGE-T/",
   #pkm or tkm is called km in the reporting. Vehicle km are called vkm
 
   yrs <- c(seq(2005, 2060, 5), seq(2070, 2100, 10))
+  Aggrdata <- fread(system.file("extdata", "EDGETdataAggregation.csv", package = "edgeTrpLib"), header = TRUE)
 
   datapath <- function(fname){
-    file.path(output_folder, sub_folder, fname)}
+    file.path(output_folder, fname)}
 
   # splits  FE Liquids variables into Biomass, Fossil and Hydrogen according to FE demand shares
   split_fe_liquids <- function(df) {
@@ -159,27 +157,17 @@ reportEDGETransport2 <- function(output_folder = ".", sub_folder = "EDGE-T/",
 
     #How to account for Hybrid Electric in Final Energy?
     if (mode == "FE") {
-      techmap <- data.table(
-        technology = c("BEV", "Electric", "Hybrid Electric", "FCEV", "Hydrogen", "Liquids", "NG"),
-        remind_rep = c("Electricity", "Electricity", "Liquids", "Hydrogen", "Hydrogen", "Liquids", "Gases"))
+      datatable[, remind_rep := fuel]
     } else {
-      techmap <- data.table(
-        technology = c("BEV", "Electric", "Hybrid Electric", "FCEV", "Hydrogen", "Liquids", "NG"),
-        remind_rep = c("BEV", "Electric", "Hybrid Electric", "FCEV", "Hydrogen", "Liquids", "Gases"))
+      datatable[, remind_rep := technology]
     }
-
-    datatable <- merge(datatable,techmap,by = c("technology"), all.x = TRUE)
+    datatable[remind_rep == "NG", remind_rep := "Gases"]
 
     datatable[!is.na(aggr_mode) & !is.na(remind_rep), aggr_mode_tech := paste0(aggr_mode, "|", remind_rep)]
     datatable[!is.na(aggr_veh) & !is.na(remind_rep), aggr_veh_tech := paste0(aggr_veh, "|", remind_rep)]
     datatable[!is.na(aggr_LDV) & !is.na(remind_rep), aggr_LDV_tech := paste0(aggr_LDV, "|", remind_rep)]
     datatable[!is.na(det_veh) & !is.na(remind_rep), det_veh_tech := paste0(det_veh, "|", remind_rep)]
     datatable[!is.na(aggr_bunkers) & !is.na(remind_rep), aggr_bunkers_tech := paste0(aggr_bunkers, "|", remind_rep)]
-
-    unit <- switch(mode,
-                   "FE" = "EJ/yr",
-                   "ES" = "bn km/yr",
-                   "VKM" = "bn vkm/yr")
 
     prefix <- switch(mode,
                      "FE" = "FE|Transport|",
@@ -194,6 +182,11 @@ reportEDGETransport2 <- function(output_folder = ".", sub_folder = "EDGE-T/",
     for (var0 in var) {
 
       for (Aggr0 in Aggr) {
+
+        unit <- switch(mode,
+                   "FE" = "EJ/yr",
+                   "ES" = if(var == "Pass"){"bn pkm/yr"}else{"bn tkm/yr"},
+                   "VKM" = "bn vkm/yr")
 
         #Aggregate data
         datatable0 <- copy(datatable)
@@ -305,10 +298,7 @@ reportEDGETransport2 <- function(output_folder = ".", sub_folder = "EDGE-T/",
   }
 
   reportStockAndSales <- function(annual_mileage){
-    if(file.exists(file.path(output_folder, "vintcomp.csv"))){
-      vintages_file <- file.path(output_folder, "vintcomp.csv")
-      vintgs <- fread(vintages_file)
-    } else if (file.exists(datapath(fname = "vintcomp.RDS"))){
+    if (file.exists(datapath(fname = "vintcomp.RDS"))){
       vintages_file <- datapath(fname = "vintcomp.RDS")
       vintgs <- readRDS(vintages_file)
       return(NULL)
@@ -395,10 +385,6 @@ reportEDGETransport2 <- function(output_folder = ".", sub_folder = "EDGE-T/",
       "EU27" = c("ENC", "EWN", "ECS", "ESC", "ECE", "FRA", "DEU", "ESW")
     ))
   }
-
-
-
-  Aggrdata <- fread(system.file("extdata", "EDGETdataAggregation.csv", package = "edgeTrpLib"), header = TRUE)
 
 
   ## load input data from last EDGE run
